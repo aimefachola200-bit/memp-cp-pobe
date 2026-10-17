@@ -25,7 +25,7 @@ const METRICS = {
 const LEVELS = { ecole: ['École', f => f.schoolNom], zone: ['Zone pédagogique', f => f.codeZone || '—'], cs: ['Circonscription scolaire', f => f.codeCs || '—'], dep: ['Département', f => f.departement || '—'] };
 
 async function synoptique(ctx) {
-  const u = ctx.user; ctx.title('Tableau synoptique', 'Consolidation automatique des fiches par école, zone, circonscription ou département');
+  const u = ctx.user; ctx.title('Synthèse des fiches (consolidation)', 'Consolidation automatique des fiches par école, zone, circonscription ou département — le tableau synoptique du CP est dans son propre menu');
   const all = await scoped('fiches', u), years = [...new Set(all.map(f => f.annee))].sort().reverse();
   const st = { annee: years[0] || currentSchoolYear(), kind: 'EP_FIN', level: 'ecole', only: 'all' };
   const sel = (k, opts) => h('select', { class: 'search', style: { maxWidth: '220px' }, onchange: (e) => { st[k] = e.target.value; draw(); } }, opts.map(([v, l]) => h('option', { value: v, selected: st[k] === v }, l)));
@@ -139,8 +139,7 @@ async function documents(ctx) {
   ctx.el.append(
     h('h2', { class: 'sec-h' }, 'Textes officiels intégrés à l\'application'),
     h('div', { class: 'doc-grille' }, (all.integres || []).map(d => h('button', { class: 'card doc-lien', onclick: () => ctx.go(d.route) }, h('h3', '📘 ' + d.titre), h('p', d.description)))),
-    h('h2', { class: 'sec-h' }, 'Fiches et canevas à télécharger'),
-    ...D.map(carte),
+    ...[...new Set(D.map(d => d.groupe || 'Fiches et canevas'))].flatMap(g => [h('h2', { class: 'sec-h' }, g), ...D.filter(d => (d.groupe || 'Fiches et canevas') === g).map(carte)]),
     h('p', { class: 'notes' }, 'Pour ajouter un document : déposez le fichier dans le dossier « docs » du dépôt et ajoutez une entrée dans data/documents.json.'));
   ctx.status(`${D.length} fichier(s) · ${(all.integres || []).length} texte(s) intégré(s)`);
 }

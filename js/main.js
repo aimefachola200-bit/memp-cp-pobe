@@ -148,8 +148,12 @@ async function route() {
     const mod = await import('./' + ROUTES[id] + '.js');
     fn = (await mod.render(id, ctx)) || null;
   } catch (e) {
-    console.error(e); el.replaceChildren(h('div', { class: 'card' }, h('h3', 'Erreur'), h('p', String(e && e.message || e))));
+    console.error(e);
+    // fichiers d'une ancienne et d'une nouvelle version mélangés (mise à jour arrivée pendant l'utilisation) : on recharge une fois
+    if (!sessionStorage.getItem('maj-recharge')) { sessionStorage.setItem('maj-recharge', '1'); toast('Mise à jour de l\'application — rechargement…'); setTimeout(() => location.reload(), 600); return; }
+    el.replaceChildren(h('div', { class: 'card' }, h('h3', 'Erreur'), h('p', String(e && e.message || e)), h('button', { class: 'btn primary', onclick: () => location.reload() }, '↻ Recharger l\'application')));
   }
+  sessionStorage.removeItem('maj-recharge');
   if (!live()) { if (fn) { try { await fn(); } catch { /* ignore */ } } return; }
   cleanup = fn; body.replaceChildren(el); bar.replaceWith(nbar); window.scrollTo(0, 0);
 }
@@ -176,5 +180,12 @@ window.addEventListener('hashchange', route);
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  // nouvelle version installée pendant l'utilisation : rechargement pour repartir sur des fichiers cohérents
+  let dejaControle = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!dejaControle) { dejaControle = true; return; }
+    if (document.querySelector('.dialog')) { toast('Nouvelle version installée : elle sera active au prochain démarrage.'); return; }
+    toast('Nouvelle version installée — rechargement…'); setTimeout(() => location.reload(), 800);
+  });
 }
 export { logout };

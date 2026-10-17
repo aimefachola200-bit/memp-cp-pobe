@@ -11,7 +11,9 @@ const files = [];
   for (const n of readdirSync(dir)) {
     if (SKIP.has(n) && dir === root) continue;
     const p = join(dir, n);
-    if (statSync(p).isDirectory()) walk(p); else files.push(relative(root, p).split(sep).join('/'));
+    const rel = relative(root, p).split(sep).join('/');
+    if (rel === 'docs/reference') continue;   // gros documents de référence : mis en cache à la première ouverture
+    if (statSync(p).isDirectory()) walk(p); else files.push(rel);
   }
 })(root);
 files.sort();
