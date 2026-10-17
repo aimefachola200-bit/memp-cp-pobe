@@ -1,0 +1,990 @@
+{
+ "jours": [
+  [
+   "lundi",
+   "Lundi"
+  ],
+  [
+   "mardi",
+   "Mardi"
+  ],
+  [
+   "mercredi",
+   "Mercredi"
+  ],
+  [
+   "jeudi",
+   "Jeudi"
+  ],
+  [
+   "vendredi",
+   "Vendredi"
+  ]
+ ],
+ "edt": [
+  {
+   "id": "maternelle",
+   "libelle": "Maternelle",
+   "lignes": [
+    {
+     "horaire": "7h45 – 8h30",
+     "lundi": "D1 : Accueil, activités de vie pratique (balayage, époussetage, arrosage…)",
+     "mardi": "D1 : Accueil, activités de vie pratique (balayage, époussetage, arrosage…)",
+     "mercredi": "D1 : Accueil, activités de vie pratique (balayage, époussetage, arrosage…)",
+     "jeudi": "D1 : Accueil, activités de vie pratique (balayage, époussetage, arrosage…)",
+     "vendredi": "D1 : Accueil, activités de vie pratique (balayage, époussetage, arrosage…)"
+    },
+    {
+     "horaire": "8h30 – 9h00",
+     "lundi": "D5 : Cérémonial des couleurs",
+     "mardi": "D1 : Passage aux toilettes – Lavage des mains",
+     "mercredi": "D1 : Passage aux toilettes – Lavage des mains",
+     "jeudi": "D1 : Passage aux toilettes – Lavage des mains",
+     "vendredi": "D1 : Passage aux toilettes – Lavage des mains"
+    },
+    {
+     "horaire": "9h00 – 9h20",
+     "lundi": "D1 : Passage aux toilettes – Lavage des mains",
+     "mardi": "D2 : Expression corporelle (Éducation du mouvement)",
+     "mercredi": "D2 : Expression corporelle (Éducation du mouvement)",
+     "jeudi": "D4 : Expression émotionnelle",
+     "vendredi": "D3 : Pré-lecture"
+    },
+    {
+     "horaire": "9h20 – 10h00",
+     "lundi": "D1 : Goûter",
+     "mardi": "D1 : Passage aux toilettes – Lavage des mains – Goûter",
+     "mercredi": "D1 : Passage aux toilettes – Lavage des mains – Goûter",
+     "jeudi": "D1 : Passage aux toilettes – Lavage des mains – Goûter",
+     "vendredi": "D1 : Passage aux toilettes – Lavage des mains – Goûter"
+    },
+    {
+     "horaire": "10h00 – 10h15",
+     "lundi": "RÉCRÉATION",
+     "mardi": "RÉCRÉATION",
+     "mercredi": "RÉCRÉATION",
+     "jeudi": "RÉCRÉATION",
+     "vendredi": "RÉCRÉATION"
+    },
+    {
+     "horaire": "10h15 – 10h30",
+     "lundi": "D5 : Poésie ou chant ou comptine ou devinette",
+     "mardi": "D5 : Poésie ou chant ou comptine ou devinette",
+     "mercredi": "D5 : Poésie ou chant ou comptine ou devinette",
+     "jeudi": "D5 : Poésie ou chant ou comptine ou devinette",
+     "vendredi": "D5 : Poésie ou chant ou comptine ou devinette"
+    },
+    {
+     "horaire": "10h30 – 10h50",
+     "lundi": "D1 : Éducation pour la santé",
+     "mardi": "D3 : Observation ou éducation sensorielle",
+     "mercredi": "D5 : Communication orale (langage)",
+     "jeudi": "D3 : Pré-mathématique",
+     "vendredi": "D5 : Expression orale (conte)"
+    },
+    {
+     "horaire": "10h50 – 11h20",
+     "lundi": "D3 : Pré-écriture",
+     "mardi": "D5 : Activités libres (jeux libres dans les coins de vie et travaux en atelier)",
+     "mercredi": "D5 : Activités libres (jeux libres dans les coins de vie et travaux en atelier)",
+     "jeudi": "D5 : Activités libres (jeux libres dans les coins de vie et travaux en atelier)",
+     "vendredi": "D5 : Activités libres (jeux libres dans les coins de vie et travaux en atelier)"
+    },
+    {
+     "horaire": "11h20 – 11h30",
+     "lundi": "Mise en ordre du local – Animation – Sortie",
+     "mardi": "Mise en ordre du local – Animation – Sortie",
+     "mercredi": "Mise en ordre du local – Animation – Sortie",
+     "jeudi": "Mise en ordre du local – Animation – Sortie",
+     "vendredi": "Mise en ordre du local – Animation – Sortie"
+    },
+    {
+     "horaire": "11h30 – 14h45",
+     "lundi": "INTERCLASSE",
+     "mardi": "INTERCLASSE",
+     "mercredi": "INTERCLASSE",
+     "jeudi": "INTERCLASSE",
+     "vendredi": "INTERCLASSE"
+    },
+    {
+     "horaire": "14h45 – 15h15",
+     "lundi": "D1 : Accueil – Passage aux toilettes – Lavage des mains",
+     "mardi": "D1 : Accueil – Passage aux toilettes – Lavage des mains",
+     "mercredi": "",
+     "jeudi": "D1 : Accueil – Passage aux toilettes – Lavage des mains",
+     "vendredi": "D1 : Accueil – Passage aux toilettes – Lavage des mains"
+    },
+    {
+     "horaire": "15h15 – 15h50",
+     "lundi": "D1 : Repos – Activités calmes pour les non dormeurs",
+     "mardi": "D1 : Repos – Activités calmes pour les non dormeurs",
+     "mercredi": "",
+     "jeudi": "D1 : Repos – Activités calmes pour les non dormeurs",
+     "vendredi": "D1 : Repos – Activités calmes pour les non dormeurs"
+    },
+    {
+     "horaire": "15h50 – 16h20",
+     "lundi": "D1 : Réveil – Passage aux toilettes – Lavage des mains – Goûter",
+     "mardi": "D1 : Réveil – Passage aux toilettes – Lavage des mains – Goûter",
+     "mercredi": "",
+     "jeudi": "D1 : Réveil – Passage aux toilettes – Lavage des mains – Goûter",
+     "vendredi": "D1 : Réveil – Passage aux toilettes – Lavage des mains – Goûter"
+    },
+    {
+     "horaire": "16h20 – 16h40",
+     "lundi": "D4 : Expression plastique ou activités manuelles à dominante technologique",
+     "mardi": "D4 : Expression plastique ou activités manuelles à dominante technologique",
+     "mercredi": "",
+     "jeudi": "D4 : Expression plastique ou activités manuelles à dominante technologique",
+     "vendredi": "D4 : Expression plastique ou activités manuelles à dominante technologique"
+    },
+    {
+     "horaire": "16h40 – 16h50",
+     "lundi": "D5 : Poésie ou chant ou comptine ou devinette",
+     "mardi": "D5 : Poésie ou chant ou comptine ou devinette",
+     "mercredi": "",
+     "jeudi": "D5 : Poésie ou chant ou comptine ou devinette",
+     "vendredi": "D5 : Poésie ou chant ou comptine ou devinette"
+    },
+    {
+     "horaire": "16h50 – 17h00",
+     "lundi": "Mise en ordre du local – Animation – Sortie",
+     "mardi": "Mise en ordre du local – Animation – Sortie",
+     "mercredi": "",
+     "jeudi": "Mise en ordre du local – Animation – Sortie",
+     "vendredi": "Mise en ordre du local – Animation – Sortie"
+    }
+   ],
+   "remarques": [
+    "Le maître de semaine est tenu d'être à l'école à 7 heures 30 minutes.",
+    "D1 à D5 : domaines d'activités de la maternelle."
+   ],
+   "source": "Emploi du temps officiel de la section des petits — Direction de l'enseignement maternel, septembre 2012 (appliqué à défaut aux deux sections)"
+  },
+  {
+   "id": "ci_cp",
+   "libelle": "CI – CP",
+   "lignes": [
+    {
+     "horaire": "08h à 10h15",
+     "lundi": "Cérémonial des couleurs 15 min\nES/Morale 30 min\nFrançais 45 min\nFrançais 45 min",
+     "mardi": "Français 45 min\nFrançais 45 min\nFrançais 45 min",
+     "mercredi": "Français 45 min\nES Compétences 2 et 3 30 min\nFrançais 45 min",
+     "jeudi": "Français 45 min\nEST 45 min\nFrançais 45 min",
+     "vendredi": "Français 45 min\nFrançais 45 min\nFrançais 45 min"
+    },
+    {
+     "horaire": "10h15 à 10h30",
+     "lundi": "RÉCRÉATION",
+     "mardi": "RÉCRÉATION",
+     "mercredi": "RÉCRÉATION",
+     "jeudi": "RÉCRÉATION",
+     "vendredi": "RÉCRÉATION"
+    },
+    {
+     "horaire": "10h30 à 12h",
+     "lundi": "Math 45 min\nFrançais 45 min",
+     "mardi": "Math 45 min\nFrançais 45 min",
+     "mercredi": "Math 45 min\nFrançais 45 min",
+     "jeudi": "Math 45 min\nFrançais 45 min",
+     "vendredi": "Math 45 min\nFrançais 45 min"
+    },
+    {
+     "horaire": "12h à 15h",
+     "lundi": "INTERCLASSE",
+     "mardi": "INTERCLASSE",
+     "mercredi": "INTERCLASSE",
+     "jeudi": "INTERCLASSE",
+     "vendredi": "INTERCLASSE"
+    },
+    {
+     "horaire": "15h à 16h",
+     "lundi": "EA Poésie/Chant 30 min\nES Civisme 30 min",
+     "mardi": "Français 30 min\nEA/Dessin 30 min",
+     "mercredi": "",
+     "jeudi": "EA/TM 30 min\nEA Poésie/Chant 30 min",
+     "vendredi": "EST 30 min\nFrançais 30 min"
+    },
+    {
+     "horaire": "16h à 16h10",
+     "lundi": "RÉCRÉATION",
+     "mardi": "RÉCRÉATION",
+     "mercredi": "",
+     "jeudi": "RÉCRÉATION",
+     "vendredi": "RÉCRÉATION"
+    },
+    {
+     "horaire": "16h10 à 17h",
+     "lundi": "Français 50 min",
+     "mardi": "EPS 50 min",
+     "mercredi": "",
+     "jeudi": "Dictée 20 min\nEPS 30 min",
+     "vendredi": "EA/Conte 40 min\nCérémonial des couleurs 10 min"
+    }
+   ],
+   "remarques": [
+    "La 6ème étape d'une unité de français prévoit déjà une activité dénommée « j'écris sous la dictée » qu'il faut continuer d'exécuter en temps convenable.",
+    "La dictée à trous ou la dictée muette sont à alterner pour la séance de dictée du jeudi soir.",
+    "En tout état de cause, l'activité de dictée au CI s'effectue à partir de l'apprentissage systématique du français."
+   ],
+   "source": "Emploi du temps officiel CI-CP — MEMP, nouveaux emplois du temps portant réhabilitation de la dictée, Porto-Novo, septembre 2016"
+  },
+  {
+   "id": "ce1_ce2",
+   "libelle": "CE1 – CE2",
+   "lignes": [
+    {
+     "horaire": "08h à 10h15",
+     "lundi": "Cérémonial des couleurs 15 min\nES/Morale 30 min\nFrançais 45 min\nFrançais 45 min",
+     "mardi": "Français 45 min\nEST 45 min\nFrançais 45 min",
+     "mercredi": "Dictée 45 min\nES compétences 2 et 3 (histoire et géographie) 45 min\nFrançais 45 min",
+     "jeudi": "Français 45 min\nEST 45 min\nFrançais 45 min",
+     "vendredi": "Français 45 min\nFrançais 45 min\nEA Couture 45 min"
+    },
+    {
+     "horaire": "10h15 à 10h30",
+     "lundi": "RÉCRÉATION",
+     "mardi": "RÉCRÉATION",
+     "mercredi": "RÉCRÉATION",
+     "jeudi": "RÉCRÉATION",
+     "vendredi": "RÉCRÉATION"
+    },
+    {
+     "horaire": "10h30 à 12h",
+     "lundi": "Math 60 min\nES/Chant 30 min",
+     "mardi": "Math 60 min\nES Dessin 30 min",
+     "mercredi": "Math 45 min\nFrançais 45 min",
+     "jeudi": "Math 60 min\nES/Chant 30 min",
+     "vendredi": "Math 60 min\nES Civisme 30 min"
+    },
+    {
+     "horaire": "12h à 15h",
+     "lundi": "INTERCLASSE",
+     "mardi": "INTERCLASSE",
+     "mercredi": "INTERCLASSE",
+     "jeudi": "INTERCLASSE",
+     "vendredi": "INTERCLASSE"
+    },
+    {
+     "horaire": "15h à 16h",
+     "lundi": "Français 60 min",
+     "mardi": "Français 30 min\nPoésie 30 min",
+     "mercredi": "",
+     "jeudi": "Français 60 min",
+     "vendredi": "Dictée 60 min"
+    },
+    {
+     "horaire": "16h à 16h10",
+     "lundi": "RÉCRÉATION",
+     "mardi": "RÉCRÉATION",
+     "mercredi": "",
+     "jeudi": "RÉCRÉATION",
+     "vendredi": "RÉCRÉATION"
+    },
+    {
+     "horaire": "16h10 à 17h",
+     "lundi": "EA/TM 50 min",
+     "mardi": "EPS 50 min",
+     "mercredi": "",
+     "jeudi": "EPS 50 min",
+     "vendredi": "EA/Conte 50 min\nCérémonial des couleurs 10 min"
+    }
+   ],
+   "remarques": [
+    "Faire la dictée préparée par conclusion (elle se prépare le mercredi et s'exécute le vendredi de la même semaine).",
+    "Faire les autres types de dictées de façon alternée.",
+    "Exécuter obligatoirement la séance de dictée prévue à la deuxième semaine de mise en œuvre d'une unité de français."
+   ],
+   "source": "Emploi du temps officiel CE1-CE2 — MEMP, nouveaux emplois du temps portant réhabilitation de la dictée, Porto-Novo, septembre 2016"
+  },
+  {
+   "id": "cm1_cm2",
+   "libelle": "CM1 – CM2",
+   "lignes": [
+    {
+     "horaire": "08h à 10h15",
+     "lundi": "Cérémonial des couleurs 15 min\nFrançais 60 min\nFrançais 60 min",
+     "mardi": "Français 60 min\nFrançais 75 min",
+     "mercredi": "Français 60 min\nFrançais 75 min",
+     "jeudi": "Français 60 min\nFrançais 75 min",
+     "vendredi": "Français 60 min\nFrançais 75 min"
+    },
+    {
+     "horaire": "10h15 à 10h30",
+     "lundi": "RÉCRÉATION",
+     "mardi": "RÉCRÉATION",
+     "mercredi": "RÉCRÉATION",
+     "jeudi": "RÉCRÉATION",
+     "vendredi": "RÉCRÉATION"
+    },
+    {
+     "horaire": "10h30 à 12h",
+     "lundi": "Math 60 min\nES/Morale 30 min",
+     "mardi": "Math 60 min\nES Civisme 30 min",
+     "mercredi": "Math 60 min\nEA/Dessin 30 min",
+     "jeudi": "Math 60 min\nES/Civisme 30 min",
+     "vendredi": "Math 60 min\nEA/Chant/Poésie 30 min"
+    },
+    {
+     "horaire": "12h à 15h",
+     "lundi": "INTERCLASSE",
+     "mardi": "INTERCLASSE",
+     "mercredi": "INTERCLASSE",
+     "jeudi": "INTERCLASSE",
+     "vendredi": "INTERCLASSE"
+    },
+    {
+     "horaire": "15h à 16h",
+     "lundi": "Dictée 60 min",
+     "mardi": "EST 60 min",
+     "mercredi": "",
+     "jeudi": "ES Compétences 2 et 3 60 min",
+     "vendredi": "EST 60 min"
+    },
+    {
+     "horaire": "16h à 16h10",
+     "lundi": "RÉCRÉATION",
+     "mardi": "RÉCRÉATION",
+     "mercredi": "",
+     "jeudi": "RÉCRÉATION",
+     "vendredi": "RÉCRÉATION"
+    },
+    {
+     "horaire": "16h10 à 17h",
+     "lundi": "ES Compétences 2 et 3 60 min",
+     "mardi": "EPS ou EA Couture 50 min",
+     "mercredi": "",
+     "jeudi": "EPS 50 min",
+     "vendredi": "EA/Conte ou EA Couture 50 min\nCérémonial des couleurs 10 min"
+    }
+   ],
+   "remarques": [
+    "Alterner systématiquement les types de dictées recommandées pour la séance de dictée du lundi soir (15 à 16 h).",
+    "Exécuter obligatoirement la séance de dictée de contrôle initialement prévue à la 2ème semaine de mise en œuvre d'une unité de français."
+   ],
+   "source": "Emploi du temps officiel CM1-CM2 — MEMP, nouveaux emplois du temps portant réhabilitation de la dictée, Porto-Novo, septembre 2016"
+  }
+ ],
+ "reglement_source": "Règlement intérieur des écoles primaires révisé — République du Bénin, Ministère des Enseignements Maternel et Primaire, N°0548/MEMP/DC/SGM/DEP/SP, fait à Porto-Novo le 26 mars 2018, le Ministre des Enseignements Maternel et Primaire, Salimane KARIMOU",
+ "reglement": [
+  {
+   "type": "preambule",
+   "numero": "",
+   "titre": "Préambule",
+   "texte": "Les écoliers sont à l'école pour être instruits et préparés à devenir des citoyens accomplis aux plans physique, mental, intellectuel, moral et spirituel. Ainsi, ils deviendront des hommes et des femmes aimant leur patrie, attachés à l'intégration africaine, ouverts à l'humanité, respectueux de leurs prochains, tant du bien public que privé, de l'environnement, des règles d'hygiène et ayant le goût de l'effort, disciplinés et aimant le travail en vue d'un développement durable.\nLes enseignant(e)s et autres personnels, parents et autres acteurs sont tenus de travailler à l'atteinte de ces objectifs en traitant les écoliers en bon père de famille. Ils constituent de par leurs comportements, présentation et valeurs morales, des modèles pour leurs apprenants.\nIls doivent travailler à instaurer dans leur école une ambiance aussi conviviale que celle de leur cadre familial afin de maintenir leurs apprenants sur les bancs jusqu'à la fin de leur cursus scolaire.\nTous les écolier(e)s ont le droit d'être traités de façon égale, sans distinction de race, de groupe ethnique, de couleur, de sexe, de langue, de handicap, de religion, d'appartenance politique ou autre opinion de leurs parents, d'origine nationale et sociale, de fortune, de naissance ou autre statut et sans distinction du même ordre pour leurs parents ou leurs tuteurs.\nLes termes écoliers, apprenants, instituteurs, enseignants, vendeurs, citoyens, ceux utilisés dans le présent règlement intérieur désignent les deux sexes."
+  },
+  {
+   "type": "titre",
+   "numero": "I",
+   "titre": "Entrée – Sortie – Horaire – Discipline",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "1",
+   "titre": "",
+   "texte": "L'école ouvre ses portes les jours et heures prévus par les textes en vigueur."
+  },
+  {
+   "type": "article",
+   "numero": "2",
+   "titre": "",
+   "texte": "Les écoliers doivent arriver 30 mn avant le début des cours et rester dans l'école pour en assurer le nettoyage."
+  },
+  {
+   "type": "article",
+   "numero": "3",
+   "titre": "",
+   "texte": "Dès le coup de cloche, les jeux et les cris cessent immédiatement. Les écoliers se mettent en rangs sans perte de temps. Toute sortie collective doit s'effectuer sous la conduite effective de l'instituteur."
+  },
+  {
+   "type": "article",
+   "numero": "4",
+   "titre": "",
+   "texte": "Aucun enfant ne doit être retenu par son instituteur ou autre personne dans l'école au-delà des heures réglementaires pendant plus de 30 mn. Les enfants obligés de rester à l'école à midi, pour des raisons diverses, doivent être encadrés."
+  },
+  {
+   "type": "article",
+   "numero": "5",
+   "titre": "",
+   "texte": "Les Associations des Parents d'Élèves doivent prendre des dispositions en collaboration avec les dirigeants de l'école pour assurer la sécurité de ces enfants jusqu'à la réouverture de l'école."
+  },
+  {
+   "type": "article",
+   "numero": "6",
+   "titre": "",
+   "texte": "Les membres de l'Association des Parents d'Élèves passent périodiquement dans l'établissement pour s'enquérir de la bonne marche des activités scolaires.\nLeur passage ne peut se faire qu'avant le démarrage des cours, pendant la récréation et à la fin des cours."
+  },
+  {
+   "type": "article",
+   "numero": "7",
+   "titre": "",
+   "texte": "Il est formellement interdit aux écoliers de former des attroupements aux abords de l'école et d'en sortir sans autorisation.\nLes écoliers sont sous la supervision de l'instituteur de semaine qui est présent à son poste bien avant sept (7) heures trente (30) minutes."
+  },
+  {
+   "type": "article",
+   "numero": "8",
+   "titre": "",
+   "texte": "Les écoliers sont tenus de communiquer les résultats des évaluations périodiques des apprentissages aux parents pour une action conjuguée entre ceux-ci et l'instituteur."
+  },
+  {
+   "type": "titre",
+   "numero": "II",
+   "titre": "De la protection des écoliers en situation de handicap",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "9",
+   "titre": "",
+   "texte": "Les écoliers handicapés doivent être particulièrement aidés et encouragés.\nLes enfants handicapés doivent être effectivement inscrits dans les registres de l'école, avec mention de leur handicap.\nCeux ayant des troubles de vision et d'audition sont disposés de manière à mieux entendre l'instituteur et bien voir au tableau."
+  },
+  {
+   "type": "article",
+   "numero": "10",
+   "titre": "",
+   "texte": "Les écoliers handicapés désireux d'exercer des activités physiques et sportives à la hauteur de leurs conditions physiques, après avis médical, ne doivent pas être en empêchés.\nL'école prend des dispositions spéciales pour répondre à leurs besoins."
+  },
+  {
+   "type": "article",
+   "numero": "11",
+   "titre": "",
+   "texte": "Il doit être prévu des moyens d'accessibilité aux classes pour les écoliers ayant des problèmes de mobilité.\nÀ cet effet, les dirigeants de l'école et les Associations des Parents d'Élèves veillent à ce que les nouvelles constructions de classes soient adaptées aux normes d'accessibilité et les anciennes réaménagées dans ce sens."
+  },
+  {
+   "type": "titre",
+   "numero": "III",
+   "titre": "De la protection contre les atteintes sexuelles",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "12",
+   "titre": "",
+   "texte": "Le Directeur et les instituteurs prennent des mesures pour protéger les enfants, en particulier, les filles contre les atteintes sexuelles.\nIl est mis un accent particulier sur les filles handicapées."
+  },
+  {
+   "type": "article",
+   "numero": "13",
+   "titre": "",
+   "texte": "Tout instituteur ou toute personne, auteur de ces agissements doit être dénoncé simultanément aux autorités administratives et judiciaires."
+  },
+  {
+   "type": "article",
+   "numero": "14",
+   "titre": "",
+   "texte": "Il est institué dans chaque école des mécanismes pour apprendre aux écolier(e)s, en particulier les filles à détecter et à dénoncer les atteintes sexuelles.\nÀ cet effet, les directeurs d'école, de concert avec l'Association des Parents d'Élèves mettent en place des dispositifs, y compris anonymes, de dénonciation et de protection des filles victimes d'abus sexuels."
+  },
+  {
+   "type": "article",
+   "numero": "15",
+   "titre": "",
+   "texte": "Aucune sanction ne peut être prononcée contre l'écolier, l'enseignant ou toute autre personne dénonciateur desdits abus."
+  },
+  {
+   "type": "titre",
+   "numero": "IV",
+   "titre": "De la gratuité des enseignements maternel et primaire publics",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "16",
+   "titre": "",
+   "texte": "Tout établissement scolaire public, maternel ou primaire, a l'obligation d'accueillir gratuitement tout enfant remplissant les conditions d'inscription prévues par les textes en vigueur."
+  },
+  {
+   "type": "article",
+   "numero": "17",
+   "titre": "",
+   "texte": "Il est interdit à tout responsable d'école maternelle, primaire publique d'exiger des enfants des frais de scolarité et des contributions au fonctionnement de ladite école."
+  },
+  {
+   "type": "article",
+   "numero": "18",
+   "titre": "",
+   "texte": "Les frais relatifs à l'organisation des activités récréatives, sportives ou culturelles sont facultatifs et ne doivent donner lieu à aucun renvoi."
+  },
+  {
+   "type": "titre",
+   "numero": "V",
+   "titre": "Du décrochage et de l'orientation professionnelle",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "19",
+   "titre": "",
+   "texte": "Aucun écolier, à l'exception de celui présentant une déficience intellectuelle ou autre, ne peut être retiré ni exclu de l'école s'il n'a obtenu le Certificat d'Études Primaires ou s'il n'a atteint le niveau du Cours Moyen Deuxième Année."
+  },
+  {
+   "type": "article",
+   "numero": "20",
+   "titre": "",
+   "texte": "L'écolier présentant une déficience intellectuelle ou autre, doit être orienté avec le concours de ses parents ou tuteurs et l'Association des Parents d'Élèves vers les centres spécialisés ou professionnels adaptés à sa situation."
+  },
+  {
+   "type": "article",
+   "numero": "21",
+   "titre": "",
+   "texte": "Aucune écolière ne peut être exclue de l'école pour cause de grossesse."
+  },
+  {
+   "type": "titre",
+   "numero": "VI",
+   "titre": "De l'interdiction des châtiments corporels et traitements inhumains ou dégradants",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "22",
+   "titre": "",
+   "texte": "Les châtiments corporels sont formellement interdits."
+  },
+  {
+   "type": "article",
+   "numero": "23",
+   "titre": "",
+   "texte": "Il est formellement interdit de soumettre les apprenants aux traitements inhumains et dégradants."
+  },
+  {
+   "type": "article",
+   "numero": "24",
+   "titre": "",
+   "texte": "Les punitions autorisées dans les écoles maternelles et primaires sont :\n– la mise en garde ;\n– échanges avec l'écolier ;\n– changement de place ;\n– présentation d'excuses par le coupable ;\n– la privation partielle de récréation ;\n– recours aux parents ;\n– restitution de l'objet volé ou de la vérité ;\n– la retenue d'au plus d'une demi-heure après la classe sous la surveillance de l'instituteur ;\n– le nettoyage de la salle de classe ;\n– la copie en plusieurs exemplaires de l'exercice mal fait ;\n– la suspension temporaire prononcée par le directeur et le Bureau de l'Association des Parents d'Élèves après avis conforme du Directeur Départemental en charge des Enseignements maternel et primaire. Cette suspension ne peut dépasser trois jours ; avis en est donné aux parents de l'écolier et suivi d'explication à tous les écoliers lors du cérémonial des couleurs afin de discipliner ses pairs."
+  },
+  {
+   "type": "article",
+   "numero": "25",
+   "titre": "",
+   "texte": "À l'exception de la suspension temporaire, aucune punition ne peut empêcher l'apprenant de suivre les cours.\nLes punitions sont exécutées aux heures creuses."
+  },
+  {
+   "type": "titre",
+   "numero": "VII",
+   "titre": "Des récompenses",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "26",
+   "titre": "",
+   "texte": "Les écoliers méritants peuvent recevoir les récompenses suivantes :\na) les bons points ;\nb) l'inscription au tableau d'honneur ;\nc) les félicitations de l'instituteur ;\nd) l'attribution d'une responsabilité de confiance."
+  },
+  {
+   "type": "titre",
+   "numero": "VIII",
+   "titre": "De la protection de l'environnement de l'école",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "27",
+   "titre": "",
+   "texte": "À l'exception des vendeurs de nourriture et de matériels didactiques agréés par le Directeur en accord avec l'Association des Parents d'Élèves, il est interdit à toute autre personne de s'installer dans l'enceinte ou aux alentours de l'école.\nToute installation non autorisée est passible de sanction."
+  },
+  {
+   "type": "article",
+   "numero": "28",
+   "titre": "",
+   "texte": "L'Association des Parents d'Élèves veille à ce qu'il ne soit installé aux abords immédiats de l'école, des débits de boissons et de tabac, des salles de jeux, des vidéoclubs, des salles de machines à sous, des boutiques de vente de supports électroniques à caractères pornographiques, des publications, des illustrations, des récits, des chroniques, des rubriques, des insertions présentant sous un jour favorable le banditisme, le mensonge, le vol, la paresse, la lâcheté, la haine, la débauche ou tout autre actes qualifiés de crimes ou délits ou de nature à démoraliser l'enfance ou la jeunesse ou à inspirer ou à entretenir des préjugés ethiques."
+  },
+  {
+   "type": "titre",
+   "numero": "IX",
+   "titre": "Tenue vestimentaire des écolier(e)s et des restauratrices",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "29",
+   "titre": "",
+   "texte": "La tenue des écoliers doit être conforme à la règlementation en vigueur.\nLes restauratrices sont en uniforme et doivent protéger leurs cheveux."
+  },
+  {
+   "type": "article",
+   "numero": "30",
+   "titre": "",
+   "texte": "Les cheveux sont modestement coiffés. Les écolières peuvent se tresser les cheveux sans extravagance."
+  },
+  {
+   "type": "titre",
+   "numero": "X",
+   "titre": "De la propreté, de l'hygiène et de l'ordre",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "31",
+   "titre": "",
+   "texte": "Les tenues uniformes doivent être maintenues propres. Les parents et les enseignants veillent à l'hygiène corporelle et bucco-dentaire des enfants."
+  },
+  {
+   "type": "article",
+   "numero": "32",
+   "titre": "",
+   "texte": "L'instituteur doit servir de modèle aux écoliers de par sa tenue vestimentaire, sa coiffure, son comportement et son langage."
+  },
+  {
+   "type": "article",
+   "numero": "33",
+   "titre": "",
+   "texte": "Il est formellement interdit de détériorer le matériel d'enseignement, les installations d'eau et d'électricité, les infrastructures, d'écrire sur les murs, de grimper sur les arbres, de cracher partout, de détruire le parterre ou d'y jeter des objets qui pourraient salir le sol. Tout objet retrouvé dans l'enceinte et aux abords immédiats de l'école doit être remis à l'instituteur."
+  },
+  {
+   "type": "article",
+   "numero": "34",
+   "titre": "",
+   "texte": "L'enlèvement des ordures doit être soumis à une structure spécialisée en la matière ou enfouies dans un trou à ordures creusé selon les normes environnementales."
+  },
+  {
+   "type": "article",
+   "numero": "35",
+   "titre": "",
+   "texte": "Au début de chaque année, l'instituteur est tenu d'élaborer la charte de sa classe en collaboration avec ses écoliers/écolières. Cette charte élaborée est affichée à divers endroits de la classe pour exploitation."
+  },
+  {
+   "type": "article",
+   "numero": "36",
+   "titre": "",
+   "texte": "Tout matériel didactique appartenant à l'école doit être entretenu avec grand soin. En cas de détérioration volontaire, il est remboursé ou réparé par le parent ou le tuteur de l'écolier."
+  },
+  {
+   "type": "article",
+   "numero": "37",
+   "titre": "",
+   "texte": "L'usage du téléphone portable aux heures de cours est formellement interdit tant aux instituteurs qu'aux écoliers."
+  },
+  {
+   "type": "article",
+   "numero": "38",
+   "titre": "",
+   "texte": "Les sonneries et la surveillance des écolier(e)s pendant la récréation sont assurées par l'instituteur de semaine aidé des autres instituteurs de l'école et des écoliers responsables."
+  },
+  {
+   "type": "article",
+   "numero": "39",
+   "titre": "",
+   "texte": "L'instituteur responsable de la santé et de la nutrition veille à l'animation des comités de santé de classe."
+  },
+  {
+   "type": "titre",
+   "numero": "XI",
+   "titre": "De la santé de l'écolier et des absences",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "40",
+   "titre": "",
+   "texte": "Tout écolier malade doit s'inscrire dans un cahier de visite médicale et se faire conduire au centre de santé. Lorsqu'un écolier se trouve dans l'impossibilité de venir à l'école en raison de maladie, de décès d'un membre de famille ou autres cas éventuels, il doit le faire savoir à son instituteur le plus tôt possible par un parent."
+  },
+  {
+   "type": "article",
+   "numero": "41",
+   "titre": "",
+   "texte": "Chaque école doit disposer d'une trousse de premiers soins conformément aux dispositions de la politique nationale de santé scolaire et universitaire. La trousse de premiers soins doit être régulièrement approvisionnée sous le contrôle du comité de santé."
+  },
+  {
+   "type": "article",
+   "numero": "42",
+   "titre": "",
+   "texte": "L'instituteur, les écoliers et le personnel de soutien doivent être formés sur les gestes de secourisme."
+  },
+  {
+   "type": "article",
+   "numero": "43",
+   "titre": "",
+   "texte": "Tout enfant souffrant d'une maladie contagieuse est confié à ses parents jusqu'à la guérison totale."
+  },
+  {
+   "type": "article",
+   "numero": "44",
+   "titre": "",
+   "texte": "La liste des écoliers absents aux cours sera transmise de façon périodique par l'administration de l'école au bureau de l'Association des Parents d'Élèves pour prise de contact avec leurs parents. Un total de cinq jours successifs d'absence sans motif valable donne lieu à un avertissement. En cas de récidive, l'écolier s'expose à l'une quelconque des sanctions prévues à l'article 24."
+  },
+  {
+   "type": "titre",
+   "numero": "XII",
+   "titre": "De la cérémonie du salut des couleurs",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "45",
+   "titre": "",
+   "texte": "Le salut des couleurs est obligatoire pour tous les écoliers et les usagers de l'école présents lors du cérémonial."
+  },
+  {
+   "type": "article",
+   "numero": "46",
+   "titre": "",
+   "texte": "L'ordre, le silence, une attitude digne et révérencieuse sont observés au cours de ces cérémonies. Chaque participant met un point d'honneur à exécuter avec conviction et patriotisme l'hymne national."
+  },
+  {
+   "type": "article",
+   "numero": "47",
+   "titre": "",
+   "texte": "Tout désordre, toute nonchalance, tout comportement tendant à perturber la cérémonie des couleurs est sanctionné."
+  },
+  {
+   "type": "titre",
+   "numero": "XIII",
+   "titre": "Des vendeuses dans l'école",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "48",
+   "titre": "",
+   "texte": "Sur autorisation du Directeur d'école et du bureau de l'Association des Parents d'Élèves, une ou plusieurs personnes peuvent acquérir la qualité de vendeur de mets dans l'établissement."
+  },
+  {
+   "type": "article",
+   "numero": "49",
+   "titre": "",
+   "texte": "Toute vendeuse de mets à l'école doit se soumettre au préalable aux conditions d'hygiène et de visite médicale qu'exige la protection de la santé de l'écolier."
+  },
+  {
+   "type": "article",
+   "numero": "50",
+   "titre": "",
+   "texte": "L'instituteur responsable des questions de santé et de nutrition en collaboration avec l'instituteur de semaine, veillent à la bonne qualité des mets, de l'eau, de boisson, de lavage des mains et des ustensiles de cuisines utilisées.\nLa stérilisation du couvert est recommandée. Cette mesure s'étend aux écoles à cantine et à l'internat."
+  },
+  {
+   "type": "article",
+   "numero": "51",
+   "titre": "",
+   "texte": "En dehors de la bonne moralité qui est exigée avant le recrutement de vendeuse de mets dans les établissements scolaires, celles-ci doivent bénéficier d'une visite médicale annuelle et de formations périodiques en hygiène alimentaire, vestimentaire et environnementale."
+  },
+  {
+   "type": "article",
+   "numero": "52",
+   "titre": "",
+   "texte": "Sur initiative du Chef de Circonscription Scolaire, des visites de contrôle inopiné sont organisées dans les établissements scolaires avec l'appui technique des agents de santé et d'hygiène du milieu puis le Bureau de l'Association des Parents d'Élèves et les Organisations Non Gouvernementales."
+  },
+  {
+   "type": "titre",
+   "numero": "XIV",
+   "titre": "De l'utilisation des latrines",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "53",
+   "titre": "",
+   "texte": "Chaque école dispose de latrines conformément aux normes École de Qualité Fondamentale et accessibles aux écoliers handicapés."
+  },
+  {
+   "type": "article",
+   "numero": "54",
+   "titre": "",
+   "texte": "Chaque écolier fille ou garçon surpris dans les latrines du sexe opposé peut être puni."
+  },
+  {
+   "type": "titre",
+   "numero": "XV",
+   "titre": "De la solidarité et de l'esprit de groupe",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "55",
+   "titre": "",
+   "texte": "Tous les acteurs de l'école, doivent accorder une attention particulière aux écoliers handicapés et leur porter assistance."
+  },
+  {
+   "type": "article",
+   "numero": "56",
+   "titre": "",
+   "texte": "L'instituteur doit encourager le soutien par les pairs et le mentorat. La solidarité entre écoliers doit être cultivée."
+  },
+  {
+   "type": "titre",
+   "numero": "XVI",
+   "titre": "Du gardien de l'école et d'autres personnels de soutien",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "57",
+   "titre": "",
+   "texte": "Le gardien de l'école doit être de bonne moralité et avoir une tenue vestimentaire irréprochable."
+  },
+  {
+   "type": "article",
+   "numero": "58",
+   "titre": "",
+   "texte": "Le gardien et les autres personnels de soutien sont régulièrement informés des enjeux de la scolarisation des enfants, de la convention relative aux droits de l'enfant et de la convention relative aux droits des personnes handicapées."
+  },
+  {
+   "type": "titre",
+   "numero": "XVIII",
+   "titre": "De l'utilisation des langues nationales",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "59",
+   "titre": "",
+   "texte": "L'école doit assurer la promotion et l'utilisation de nos langues nationales, de la langue des signes, de l'écriture braille."
+  },
+  {
+   "type": "titre",
+   "numero": "XIX",
+   "titre": "Des dispositions diverses",
+   "texte": ""
+  },
+  {
+   "type": "article",
+   "numero": "60",
+   "titre": "",
+   "texte": "Tout manquement au présent règlement intérieur est sanctionné."
+  },
+  {
+   "type": "article",
+   "numero": "61",
+   "titre": "",
+   "texte": "Tous les cas non envisagés dans le présent règlement intérieur sont laissés à l'appréciation des autorités administratives de l'école."
+  },
+  {
+   "type": "article",
+   "numero": "62",
+   "titre": "",
+   "texte": "Le présent règlement intérieur est lu et commenté tous les premiers mois de l'année scolaire, et chaque fois que le besoin se fait sentir.\nIl sera affiché dans les classes et porté à la connaissance des parents et autres usagers de l'école."
+  },
+  {
+   "type": "article",
+   "numero": "63",
+   "titre": "",
+   "texte": "À l'exception de la gratuité de l'enseignement, les autres dispositions du présent règlement intérieur s'appliquent aux écoles maternelles, primaires tant du public que du privé."
+  }
+ ],
+ "calendrier": {
+  "2026-2027": {
+   "arrete": "Arrêté interministériel année 2026 n° 017/MEMP/MES/MESRS-FT/DC/SGM/DIIP/DEP/DEM/DEC/IGPM/DESG/DESTFP/SA 015SGG26 fixant le calendrier de l'année scolaire 2026-2027 (articles 1 à 7)",
+   "signe": "MEMP / MES / MESRS-FT, Cotonou, le 28 juillet 2026",
+   "lignes": [
+    {
+     "type": "pre_rentree",
+     "libelle": "Pré-rentrée scolaire",
+     "debut": "2026-09-07",
+     "fin": "2026-09-11",
+     "precision": "",
+     "duree": "1 semaine",
+     "obs": "Article 1"
+    },
+    {
+     "type": "trimestre",
+     "libelle": "Premier trimestre",
+     "debut": "2026-09-14",
+     "fin": "2026-12-18",
+     "precision": "après les cours de l'après-midi",
+     "duree": "14 semaines de travail",
+     "obs": "Article 2"
+    },
+    {
+     "type": "conges",
+     "libelle": "Congés de fin du premier trimestre",
+     "debut": "2026-12-18",
+     "fin": "2027-01-03",
+     "precision": "après les cours ; dimanche 03 janvier inclus",
+     "duree": "2 semaines",
+     "obs": "Article 2"
+    },
+    {
+     "type": "trimestre",
+     "libelle": "Deuxième trimestre",
+     "debut": "2027-01-04",
+     "fin": "2027-03-24",
+     "precision": "après les cours",
+     "duree": "10 semaines 3 jours de travail",
+     "obs": "Article 3"
+    },
+    {
+     "type": "conges",
+     "libelle": "Congés de détente",
+     "debut": "2027-02-19",
+     "fin": "2027-02-28",
+     "precision": "après les cours ; dimanche 28 février inclus",
+     "duree": "1 semaine",
+     "obs": "Article 3"
+    },
+    {
+     "type": "conges",
+     "libelle": "Congés de fin du deuxième trimestre",
+     "debut": "2027-03-24",
+     "fin": "2027-04-07",
+     "precision": "après les cours ; mercredi 07 avril inclus",
+     "duree": "2 semaines",
+     "obs": "Article 3"
+    },
+    {
+     "type": "trimestre",
+     "libelle": "Troisième trimestre",
+     "debut": "2027-04-08",
+     "fin": "2027-06-25",
+     "precision": "après les cours",
+     "duree": "11 semaines 2 jours",
+     "obs": "Article 4"
+    },
+    {
+     "type": "vacances",
+     "libelle": "Grandes vacances",
+     "debut": "2027-06-25",
+     "fin": "2027-09-12",
+     "precision": "après les cours ; reprise des activités pédagogiques le lundi 13 septembre 2027",
+     "duree": "",
+     "obs": "Article 5"
+    },
+    {
+     "type": "ferie",
+     "libelle": "Fête des cultes et traditions du Bénin",
+     "debut": "2027-01-07",
+     "fin": "2027-01-08",
+     "precision": "jeudi 07 et vendredi 08 janvier 2027",
+     "duree": "2 jours",
+     "obs": "Article 6"
+    },
+    {
+     "type": "ferie",
+     "libelle": "Ascension",
+     "debut": "2027-05-06",
+     "fin": "2027-05-06",
+     "precision": "jeudi",
+     "duree": "1 jour",
+     "obs": "Article 6"
+    },
+    {
+     "type": "ferie",
+     "libelle": "Lundi de Pentecôte",
+     "debut": "2027-05-17",
+     "fin": "2027-05-17",
+     "precision": "lundi",
+     "duree": "1 jour",
+     "obs": "Article 6 — les autres jours fériés sont déclarés par le Ministre chargé de la Fonction publique"
+    }
+   ]
+  }
+ },
+ "types_calendrier": {
+  "pre_rentree": "Pré-rentrée",
+  "trimestre": "Trimestre",
+  "conges": "Congés",
+  "ferie": "Jour férié",
+  "vacances": "Grandes vacances",
+  "evenement": "Événement",
+  "autre": "Autre"
+ },
+ "couleurs_calendrier": {
+  "pre_rentree": "#FDE68A",
+  "trimestre": "#D1FAE5",
+  "conges": "#FECACA",
+  "ferie": "#FCA5A5",
+  "vacances": "#E9D5FF",
+  "evenement": "#BFDBFE",
+  "autre": "#E5E7EB",
+  "classe": "#D1FAE5",
+  "weekend": "#F3F4F6"
+ }
+}

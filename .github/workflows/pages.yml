@@ -1,0 +1,34 @@
+name: Publication GitHub Pages
+# À chaque envoi sur main : régénère la liste du cache hors ligne puis publie l'application sur la branche gh-pages
+# (https://<utilisateur>.github.io/<depot>/). Aucun réglage manuel de Pages n'est nécessaire.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Régénérer la liste des fichiers du cache hors ligne
+        run: node tools/gen-assets.mjs
+      - name: Publier sur la branche gh-pages
+        run: |
+          rm -rf /tmp/site && mkdir /tmp/site
+          tar --exclude=.git --exclude=.github --exclude=tools -cf - . | tar -xf - -C /tmp/site
+          touch /tmp/site/.nojekyll
+          cd /tmp/site
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Publication de ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
