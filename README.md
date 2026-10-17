@@ -10,26 +10,26 @@ mêmes fonctions, avec ses propres données sur l'appareil (elle ne se mélange 
 **Conception : Maître Aimé FACHE — Tél. 01 96 51 03 33**
 
 ## Données de départ
-- **156 écoles** (92 EPP publiques, 18 EM publiques, 46 écoles privées) réparties en **5 zones** (une par arrondissement :
-  Ahoyéyé, Igana, Issaba, Pobè, Towé) — onglets par zone dans « Écoles » et « Personnel enseignant ».
-- **282 agents** (directeurs, adjoints, CP, CCS) avec leur école, fonction, statut, grade et corps.
-- Boutons **Ajouter / Modifier / Supprimer**, import Excel, export Excel et PDF.
+- **156 écoles** (92 EPP publiques, 18 EM publiques, 46 écoles privées) et **282 agents** (directeurs, adjoints, CP, CCS)
+  avec leur école, fonction, statut, grade et corps — boutons **Ajouter / Modifier / Supprimer**, import Excel, export Excel et PDF.
+- **Compte de la circonscription (CCS, administrateur)** : écoles et personnel rangés **par arrondissement**
+  (Ahoyéyé, Igana, Issaba, Pobè, Towé), avec un bouton pour passer à la vue **par zone pédagogique**.
+- **Comptes des CP** : écoles et personnel de **leur zone pédagogique** (3 zones).
+- **Zones** : les fichiers fournis ne donnent pas la zone de chaque école. Tant qu'elle n'est pas renseignée, l'école reste
+  rangée dans son **arrondissement** ; dès que le CCS saisit sa zone (Écoles → Modifier → « N° zone pédagogique » : 1, 2 ou 3),
+  l'école et tout son personnel passent automatiquement dans cette zone et apparaissent chez le CP concerné.
 - Le dépôt étant public, les matricules, téléphones, dates et lieux de naissance, situations de famille et notes
-  d'évaluation **ne sont pas publiés** : importez votre cahier de contrôle (menu Personnel → « Importer Excel ») pour les
+  d'évaluation **ne sont pas publiés** : importez votre cahier de contrôle (Personnel → « Importer Excel ») pour les
   compléter sur votre appareil uniquement.
-- Les zones suivent les arrondissements ; si le découpage officiel des zones pédagogiques est différent, changez la zone
-  d'une école (Écoles → Modifier) : son personnel suit automatiquement.
 
 ## Comptes de départ (à changer dès la première connexion)
 | Rôle | Identifiant | Mot de passe |
 |---|---|---|
 | Administrateur | admin | admin123 |
 | Chef de circonscription | ccs | ccs123 |
-| CP zone 1 — Ahoyéyé | cp.ahoyeye | cp123 |
-| CP zone 2 — Igana | cp.igana | cp123 |
-| CP zone 3 — Issaba | cp.issaba | cp123 |
-| CP zone 4 — Pobè | cp.pobe | cp123 |
-| CP zone 5 — Towé | cp.towe | cp123 |
+| CP zone pédagogique 1 | cp1 | cp123 |
+| CP zone pédagogique 2 | cp2 | cp123 |
+| CP zone pédagogique 3 | cp3 | cp123 |
 
 ## Installer sur Android
 1. Ouvrir **Chrome** sur le téléphone ou la tablette (avec Internet pour la première fois).

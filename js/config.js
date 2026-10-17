@@ -3,7 +3,7 @@
 export const APP = {
   name: "Application CP — CS Pobè",
   full: 'Application CP — Gestion pédagogique',
-  version: '1.1.0',
+  version: '1.1.1',
   republique: 'RÉPUBLIQUE DU BÉNIN',
   ministere: 'MINISTÈRE DES ENSEIGNEMENTS MATERNEL ET PRIMAIRE',
   concepteur: 'Maître Aimé FACHE',
@@ -27,23 +27,15 @@ export const VARIANT = {
       "ccs123"
     ],
     [
-      "cp.ahoyeye",
+      "cp1",
       "cp123"
     ],
     [
-      "cp.igana",
+      "cp2",
       "cp123"
     ],
     [
-      "cp.issaba",
-      "cp123"
-    ],
-    [
-      "cp.pobe",
-      "cp123"
-    ],
-    [
-      "cp.towe",
+      "cp3",
       "cp123"
     ]
   ]

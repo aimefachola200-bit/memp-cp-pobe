@@ -3,7 +3,7 @@
 // Préfixe propre à chaque application (même domaine github.io pour l'application CP et ses jumelles)
 const PREFIX = 'memp-cp-' + new URL(self.registration.scope).pathname.replace(/[^a-z0-9]+/gi, '-') + '-';
 // Empreinte de la publication (écrite par tools/gen-assets.mjs) : sw.js change à chaque mise à jour, les appareils la reçoivent.
-const BUILD = '5847da592b58';
+const BUILD = 'd5d404112a29';
 let VERSION = 'dev';
 
 self.addEventListener('install', (event) => {

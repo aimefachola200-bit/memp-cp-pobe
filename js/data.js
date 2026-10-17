@@ -39,6 +39,21 @@ export async function seedIfEmpty() {
 
 /** Application jumelle d'une circonscription : comptes, référentiel, écoles et personnel de départ (premier lancement). */
 async function seedVariant() {
+  // CS Pobè, première publication (17/10/2026) : 5 zones calquées sur les arrondissements → 3 zones pédagogiques à renseigner
+  const refs = await db.all('ref');
+  if (VARIANT.id === 'pobe' && refs.some(r => r.type === 'zone' && r.code === 'CSPOBE-ZP05')) {
+    const S = await (await fetch(VARIANT.seed)).json();
+    await db.delMany('ref', refs.filter(r => r.type === 'zone').map(r => r.id));
+    await db.putMany('ref', S.ref.filter(r => r.type === 'zone').map(r => ({ id: uid(), ...r })));
+    const arr = new Map(S.schools.map(x => [x.id, x.arrondissement]));
+    await db.putMany('schools', (await db.all('schools')).map(x => (/^CSPOBE-ZP0[1-5]$/.test(x.codeZone || '') ? { ...x, numZone: '', codeZone: '' } : x)));
+    await db.putMany('personnel', (await db.all('personnel')).map(x => ({ ...x, numZone: '', codeZone: '', arrondissement: arr.get(x.schoolId) || x.arrondissement || '' })));
+    const anciens = (await db.all('users')).filter(x => /^cp\.(ahoyeye|igana|issaba|pobe|towe)$/.test(x.username));
+    await db.delMany('users', anciens.map(x => x.id));
+    const cps = [];
+    for (const c of S.comptes.filter(c => c.profil.role === 'CP')) if (!(await db.all('users')).some(x => x.username === c.username)) cps.push({ id: uid(), username: c.username, pwd: await hashPassword(c.mdp), actif: true, mustChange: true, created: nowISO(), ...c.profil });
+    await db.putMany('users', cps);
+  }
   const besoin = !(await db.count('users')) || !(await db.all('ref')).some(r => r.type === 'departement')
     || (!(await db.count('schools')) && !(await db.setting('seed-ecoles'))) || (!(await db.count('personnel')) && !(await db.setting('seed-personnel')));
   if (!besoin) return;
@@ -79,6 +94,21 @@ export async function refreshDatalists() {
   };
   holder.replaceChildren(...Object.entries(lists).map(([id, vals]) => h('datalist', { id }, vals.map(v => h('option', { value: v })))));
 }
+
+/* ---------- Regroupement des écoles et du personnel ----------
+   « zone » : par zone pédagogique ; une école dont la zone n'est pas encore renseignée reste dans son arrondissement
+   et passe dans sa zone dès que celle-ci est saisie. « arr » : par arrondissement (vue de la circonscription). */
+export const modeGroupeDefaut = (u) => u.role === 'CP' ? 'zone' : 'arr';
+export function cleGroupe(rec, mode) {
+  if (mode === 'arr') return rec.arrondissement ? 'a:' + rec.arrondissement : rec.codeZone ? 'z:' + rec.codeZone : 'cs';
+  return rec.codeZone ? 'z:' + rec.codeZone : rec.arrondissement ? 'a:' + rec.arrondissement : 'cs';
+}
+export function libGroupe(k, zonesRef, mode, libCs = 'Circonscription') {
+  if (k === 'cs') return libCs;
+  if (k.startsWith('z:')) { const c = k.slice(2), z = zonesRef.find(x => x.code === c); return z ? (z.nom || `Zone ${z.numero}`) : 'Zone ' + c.split('-ZP').pop(); }
+  return mode === 'arr' ? k.slice(2) : `${k.slice(2)} (zone non renseignée)`;
+}
+export const ordreGroupe = (a, b) => (a[0] === 'c') - (b[0] === 'c') || (a[0] === 'a') - (b[0] === 'a') || a.localeCompare(b, 'fr', { numeric: true });
 
 export const schoolLabel = (s) => `${s.nom}${s.code ? ' (' + s.code + ')' : ''}`;
 export function ficheOf(kind, school, annee, data, perso) {

@@ -4,7 +4,7 @@
 import { h, uid, nowISO, toast, confirmBox, pickFile, readAsBuffer, readAsText, download, norm, fmtDate } from './util.js';
 import { db } from './db.js';
 import { dataTable, formDialog } from './ui.js';
-import { scoped, inScope, addLog } from './data.js';
+import { scoped, inScope, addLog, cleGroupe, libGroupe, ordreGroupe, modeGroupeDefaut } from './data.js';
 import { listToXlsx, listToPdf } from './export.js';
 import { readXlsx, parseCsv } from './xlsx.js';
 import { newPdf } from './pdf.js';
@@ -170,35 +170,36 @@ async function personnel(ctx) {
   ctx.title('Personnel enseignant', 'Par zone pédagogique et par école — ajouter, modifier, supprimer');
   const zonesRef = (await db.all('ref')).filter(r => r.type === 'zone');
   const schools = await scoped('schools', u);
-  const zonesVues = [...new Set(schools.map(s => s.codeZone).filter(Boolean))].sort();
-  const libZone = (c) => { const z = zonesRef.find(x => x.code === c); return z ? (z.nom || `Zone ${z.numero}`) : (c ? 'Zone ' + c.split('-ZP').pop() : 'Circonscription'); };
+  const libZone = (c) => libGroupe(c ? 'z:' + c : 'cs', zonesRef, 'zone');
+  let mode = u.role === 'CP' ? 'zone' : ((await db.setting('groupe-mode')) || modeGroupeDefaut(u));
   let onglet = (await db.setting('personnel-onglet')) || 'tout';
-  if (onglet !== 'tout' && onglet !== 'cs' && !zonesVues.includes(onglet)) onglet = 'tout';
-  const tabs = h('div', { class: 'tabs no-print' }), holder = h('div'); ctx.el.append(tabs, holder);
+  const modes = h('div', { class: 'tabs no-print modes' }), tabs = h('div', { class: 'tabs no-print' }), holder = h('div'); ctx.el.append(modes, tabs, holder);
   const COLS = [{ k: 'nom', l: 'Nom', w: 130 }, { k: 'prenoms', l: 'Prénoms', w: 150 }, { k: 'sexe', l: 'Sexe' }, { k: 'fonction', l: 'Fonction', w: 140 }, { k: 'ecole', l: 'École / poste', w: 190 },
-    { k: 'zoneLib', l: 'Zone' }, { k: 'statut', l: 'Statut' }, { k: 'grade', l: 'Grade' }, { k: 'corps', l: 'Corps', w: 200 }, { k: 'matricule', l: 'Matricule' }, { k: 'telephone', l: 'Téléphone' }];
+    { k: 'zoneLib', l: 'Zone' }, { k: 'arrondissement', l: 'Arrondissement' }, { k: 'statut', l: 'Statut' }, { k: 'grade', l: 'Grade' }, { k: 'corps', l: 'Corps', w: 200 }, { k: 'matricule', l: 'Matricule' }, { k: 'telephone', l: 'Téléphone' }];
   const tous = async () => (await db.all('personnel')).filter(p => u.role === 'ADMIN' || inScope(u, p) || (u.role === 'CCS' && p.codeCs === u.codeCs));
   let t;
   async function draw() {
-    const all = await tous();
-    const n = (k) => all.filter(p => k === 'tout' ? true : k === 'cs' ? !p.codeZone : p.codeZone === k).length;
-    const ong = [['tout', 'Toutes les zones'], ...zonesVues.map(z => [z, libZone(z)]), ...(all.some(p => !p.codeZone) ? [['cs', 'Circonscription']] : [])];
-    tabs.replaceChildren(...ong.map(([k, l]) => h('button', { class: 'tab' + (k === onglet ? ' on' : ''), onclick: () => { onglet = k; db.setting('personnel-onglet', k); draw(); } }, `${l} (${n(k)})`)));
-    const rows = all.filter(p => onglet === 'tout' ? true : onglet === 'cs' ? !p.codeZone : p.codeZone === onglet)
-      .map(p => ({ ...p, zoneLib: libZone(p.codeZone) })).sort((a, b) => (a.ecole || '').localeCompare(b.ecole || '', 'fr') || (a.fonction || '').localeCompare(b.fonction || '', 'fr') || a.nom.localeCompare(b.nom, 'fr'));
-    if (!t) { t = dataTable({ columns: COLS, rows, onOpen: () => modifier(), pageSize: 50, empty: 'Aucun agent dans cette zone. Touchez « Ajouter » ou « Importer Excel ».' }); holder.replaceChildren(t.el); } else t.setRows(rows);
+    const all = await tous(), cle = (p) => cleGroupe(p, mode);
+    const gs = [...new Set(all.map(cle))].sort(ordreGroupe);
+    if (onglet !== 'tout' && !gs.includes(onglet)) onglet = 'tout';
+    if (u.role !== 'CP') modes.replaceChildren(...[['arr', 'Par arrondissement'], ['zone', 'Par zone pédagogique']].map(([k, l]) => h('button', { class: 'tab' + (k === mode ? ' on' : ''), onclick: () => { mode = k; onglet = 'tout'; db.setting('groupe-mode', k); draw(); } }, l)));
+    const ong = [['tout', mode === 'arr' ? 'Tous les arrondissements' : 'Toutes les zones'], ...gs.map(g => [g, libGroupe(g, zonesRef, mode)])];
+    tabs.replaceChildren(...ong.map(([k, l]) => h('button', { class: 'tab' + (k === onglet ? ' on' : ''), onclick: () => { onglet = k; db.setting('personnel-onglet', k); draw(); } }, `${l} (${k === 'tout' ? all.length : all.filter(p => cle(p) === k).length})`)));
+    const rows = all.filter(p => onglet === 'tout' || cle(p) === onglet)
+      .map(p => ({ ...p, zoneLib: p.codeZone ? libZone(p.codeZone) : '' })).sort((a, b) => (a.ecole || '').localeCompare(b.ecole || '', 'fr') || (a.fonction || '').localeCompare(b.fonction || '', 'fr') || a.nom.localeCompare(b.nom, 'fr'));
+    if (!t) { t = dataTable({ columns: COLS, rows, onOpen: () => modifier(), pageSize: 50, empty: 'Aucun agent ici. Touchez « Ajouter » ou « Importer Excel ».' }); holder.replaceChildren(t.el); } else t.setRows(rows);
     const f = rows.filter(p => p.sexe === 'F').length;
     ctx.status(`${rows.length} agent(s) dont ${f} femme(s) — ${rows.filter(p => /^Directeur/.test(p.fonction)).length} directeur(s)/directrice(s)`);
   }
-  const schoolOptions = () => schools.slice().sort((a, b) => a.nom.localeCompare(b.nom, 'fr')).map(s => ({ v: s.id, l: `${s.nom} (${libZone(s.codeZone)})` }));
+  const schoolOptions = () => schools.slice().sort((a, b) => a.nom.localeCompare(b.nom, 'fr')).map(s => ({ v: s.id, l: `${s.nom} (${s.codeZone ? libZone(s.codeZone) : s.arrondissement || 'sans zone'})` }));
   const FIELDS = () => [{ k: 'nom', l: 'Nom', t: 'text', req: true, w: 'half' }, { k: 'prenoms', l: 'Prénoms', t: 'text', w: 'half' },
     { k: 'sexe', l: 'Sexe', t: 'select', options: [{ v: 'M', l: 'Masculin' }, { v: 'F', l: 'Féminin' }], w: 'half' }, { k: 'fonction', l: 'Fonction', t: 'select', options: FONCTIONS, req: true, w: 'half' },
     { k: 'schoolId', l: 'École (vide = circonscription)', t: 'select', options: schoolOptions() }, { k: 'statut', l: 'Statut', t: 'select', options: STATUTS, w: 'half' }, { k: 'grade', l: 'Grade (ex. B1-04)', t: 'text', w: 'half' },
     { k: 'corps', l: 'Corps', t: 'text', w: 'half' }, { k: 'matricule', l: 'N° matricule', t: 'text', w: 'half' }, { k: 'telephone', l: 'Téléphone', t: 'text', w: 'half' }, { k: 'obs', l: 'Observations', t: 'textarea' }];
   const lier = (p) => {
     const s = schools.find(x => x.id === p.schoolId);
-    if (s) Object.assign(p, { ecole: s.nom, codeZone: s.codeZone || '', numZone: s.numZone || '', codeCs: s.codeCs || '' });
-    else Object.assign(p, { schoolId: '', ecole: p.ecole && !p.schoolId ? p.ecole : (u.nomCs ? 'Circonscription scolaire de ' + u.nomCs : 'Circonscription scolaire'), codeZone: '', numZone: '', codeCs: p.codeCs || u.codeCs || '' });
+    if (s) Object.assign(p, { ecole: s.nom, codeZone: s.codeZone || '', numZone: s.numZone || '', codeCs: s.codeCs || '', arrondissement: s.arrondissement || '' });
+    else Object.assign(p, { schoolId: '', ecole: p.ecole && !p.schoolId ? p.ecole : (u.nomCs ? 'Circonscription scolaire de ' + u.nomCs : 'Circonscription scolaire'), codeZone: '', numZone: '', arrondissement: '', codeCs: p.codeCs || u.codeCs || '' });
     return p;
   };
   const sel = () => { const s = t.selected; if (!s) toast('Touchez d\'abord une ligne du tableau.', 'warn'); return s; };
@@ -244,7 +245,7 @@ async function personnel(ctx) {
       toast(`${ajout} agent(s) ajouté(s), ${maj} mis à jour${sans ? ` — ${sans} poste(s) sans école reconnue` : ''}${horsCs ? ` — ${horsCs} ligne(s) d'autres circonscriptions ignorée(s)` : ''}.`, 'ok', 7000); draw();
     } catch (e) { toast('Import impossible : ' + e.message, 'err'); }
   }
-  const titre = () => `PERSONNEL ENSEIGNANT — ${onglet === 'tout' ? 'TOUTES LES ZONES' : onglet === 'cs' ? 'CIRCONSCRIPTION' : libZone(onglet).toUpperCase()}`;
+  const titre = () => `PERSONNEL ENSEIGNANT — ${onglet === 'tout' ? (mode === 'arr' ? 'TOUS LES ARRONDISSEMENTS' : 'TOUTES LES ZONES') : libGroupe(onglet, zonesRef, mode).toUpperCase()}`;
   await draw();
   ctx.actions([
     { label: '➕ Ajouter', kind: 'primary', onClick: ajouter }, { label: '✏️ Modifier', onClick: modifier }, { label: '🗑 Supprimer', onClick: supprimer },
