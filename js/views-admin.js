@@ -5,7 +5,7 @@ import { db } from './db.js';
 import { APP, CREDIT } from './config.js';
 import { dataTable, formDialog, fieldEl } from './ui.js';
 import { scoped, inScope, addLog, session, ROLES, ficheOf } from './data.js';
-import { getIdentity, saveIdentity, makeCachet, signaturePad, canonical, ficheHash, reportHash, bilanHash } from './sign.js';
+import { getIdentity, saveIdentity, makeCachet, cachetParDefaut, signaturePad, canonical, ficheHash, reportHash, bilanHash } from './sign.js';
 import { qrDataURL } from './qr.js';
 import { zoneCode } from './refdata.js';
 import { listToXlsx } from './export.js';
@@ -28,13 +28,13 @@ export function changePasswordDialog(user, forced = false) {
 
 /* ================= Identité numérique ================= */
 async function identite(ctx) {
-  const u = ctx.user; ctx.title('Identité numérique', 'Signature manuscrite, cachet rectangulaire et QR code — apposés sur les PDF signés');
+  const u = ctx.user; ctx.title('Identité numérique', 'Signature manuscrite, cachet rond (ou rectangulaire) et QR code — apposés sur les PDF signés');
   const idn = (await getIdentity()) || { codeCp: u.codeCp || '', nom: u.nom || '', prenoms: u.prenoms || '', titre: u.role === 'CCS' ? 'Chef de Circonscription Scolaire' : 'Conseiller Pédagogique', departement: u.departement || '', nomCs: u.nomCs || '', numZone: u.numZone || '', codeZone: u.codeZone || '', telephone: '', email: '', qrToken: uid(), signature: '' };
-  const F = [['codeCp', 'Code CP', 'text'], ['titre', 'Titre / fonction', 'text'], ['nom', 'Nom', 'text'], ['prenoms', 'Prénoms', 'text'], ['departement', 'Département', 'text'], ['nomCs', 'Circonscription scolaire', 'text'], ['numZone', 'N° de zone', 'text'], ['telephone', 'Téléphone', 'text'], ['email', 'E-mail', 'text']];
+  const F = [['cachetType', 'Forme du cachet', 'select', [{ v: 'rond', l: 'Cachet rond (comme SCOLARIS)' }, { v: 'rectangulaire', l: 'Cachet rectangulaire' }]], ['cachetCouleur', 'Couleur du cachet', 'select', [{ v: 'bleu', l: 'Bleu' }, { v: 'rouge', l: 'Rouge' }]], ['codeCp', 'Code CP', 'text'], ['titre', 'Titre / fonction', 'text'], ['nom', 'Nom', 'text'], ['prenoms', 'Prénoms', 'text'], ['departement', 'Département', 'text'], ['nomCs', 'Circonscription scolaire', 'text'], ['numZone', 'N° de zone', 'text'], ['telephone', 'Téléphone', 'text'], ['email', 'E-mail', 'text'], ['cachetSup', 'Cachet rond : texte du haut', 'text'], ['cachetInf', 'Cachet rond : texte du bas', 'text'], ['cachetCentre', 'Cachet rond : centre (lignes séparées par |)', 'text']];
   const pad = signaturePad(idn.signature), prev = h('div'), qrBox = h('div', { style: { textAlign: 'center' } });
-  const renderPrev = async () => { idn.codeZone = zoneCode(u.codeCs || '', idn.numZone) || idn.codeZone; const img = h('img', { src: await makeCachet(idn), style: { maxWidth: '100%', width: '420px', background: '#fff', border: '1px solid var(--line)' }, alt: 'Cachet' }); prev.replaceChildren(img);
+  const renderPrev = async () => { idn.codeZone = zoneCode(u.codeCs || '', idn.numZone) || idn.codeZone; const img = h('img', { src: await makeCachet(idn), style: { maxWidth: '100%', width: (idn.cachetType || 'rond') === 'rond' ? '220px' : '420px', background: '#fff', border: '1px solid var(--line)', borderRadius: '8px' }, alt: 'Cachet' }); prev.replaceChildren(img);
     qrBox.replaceChildren(h('img', { src: qrDataURL(`MEMP-BJ|CP|${idn.codeCp || '-'}|${idn.qrToken}`, 5, 2), alt: 'QR code du CP', width: 150, height: 150 }), h('div', { class: 'notes' }, 'QR d\'identité du CP')); };
-  ctx.el.append(h('div', { class: 'card' }, h('h3', 'Identité'), h('div', { class: 'grid12' }, F.map(([k, l, t]) => fieldEl({ k, l, t, w: 'half' }, idn[k], (kk, v) => { idn[kk] = v; renderPrev(); })))),
+  ctx.el.append(h('div', { class: 'card' }, h('h3', 'Identité'), h('div', { class: 'grid12' }, F.map(([k, l, t, options]) => fieldEl({ k, l, t, options, w: 'half' }, idn[k] ?? (k.startsWith('cachet') ? ({ cachetType: 'rond', cachetCouleur: 'bleu', ...Object.fromEntries(Object.entries(cachetParDefaut(idn)).map(([a, b]) => ['cachet' + a[0].toUpperCase() + a.slice(1), b])) })[k] : ''), (kk, v) => { idn[kk] = v; renderPrev(); })))),
     h('div', { class: 'card' }, h('h3', 'Signature manuscrite'), h('p', { class: 'notes' }, 'Dessinez votre signature au doigt, au stylet ou à la souris — ou importez une image (fond blanc ou transparent).'), pad.el,
       h('p', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } }, h('button', { class: 'btn', onclick: () => pad.clear() }, '🧹 Effacer'), h('button', { class: 'btn', onclick: async () => { const f = await pickFile('image/*'); if (!f) return; const img = new Image(); img.onload = () => { const g = pad.el.getContext('2d'); g.clearRect(0, 0, pad.el.width, pad.el.height); const s = Math.min(pad.el.width / img.width, pad.el.height / img.height); g.drawImage(img, (pad.el.width - img.width * s) / 2, (pad.el.height - img.height * s) / 2, img.width * s, img.height * s); }; img.src = URL.createObjectURL(f); } }, '🖼 Importer une image'))),
     h('div', { class: 'card' }, h('h3', 'Cachet numérique & QR code'), prev, qrBox));

@@ -4,13 +4,13 @@
 import { h, uid, nowISO, toast, modal, confirmBox, pickFile, readAsBuffer, readAsText, download, norm, fmtDate, today } from './util.js';
 import { calculerFiche, lireDate, fmtIso, fmtJour, fmtDuree, ANCIENNETES, CATEGORIES, DIPLOMES } from './carriere.js';
 import { db } from './db.js';
-import { dataTable, formDialog } from './ui.js';
+import { dataTable, formDialog, fieldEl } from './ui.js';
 import { scoped, inScope, addLog, cleGroupe, libGroupe, ordreGroupe, modeGroupeDefaut } from './data.js';
 import { listToXlsx, listToPdf } from './export.js';
 import { readXlsx, parseCsv } from './xlsx.js';
 import { newPdf } from './pdf.js';
 
-export async function render(id, ctx) { return ({ emploi, calendrier, reglement, personnel, planif, espace })[id](ctx); }
+export async function render(id, ctx) { return ({ emploi, calendrier, reglement, personnel, planif, espace, synocp })[id](ctx); }
 
 const rc = (el, ...k) => el.replaceChildren(...k.flat().filter(x => x !== null && x !== undefined && x !== false));
 const pdfBlob = (b) => new Blob([b], { type: 'application/pdf' });
@@ -445,4 +445,102 @@ async function espace(ctx) {
     ctx.status(`${nomZone()} — ${ec.length} école(s), ${pe.length} agent(s), ${fi.length} fiche(s)`);
   }
   await draw();
+}
+
+/* ================= TABLEAU SYNOPTIQUE DU CP (présenté comme celui des directeurs dans SCOLARIS) ================= */
+const RUB_ID = [['memp', 'Nom du MEMP (ministère)'], ['ddemp', 'Direction départementale (DDEMP)'], ['cs', 'Circonscription scolaire'], ['ccs', 'Nom du Chef de circonscription (CCS)'],
+  ['zone', 'Zone pédagogique n°'], ['cp_nom', 'Nom et prénoms du CP'], ['cp_grade', 'Grade du CP'], ['cp_matricule', 'Matricule / NIP du CP'], ['cp_diplome', 'Diplôme professionnel (CAPCP, CAPIEMP…)'],
+  ['cp_ps', 'Date de première prise de service'], ['cp_ps_zone', 'Date de prise de service dans la zone'], ['cp_contact', 'Contact (téléphone)'], ['cp_email', 'E-mail'],
+  ['arrondissements', 'Arrondissements couverts'], ['communes', 'Commune(s)'], ['siege', 'Siège / bureau du CP'], ['obs', 'Observations']];
+const COLS_UP = [['up', 'Unité pédagogique'], ['siege', 'École siège'], ['rup', 'Nom du RUP'], ['rup_tel', 'Contact RUP'], ['corup', 'Nom du Co-RUP'], ['corup_tel', 'Contact Co-RUP'], ['ecoles', 'Écoles membres'], ['jour', 'Jour / périodicité des séances']];
+async function synocp(ctx) {
+  const u = ctx.user, zonesRef = (await db.all('ref')).filter(r => r.type === 'zone' && (!u.codeCs || r.cs === u.codeCs)).sort((a, b) => (+a.numero || 0) - (+b.numero || 0));
+  let zone = u.role === 'CP' ? u.codeZone : ((await db.setting('espace-zone')) || zonesRef[0]?.code || '');
+  let onglet = (await db.setting('synocp-onglet')) || 'identite';
+  const z = () => zonesRef.find(x => x.code === zone), nomZone = () => z() ? (z().nom || 'Zone ' + z().numero) : (zone ? 'Zone ' + zone.split('-ZP').pop() : '—');
+  const peut = u.role !== 'CP' || u.codeZone === zone;
+  const zbar = h('div', { class: 'tabs no-print' }), tabs = h('div', { class: 'tabs no-print' }), holder = h('div'); ctx.el.append(zbar, tabs, holder);
+  const ONG = [['identite', '🪪 Identité'], ['ecoles', '🏫 Écoles et directeurs'], ['up', '👥 Unités pédagogiques'], ['personnel', '👩‍🏫 Personnel'], ['textes', '📘 EDT, planification, règlement']];
+  let data = {}, ups = [], ecoles = [], perso = [];
+  async function charger() {
+    const idn = (await db.setting('cpIdentity')) || {};
+    const ccs = (await db.all('users')).find(x => x.role === 'CCS' && x.codeCs === (u.codeCs || z()?.cs));
+    const cpU = (await db.all('users')).find(x => x.role === 'CP' && x.codeZone === zone);
+    ecoles = (await db.all('schools')).filter(s => s.codeZone === zone).sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+    perso = (await personnelDuPerimetre(u)).filter(p => p.codeZone === zone);
+    const moi = u.role === 'CP' ? idn : {};
+    const defaut = { memp: 'Ministère des Enseignements Maternel et Primaire', ddemp: (u.departement || cpU?.departement) ? 'DDEMP ' + (u.departement || cpU.departement) : '', cs: u.nomCs || cpU?.nomCs || '', ccs: ccs ? `${ccs.nom || ''} ${ccs.prenoms || ''}`.trim() : '',
+      zone: z() ? String(z().numero) : '', cp_nom: moi.nom ? `${moi.nom} ${moi.prenoms || ''}`.trim() : '', cp_contact: moi.telephone || '', cp_email: moi.email || '', cp_matricule: moi.codeCp || '',
+      arrondissements: [...new Set(ecoles.map(s => s.arrondissement).filter(Boolean))].join(', '), communes: [...new Set(ecoles.map(s => s.commune).filter(Boolean))].join(', ') };
+    const enr = (await db.setting('synocp:' + zone)) || {};
+    data = { ...defaut, ...Object.fromEntries(Object.entries(enr).filter(([, v]) => v !== '' && v != null)) };
+    ups = (await db.setting('synocp-up:' + zone)) || [...new Set(ecoles.map(s => s.up).filter(Boolean))].map(n => ({ up: n }));
+  }
+  const sauver = async () => { await db.setting('synocp:' + zone, data); await db.setting('synocp-up:' + zone, ups); };
+  async function draw() {
+    ctx.title(`Tableau synoptique du CP — ${nomZone()}`, data.cs ? `Circonscription scolaire de ${data.cs}` : 'Renseignements de la zone pédagogique');
+    zbar.replaceChildren(...(u.role === 'CP' ? [] : zonesRef.map(x => h('button', { class: 'tab' + (x.code === zone ? ' on' : ''), onclick: async () => { zone = x.code; db.setting('espace-zone', zone); await charger(); draw(); } }, x.nom || 'Zone ' + x.numero))));
+    tabs.replaceChildren(...ONG.map(([k, l]) => h('button', { class: 'tab' + (k === onglet ? ' on' : ''), onclick: () => { onglet = k; db.setting('synocp-onglet', k); draw(); } }, l)));
+    const fNb = (a, f) => a.filter(f).length;
+    if (onglet === 'identite') {
+      rc(holder, h('div', { class: 'card' }, h('h3', 'Identité de la zone pédagogique et du CP'),
+        h('div', { class: 'grid12' }, RUB_ID.map(([k, l]) => fieldEl({ k, l, t: k === 'obs' ? 'textarea' : (k === 'cp_ps' || k === 'cp_ps_zone') ? 'date' : 'text', w: k === 'obs' ? null : 'half', ro: !peut }, data[k], (kk, v) => { data[kk] = v; })))),
+        h('div', { class: 'cards' }, h('div', { class: 'stat' }, h('b', String(ecoles.length)), h('span', `écoles (${fNb(ecoles, s => s.cycle === 'Maternelle')} EM · ${fNb(ecoles, s => s.cycle !== 'Maternelle')} EP)`)),
+          h('div', { class: 'stat' }, h('b', String(fNb(ecoles, s => (s.secteur || '').startsWith('Priv')))), h('span', 'écoles privées')), h('div', { class: 'stat' }, h('b', String(ups.length)), h('span', 'unités pédagogiques')),
+          h('div', { class: 'stat' }, h('b', String(perso.length)), h('span', `agents dont ${fNb(perso, p => p.sexe === 'F')} femmes`)), h('div', { class: 'stat' }, h('b', String(fNb(perso, p => /^Directeur/.test(p.fonction)))), h('span', 'directeurs / directrices')),
+          h('div', { class: 'stat y' }, h('b', String(fNb(perso, p => p.alerteRetraite))), h('span', 'départs à la retraite ≤ 2 ans'))));
+    } else if (onglet === 'ecoles') {
+      const rows = ecoles.map(s => { const pe = perso.filter(p => p.schoolId === s.id); return { ...s, nbPerso: pe.length, nbF: fNb(pe, p => p.sexe === 'F'), dir: s.directeur || (pe.find(p => /^Directeur/.test(p.fonction)) ? `${pe.find(p => /^Directeur/.test(p.fonction)).nom} ${pe.find(p => /^Directeur/.test(p.fonction)).prenoms || ''}` : '') }; });
+      const t = dataTable({ columns: COLS_EC, rows, pageSize: 200, empty: "Aucune école rattachée à cette zone (Écoles → « Affecter une zone »)." }); rc(holder, t.el);
+    } else if (onglet === 'up') {
+      const ligne = (x, i) => h('tr', COLS_UP.map(([k]) => h('td', h('textarea', { class: 'edt-cell', readOnly: !peut, oninput: (e) => { x[k] = e.target.value; ajuster(e.target); } }, x[k] || ''))),
+        peut ? h('td', { class: 'no-print' }, h('button', { class: 'btn sm', 'aria-label': 'Supprimer la ligne', onclick: () => { ups.splice(i, 1); draw(); } }, '✕')) : null);
+      rc(holder, h('div', { class: 'tbl-wrap' }, h('table', { class: 't edt' }, h('thead', h('tr', COLS_UP.map(([, l]) => h('th', l)), peut ? h('th', { class: 'no-print' }, '') : null)), h('tbody', ups.map(ligne)))),
+        peut ? h('button', { class: 'btn no-print', style: { marginTop: '8px' }, onclick: () => { ups.push({}); draw(); } }, '➕ Ajouter une UP') : null,
+        h('p', { class: 'notes' }, 'RUP : responsable d\'unité pédagogique ; Co-RUP : son adjoint. Indiquez dans « Écoles membres » les écoles rattachées à chaque UP.'));
+      requestAnimationFrame(() => holder.querySelectorAll('.edt-cell').forEach(ajuster));
+    } else if (onglet === 'personnel') {
+      const t = dataTable({ columns: COLS_PS, rows: perso.map(lignePs).sort((a, b) => (a.ecole || '').localeCompare(b.ecole || '', 'fr') || (a.fonction || '').localeCompare(b.fonction || '', 'fr')), pageSize: 300, empty: 'Aucun agent dans cette zone.' }); rc(holder, t.el);
+    } else {
+      rc(holder, h('div', { class: 'doc-grille' }, [['emploi', '🕘 Emplois du temps officiels', 'Maternelle, CI-CP, CE1-CE2, CM1-CM2'], ['planif', '🗓️ Planification annuelle', 'Maternelle (petits, grands) et CI → CM2'], ['reglement', '⚖️ Règlement intérieur', 'Texte officiel révisé'], ['calendrier', '🗓️ Calendrier scolaire', '2026-2027'], ['documents', '📄 Documents officiels', 'Fiches, canevas et guides']]
+        .map(([r, t, d]) => h('button', { class: 'card doc-lien', onclick: () => ctx.go(r) }, h('h3', t), h('p', d)))));
+    }
+    ctx.status(`${nomZone()} — ${ecoles.length} école(s), ${ups.length} UP, ${perso.length} agent(s)`);
+  }
+  const COLS_EC = [{ k: 'nom', l: 'École', w: 180 }, { k: 'cycle', l: 'Cycle' }, { k: 'secteur', l: 'Statut' }, { k: 'arrondissement', l: 'Arrondissement' }, { k: 'up', l: 'UP' }, { k: 'dir', l: 'Directeur / directrice', w: 170 }, { k: 'contact', l: 'Contact' }, { k: 'classesAutorisees', l: 'Classes autorisées', num: true }, { k: 'nbPerso', l: 'Personnel', num: true }, { k: 'nbF', l: 'dont F', num: true }];
+  const COLS_PS = [{ k: 'matricule', l: 'Matricule' }, { k: 'nom_complet', l: 'Nom et prénoms', w: 170 }, { k: 'statut', l: 'Catégorie' }, { k: 'fonction', l: 'Fonction', w: 110 }, { k: 'grade', l: 'Grade' }, { k: 'ecole', l: 'École', w: 160 },
+    { k: 'ancGen', l: 'Anc. gén.' }, { k: 'ancEcole', l: 'Anc. école' }, { k: 'ps', l: '1re prise de service' }, { k: 'retraiteTxt', l: 'Retraite' }, { k: 'dipl', l: 'Diplômes' }, { k: 'visites', l: 'Visites CP/CCS' }, { k: 'participation_up', l: 'UP %' }, { k: 'telephone', l: 'Contact' }];
+  const lignePs = (p) => ({ ...p, nom_complet: `${p.nom} ${p.prenoms || ''}`.trim(), ancGen: p.ancTxt.generale, ancEcole: p.ancTxt.ecole, ps: fmtIso(p.date_prise_service),
+    dipl: [p.diplome_academique, p.ceap === 'oui' ? 'CEAP' + (p.ceap_annee ? ' ' + p.ceap_annee : '') : '', p.cap === 'oui' ? 'CAP' + (p.cap_annee ? ' ' + p.cap_annee : '') : ''].filter(Boolean).join(' · '),
+    visites: p.visites_cp || p.visites_ccs ? `${p.visites_cp || 0} / ${p.visites_ccs || 0}` : '' });
+  async function pdfComplet() {
+    const p = await newPdf({ title: 'Tableau synoptique du CP — ' + nomZone(), footer: 'Tableau synoptique du CP', orientation: 'landscape' });
+    p.text('RÉPUBLIQUE DU BÉNIN — MINISTÈRE DES ENSEIGNEMENTS MATERNEL ET PRIMAIRE', { bold: true, align: 'center', size: 9 }); p.space(2);
+    p.titleBox([`TABLEAU SYNOPTIQUE DU CONSEILLER PÉDAGOGIQUE — ${nomZone().toUpperCase()}`, data.cs ? `Circonscription scolaire de ${data.cs}` : ''].filter(Boolean), { size: 12 });
+    p.heading('1. Identité');
+    const idRows = RUB_ID.filter(([k]) => data[k]).map(([k, l]) => [l, k === 'cp_ps' || k === 'cp_ps_zone' ? fmtIso(data[k]) : data[k]]);
+    p.table({ widths: [230, p.cw - 230], head: [{ t: 'Rubrique', c: 0, s: 1, r: 0, rs: 1 }, { t: 'Renseignement', c: 1, s: 1, r: 0, rs: 1 }], headRows: 1, rows: idRows, size: 8 });
+    p.heading(`2. Écoles et directeurs (${ecoles.length})`);
+    const er = ecoles.map(s => { const pe = perso.filter(x => x.schoolId === s.id), d = pe.find(x => /^Directeur/.test(x.fonction)); return [s.nom, s.cycle, s.secteur || '', s.arrondissement || '', s.up || '', s.directeur || (d ? `${d.nom} ${d.prenoms || ''}` : ''), String(pe.length)]; });
+    if (er.length) p.table({ widths: [170, 60, 80, 80, 80, 200, 50], head: ['École', 'Cycle', 'Statut', 'Arrondissement', 'UP', 'Directeur / directrice', 'Personnel'].map((t, c) => ({ t, c, s: 1, r: 0, rs: 1 })), headRows: 1, rows: er, size: 7.5 }); else p.text('Aucune école rattachée.', { size: 8 });
+    p.heading(`3. Unités pédagogiques (${ups.length})`);
+    if (ups.length) p.table({ widths: [80, 90, 95, 60, 95, 60, 150, 90], head: COLS_UP.map(([, t], c) => ({ t, c, s: 1, r: 0, rs: 1 })), headRows: 1, rows: ups.map(x => COLS_UP.map(([k]) => x[k] || '')), size: 7 }); else p.text('Aucune UP renseignée.', { size: 8 });
+    p.heading(`4. Personnel enseignant (${perso.length})`);
+    if (perso.length) p.table({ widths: [50, 120, 45, 70, 40, 110, 45, 45, 60, 55, 65, 40], head: ['Matricule', 'Nom et prénoms', 'Catég.', 'Fonction', 'Grade', 'École', 'Anc. gén.', 'Anc. école', '1re PS', 'Retraite', 'Diplômes', 'Contact'].map((t, c) => ({ t, c, s: 1, r: 0, rs: 1 })), headRows: 1,
+      rows: perso.map(lignePs).map(x => [x.matricule || '', x.nom_complet, x.statut || '', x.fonction || '', x.grade || '', x.ecole || '', x.ancGen || '', x.ancEcole || '', x.ps || '', x.retraiteTxt || '', x.dipl || '', x.telephone || '']), size: 6.5 });
+    const idn = await db.setting('cpIdentity');
+    if (idn && u.role === 'CP') { const { makeCachet } = await import('./sign.js'); const { dataUrlToBytes } = await import('./util.js'); await p.authBlock({ role: idn.titre || 'Le Conseiller Pédagogique', nom: `${idn.prenoms || ''} ${idn.nom || ''}`.trim(), signature: idn.signature && dataUrlToBytes(idn.signature), cachet: dataUrlToBytes(await makeCachet(idn)), lines: [`Fait le ${fmtJour(new Date())}`] }); }
+    download(pdfBlob(await p.finish()), `Tableau_synoptique_CP_${nomZone().replace(/\W+/g, '_')}.pdf`);
+  }
+  await charger(); await draw();
+  ctx.actions([
+    { label: '💾 Enregistrer', kind: 'primary', show: peut, onClick: async () => { await sauver(); toast('Tableau synoptique enregistré.'); } },
+    { label: '⬇ PDF complet', onClick: pdfComplet },
+    { label: '⬇ Excel (onglet)', onClick: async () => {
+      if (onglet === 'ecoles') return download(await listToXlsx({ title: `ÉCOLES ET DIRECTEURS — ${nomZone().toUpperCase()}`, columns: COLS_EC, rows: ecoles.map(s => ({ ...s, dir: s.directeur })), sheet: 'Écoles' }), 'Synoptique_ecoles.xlsx');
+      if (onglet === 'up') return download(await listToXlsx({ title: `UNITÉS PÉDAGOGIQUES — ${nomZone().toUpperCase()}`, columns: COLS_UP.map(([k, l]) => ({ k, l, xw: 24 })), rows: ups, sheet: 'UP' }), 'Synoptique_UP.xlsx');
+      if (onglet === 'personnel') return download(await listToXlsx({ title: `PERSONNEL — ${nomZone().toUpperCase()}`, columns: COLS_PS, rows: perso.map(lignePs), sheet: 'Personnel' }), 'Synoptique_personnel.xlsx');
+      return download(await listToXlsx({ title: `IDENTITÉ — ${nomZone().toUpperCase()}`, columns: [{ k: 'l', l: 'Rubrique', xw: 40 }, { k: 'v', l: 'Renseignement', xw: 60 }], rows: RUB_ID.map(([k, l]) => ({ l, v: data[k] || '' })), sheet: 'Identité' }), 'Synoptique_identite.xlsx');
+    } },
+    { label: '🖨 Imprimer', onClick: () => window.print() }]);
 }

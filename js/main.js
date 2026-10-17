@@ -44,11 +44,12 @@ document.addEventListener('DOMContentLoaded', () => oeilPartout(document));
 const NAV = [
   { g: null, id: 'accueil', ic: '🏠', t: 'Tableau de bord' },
   { id: 'espace', ic: '🧑‍🏫', t: 'Espace CP de zone' },
+  { id: 'synocp', ic: '📋', t: 'Tableau synoptique du CP' },
   { g: 'Collecte', id: 'ecoles', ic: '🏫', t: 'Écoles' },
   { id: 'personnel', ic: '👩‍🏫', t: 'Personnel enseignant' },
   { id: 'fiches', ic: '📝', t: 'Fiches de collecte' },
   { id: 'rapports', ic: '📊', t: "Rapports de fin d'année" },
-  { id: 'synoptique', ic: '🗂️', t: 'Tableau synoptique' },
+  { id: 'synoptique', ic: '🗂️', t: 'Synthèse des fiches (consolidation)' },
   { g: 'Pédagogie', id: 'activites', ic: '📅', t: 'Activités pédagogiques' },
   { id: 'bilans', ic: '📈', t: 'Bilans trimestriel / annuel' },
   { id: 'themes', ic: '🎯', t: 'Thèmes 2026-2027' },
@@ -67,7 +68,7 @@ const NAV = [
   { id: 'parametres', ic: '⚙️', t: 'Paramètres & à propos' },
 ];
 const ROUTES = { accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', rapports: 'views-reports', rapport: 'views-reports', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui',
-  synoptique: 'views-more', activites: 'views-more', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
+  synoptique: 'views-more', activites: 'views-more', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', synocp: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
   identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
 
 const app = $('#app');

@@ -28,7 +28,50 @@ export async function registerSigned({ ficheId, store = 'fiches', hash, user, la
 function loadImg(src) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; }); }
 
 /** Cachet numérique rectangulaire (PNG dataURL) */
+/* ---------- Cachet rond (même dessin que SCOLARIS / GESCOL : texte en arc ★ texte en arc ★, texte central) ---------- */
+export const COULEURS_CACHET = { bleu: '#1E3A8A', rouge: '#B91C1C' };
+export function cachetParDefaut(idn) {
+  const cs = (idn.nomCs || '').toUpperCase(), ccs = /circonscription/i.test(idn.titre || '');
+  return { sup: 'RÉPUBLIQUE DU BÉNIN - MEMP', inf: cs ? `CIRCONSCRIPTION SCOLAIRE DE ${cs}` : (idn.departement ? `DDEMP ${idn.departement.toUpperCase()}` : 'DIRECTION DÉPARTEMENTALE'),
+    centre: ccs ? 'CHEF DE LA|CIRCONSCRIPTION|SCOLAIRE' : `CONSEILLER|PÉDAGOGIQUE${idn.numZone ? '|ZONE ' + idn.numZone : ''}` };
+}
+export function makeCachetRond(idn, taille = 420) {
+  const d = cachetParDefaut(idn), sup = (idn.cachetSup || d.sup).toUpperCase(), inf = (idn.cachetInf || d.inf).toUpperCase(), centre = (idn.cachetCentre || d.centre).toUpperCase();
+  const col = COULEURS_CACHET[idn.cachetCouleur] || COULEURS_CACHET.bleu;
+  const c = h('canvas', { width: taille, height: taille }), g = c.getContext('2d'), r = taille / 2, rt = r * 0.74, fs0 = r * 0.17;
+  g.clearRect(0, 0, taille, taille); g.strokeStyle = col; g.fillStyle = col; g.globalAlpha = 0.92;
+  const cercle = (rr, lw) => { g.lineWidth = lw; g.beginPath(); g.arc(r, r, rr, 0, Math.PI * 2); g.stroke(); };
+  cercle(r - 4, taille * 0.018); cercle(r * 0.9, taille * 0.005); cercle(r * 0.56, taille * 0.008);
+  const arc = (texte, haut) => {
+    if (!texte) return;
+    let fs = fs0; g.font = `bold ${fs}px Arial, Helvetica, sans-serif`;
+    let larg = [...texte].map(ch => g.measureText(ch).width + fs * 0.08), total = larg.reduce((a, b) => a + b, 0) / rt * 180 / Math.PI;
+    if (total > 150) { const f = 150 / total; fs *= f; larg = larg.map(w => w * f); total = 150; g.font = `bold ${fs}px Arial, Helvetica, sans-serif`; }
+    let cumul = 0; g.textAlign = 'center'; g.textBaseline = 'middle';
+    [...texte].forEach((ch, i) => {
+      const pas = larg[i] / rt * 180 / Math.PI, milieu = cumul + pas / 2; cumul += pas;
+      const a = haut ? 90 + total / 2 - milieu : 270 - total / 2 + milieu, rad = a * Math.PI / 180;
+      const x = r + rt * Math.cos(rad), y = r - rt * Math.sin(rad), rot = (haut ? 90 - a : 270 - a) * Math.PI / 180;
+      g.save(); g.translate(x, y); g.rotate(rot); g.fillText(ch, 0, 0); g.restore();
+    });
+  };
+  arc(sup, true); arc(inf, false);
+  const etoile = (x, y, rr) => { g.beginPath(); for (let k = 0; k < 10; k++) { const a = -Math.PI / 2 + k * Math.PI / 5, q = k % 2 ? rr * 0.42 : rr; g.lineTo(x + q * Math.cos(a), y + q * Math.sin(a)); } g.closePath(); g.fill(); };
+  etoile(r + rt, r, fs0 * 0.55); etoile(r - rt, r, fs0 * 0.55);
+  const lignes = centre.split('|').map(x => x.trim()).filter(Boolean);
+  if (lignes.length) {
+    let fc = r * 0.2; g.font = `bold ${fc}px Arial, Helvetica, sans-serif`;
+    const maxW = r * 1.0, w = Math.max(...lignes.map(l => g.measureText(l).width)); if (w > maxW) fc *= maxW / w;
+    fc = Math.min(fc, (r * 1.0) / (lignes.length * 1.2)); g.font = `bold ${fc}px Arial, Helvetica, sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const y0 = r - (lignes.length - 1) * fc * 0.6; lignes.forEach((l, k) => g.fillText(l, r, y0 + k * fc * 1.2));
+  }
+  return c.toDataURL('image/png');
+}
+/** Cachet apposé sur les documents : rond par défaut (comme SCOLARIS / GESCOL), rectangulaire au choix */
 export async function makeCachet(idn, date = new Date()) {
+  return (idn.cachetType || 'rond') === 'rond' ? makeCachetRond(idn) : makeCachetRect(idn, date);
+}
+export async function makeCachetRect(idn, date = new Date()) {
   const W = 640, H = 300, c = h('canvas', { width: W, height: H }), g = c.getContext('2d');
   const col = '#1b3a8a';
   g.fillStyle = 'rgba(255,255,255,0)'; g.clearRect(0, 0, W, H);
