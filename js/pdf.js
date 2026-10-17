@@ -34,7 +34,7 @@ class Pdf {
   rgb(c) { return this.P.rgb(...c); }
 
   clean(s) {
-    s = String(s ?? '').replace(/ /g, ' ').replace(/[‐-‑]/g, '-').replace(/≥/g, '>=').replace(/≤/g, '<=').replace(/[✓✔]/g, 'x').replace(/\r/g, '');
+    s = String(s ?? '').replace(/ /g, ' ').replace(/[‐-‑]/g, '-').replace(/→/g, '-').replace(/≥/g, '>=').replace(/≤/g, '<=').replace(/[✓✔]/g, 'x').replace(/\r/g, '');
     let o = '';
     for (const ch of s) { const cp = ch.codePointAt(0); o += (ch === '\n' || this.chars.has(cp)) ? ch : '?'; }
     return o;

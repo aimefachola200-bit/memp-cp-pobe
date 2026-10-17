@@ -224,3 +224,9 @@ tr.edt-pause td{background:var(--green-l);text-align:center;letter-spacing:.08em
 button.card.doc-lien{text-align:left;cursor:pointer;font:inherit;color:inherit;margin:0}
 button.card.doc-lien:hover,button.card.doc-lien:focus-visible{border-color:var(--green);outline:none}
 .card{overflow-wrap:anywhere}
+/* Espace CP de zone */
+.espace-tete h3{margin:0 0 4px;color:var(--green)}
+.espace-liens{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+table.t.planif th{min-width:120px}
+table.t.fiche-carriere th{text-align:left;width:38%;background:var(--green-l);color:var(--ink)}
+table.t.planif th:first-child,table.t.planif td.edt-h:first-child{min-width:54px;width:54px}table.t.planif td.edt-h{min-width:86px}

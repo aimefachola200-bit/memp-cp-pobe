@@ -77,13 +77,18 @@
    "description": "Préambule, titres et articles — texte modifiable, PDF et Excel."
   },
   {
+   "route": "planif",
+   "titre": "Planification annuelle — Maternelle et primaire",
+   "description": "EM (section des petits, section des grands) par domaines d'activités D1 à D5 ; CI → CM2 avec la planification de référence. Modifiable, PDF et Excel."
+  },
+  {
    "route": "themes",
    "titre": "Thèmes 2026-2027",
    "description": "Unités pédagogiques, conférences et formations groupées."
   },
   {
    "route": "planification",
-   "titre": "Planification CI → CM2",
+   "titre": "Planification CI → CM2 (projet de planification des objets d'apprentissage)",
    "description": "Projet de planification des objets d'apprentissage à l'école primaire."
   }
  ]

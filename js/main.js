@@ -43,6 +43,7 @@ document.addEventListener('DOMContentLoaded', () => oeilPartout(document));
 
 const NAV = [
   { g: null, id: 'accueil', ic: '🏠', t: 'Tableau de bord' },
+  { id: 'espace', ic: '🧑‍🏫', t: 'Espace CP de zone' },
   { g: 'Collecte', id: 'ecoles', ic: '🏫', t: 'Écoles' },
   { id: 'personnel', ic: '👩‍🏫', t: 'Personnel enseignant' },
   { id: 'fiches', ic: '📝', t: 'Fiches de collecte' },
@@ -51,7 +52,8 @@ const NAV = [
   { g: 'Pédagogie', id: 'activites', ic: '📅', t: 'Activités pédagogiques' },
   { id: 'bilans', ic: '📈', t: 'Bilans trimestriel / annuel' },
   { id: 'themes', ic: '🎯', t: 'Thèmes 2026-2027' },
-  { id: 'planification', ic: '📚', t: 'Planification CI → CM2' },
+  { id: 'planif', ic: '🗓️', t: 'Planification annuelle EM et EP' },
+  { id: 'planification', ic: '📚', t: 'Planification CI → CM2 (projet)' },
   { id: 'emploi', ic: '🕘', t: 'Emplois du temps officiels' },
   { id: 'calendrier', ic: '🗓️', t: 'Calendrier scolaire officiel' },
   { id: 'reglement', ic: '⚖️', t: 'Règlement intérieur' },
@@ -65,7 +67,7 @@ const NAV = [
   { id: 'parametres', ic: '⚙️', t: 'Paramètres & à propos' },
 ];
 const ROUTES = { accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', rapports: 'views-reports', rapport: 'views-reports', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui',
-  synoptique: 'views-more', activites: 'views-more', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
+  synoptique: 'views-more', activites: 'views-more', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
   identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
 
 const app = $('#app');
@@ -103,7 +105,7 @@ function shell() {
   NAV.forEach(n => {
     if (n.roles && !n.roles.includes(u.role)) return;
     if (n.g) nav.appendChild(h('div', { class: 'grp' }, n.g));
-    nav.appendChild(h('button', { 'data-r': n.id, onclick: () => { location.hash = '#/' + n.id; document.body.classList.remove('nav-open'); } }, h('span', { class: 'ic' }, n.ic), n.t));
+    nav.appendChild(h('button', { 'data-r': n.id, onclick: () => { location.hash = '#/' + n.id; document.body.classList.remove('nav-open'); } }, h('span', { class: 'ic' }, n.ic), n.id === 'espace' && u.role === 'CP' ? `Mon espace CP — zone ${u.numZone || ''}` : n.t));
   });
   const side = h('aside', { class: 'sidebar', id: 'sidebar' },
     h('div', { class: 'sb-head' }, h('img', { src: 'assets/armoiries.png', alt: 'Armoiries du Bénin' }), h('b', 'APPLICATION CP'), h('span', 'MEMP — RÉPUBLIQUE DU BÉNIN')),
@@ -151,12 +153,13 @@ async function route() {
   cleanup = fn; body.replaceChildren(el); bar.replaceWith(nbar); window.scrollTo(0, 0);
 }
 
-function logout() { sessionStorage.removeItem(CLE_SESSION); session.user = null; loginScreen(); }
+function logout() { sessionStorage.removeItem(CLE_SESSION); sessionStorage.removeItem(CLE_SESSION + '-vu'); session.user = null; loginScreen(); }
 
 async function start() {
   await refreshDatalists();
   shell();
-  if (!location.hash) history.replaceState(null, '', '#/accueil');
+  if (!location.hash || (session.user.role === 'CP' && location.hash === '#/accueil' && !sessionStorage.getItem(CLE_SESSION + '-vu'))) history.replaceState(null, '', session.user.role === 'CP' ? '#/espace' : '#/accueil');
+  sessionStorage.setItem(CLE_SESSION + '-vu', '1');
   await route();
   if (session.user.mustChange) setTimeout(() => import('./views-admin.js').then(m => m.changePasswordDialog(session.user, true)), 400);
 }

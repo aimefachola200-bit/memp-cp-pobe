@@ -22,6 +22,12 @@ mêmes fonctions, avec ses propres données sur l'appareil (elle ne se mélange 
   d'évaluation **ne sont pas publiés** : importez votre cahier de contrôle (Personnel → « Importer Excel ») pour les
   compléter sur votre appareil uniquement.
 
+## Espace de chaque CP
+Chaque CP (cp1, cp2, cp3) arrive sur **« Mon espace CP — zone N »** : ses écoles, son personnel (départs à la retraite, dossiers incomplets), ses fiches de collecte, activités et bilans, et tous ses outils (planification EM et EP, emplois du temps, calendrier, règlement, documents officiels). Le CCS consulte l'espace de chaque zone.
+
+## Départ à la retraite
+Mêmes règles que SCOLARIS et GESCOL : A = 60 ans, B = 58 ans, C = 55 ans ; départ le 1er jour du trimestre qui suit le trimestre de naissance. Les dates de naissance n'étant pas publiées, importez le cahier de contrôle (Personnel → Importer Excel) : les dates de départ se calculent aussitôt sur l'appareil.
+
 ## Comptes de départ (à changer dès la première connexion)
 | Rôle | Identifiant | Mot de passe |
 |---|---|---|
