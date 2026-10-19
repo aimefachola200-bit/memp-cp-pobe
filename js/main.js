@@ -60,6 +60,7 @@ const NAV = [
   { id: 'calendrier', ic: '🗓️', t: 'Calendrier scolaire officiel' },
   { id: 'reglement', ic: '⚖️', t: 'Règlement intérieur' },
   { id: 'documents', ic: '📄', t: 'Documents officiels' },
+  { id: 'whatsapp', ic: '💬', t: 'Groupe WhatsApp des directeurs', roles: ['ADMIN', 'CCS', 'CP'] },
   { g: 'Administration', id: 'referentiel', ic: '🌍', t: 'Référentiel national', roles: ['ADMIN', 'CCS', 'CP'] },
   { id: 'identite', ic: '✍️', t: 'Identité numérique (signature)' },
   { id: 'transmission', ic: '🔄', t: 'Transmission & sauvegarde' },
@@ -70,7 +71,7 @@ const NAV = [
 ];
 const ROUTES = { accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', rapports: 'views-reports', rapport: 'views-reports', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs',
   synoptique: 'views-more', activites: 'views-more', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', synocp: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
-  identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
+  whatsapp: 'views-whatsapp', identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
 
 const app = $('#app');
 let cleanup = null, deferredPrompt = null;
