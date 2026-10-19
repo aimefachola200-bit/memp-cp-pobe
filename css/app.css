@@ -240,6 +240,8 @@ table.eff td{border:1px solid var(--line);padding:2px 3px;text-align:center;min-
 table.eff td.eff-l{text-align:left;min-width:230px;max-width:340px;position:sticky;left:0;background:var(--card);z-index:1;padding:4px 8px}
 table.eff td.calc{background:var(--green-l);font-weight:700}
 table.eff td.na{background:rgba(0,0,0,.06)}
+table.eff tr.eff-stat td{background:#fff8e1;font-weight:700}
+table.eff small.eff-pc{display:block;color:#64748b;font-size:10px;font-weight:400;white-space:nowrap}
 table.eff tr.eff-grp td{background:#d9eadf;color:var(--green-d);font-weight:700;text-align:left;padding:5px 8px;position:sticky;left:0;z-index:1}
 table.eff input.eff-in{width:52px;padding:4px 2px;border:1px solid var(--line);border-radius:4px;text-align:center;background:var(--card)}
 table.eff input.eff-in:focus{outline:2px solid var(--green);background:#fff8c4;color:#111}

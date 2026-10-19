@@ -251,9 +251,30 @@ function statsEl(S, v, titre = '') {
     h('tbody', {}, ...rows.map(r => h('tr', {}, h('td', { class: 'eff-l' }, r.label), h('td', {}, r.G), h('td', {}, r.F), h('td', { class: 'calc' }, r.T), h('td', {}, r.pF === null ? '' : r.pF + ' %'), h('td', {}, r.ageModal))),
       h('tr', { class: 'eff-grp' }, h('td', {}, 'TOTAL'), h('td', {}, tot.G), h('td', {}, tot.F), h('td', {}, tot.G + tot.F), h('td', {}, tot.G + tot.F ? Math.round(tot.F / (tot.G + tot.F) * 100) + ' %' : ''), h('td', {}))));
   const g1 = h('div', { class: 'card-courbe' }), g2 = h('div', { class: 'card-courbe' });
+  const ages = S.id === 'EP' ? ageTableEl(S, v) : null;
   g1.innerHTML = svgCourbe({ titre: "Courbe d'âge selon le sexe", sousTitre: [S.label, titre].filter(Boolean).join(' — '), ...a });
   g2.innerHTML = svgCourbe({ titre: `Courbe d'âge par ${unite}`, sousTitre: [S.label, titre].filter(Boolean).join(' — '), ...b });
-  return h('div', { class: 'card eff-wrap' }, h('h4', {}, `Synthèse par ${unite} et statistique par courbe d'âge`), h('div', { class: 'tbl-wrap' }, tbl), g1, g2);
+  return h('div', { class: 'card eff-wrap' }, h('h4', {}, `Synthèse par ${unite} et statistique par courbe d'âge`), h('div', { class: 'tbl-wrap' }, tbl), ages, g1, g2);
+}
+const f2 = (x) => (x === null || x === undefined ? '—' : x.toFixed(2).replace('.', ','));
+const fp = (x) => (x === null || x === undefined ? '' : String(x).replace('.', ',') + ' %');
+/** Catégories d'âge (moins de 5 ans … 16 ans et plus) par cours et par sexe : effectifs, pourcentages, âge moyen, écart type */
+function ageTableEl(S, v) {
+  const t = E.ageTable(S, v), SX = ['G', 'F', 'T'];
+  if (t.vide) return h('p', { class: 'muted' }, "Catégories d'âge : aucune répartition par âge saisie.");
+  const lab = (c) => (c === E.ENS ? 'ENSEMBLE' : E.colLabel(S, c));
+  const head = h('thead', {}, h('tr', {}, h('th', { rowspan: 2 }, "Catégorie d'âge"), ...t.cols.map(c => h('th', { colspan: 3 }, lab(c)))),
+    h('tr', {}, ...t.cols.flatMap(() => SX.map(x => h('th', {}, x)))));
+  const cel = (n, p, cl) => h('td', { class: 'num ' + (cl || '') }, n ? String(n) : '', n && p !== null ? h('small', { class: 'eff-pc' }, fp(p)) : null);
+  const body = [
+    ...t.lignes.map(r => h('tr', {}, h('td', { class: 'eff-l' }, r.l), ...t.cols.flatMap(c => SX.map(x => cel(r.cells[c][x][0], r.cells[c][x][1], x === 'T' || c === E.ENS ? 'calc' : ''))))),
+    h('tr', { class: 'eff-stat' }, h('td', { class: 'eff-l' }, 'TOTAL'), ...t.cols.flatMap(c => SX.map(x => cel(t.tot[c][x], t.tot[c][x] ? 100 : null)))),
+    h('tr', { class: 'eff-stat' }, h('td', { class: 'eff-l' }, 'Âge moyen (ans)'), ...t.cols.flatMap(c => SX.map(x => h('td', { class: 'num' }, f2(t.stats[c][x].moy))))),
+    h('tr', { class: 'eff-stat' }, h('td', { class: 'eff-l' }, 'Écart type (ans)'), ...t.cols.flatMap(c => SX.map(x => h('td', { class: 'num' }, f2(t.stats[c][x].et))))),
+  ];
+  return h('div', {}, h('h4', { style: { marginTop: '14px' } }, "Catégories d'âge par sexe et par cours : pourcentages, âge moyen et écart type"),
+    h('div', { class: 'tbl-wrap' }, h('table', { class: 'eff eff-ages' }, head, h('tbody', {}, body))),
+    h('p', { class: 'muted', style: { fontSize: '12px' } }, "Pourcentage : part de la catégorie d'âge dans l'effectif du cours et du sexe (colonne). Âge moyen et écart type : « moins de 5 ans » compté 4 ans, « 16 ans et plus » compté 16 ans."));
 }
 
 /* ---------------- Fiche d'une école ---------------- */

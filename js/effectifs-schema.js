@@ -278,6 +278,30 @@ export function ageSeries(S, v, col = null) {
   }
   return out;
 }
+/* Âge retenu pour l'âge moyen et l'écart type (primaire) : « moins de 5 ans » = 4 ans, « 16 ans et plus » = 16 ans. */
+const AGE_NUM_EP = { m5: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12, 13: 13, 14: 14, 15: 15, '16p': 16 };
+const nAge = (S, v, r, col, sex) => {
+  const cols = col === ENS || !col ? S.ensCols : [col];
+  let t = 0; for (const c of cols) { if (!rowCols(S, r).includes(c)) continue; t += sex === 'T' ? (v[dataKey(r.k, c, 'G')] || 0) + (v[dataKey(r.k, c, 'F')] || 0) : (v[dataKey(r.k, c, sex)] || 0); }
+  return t;
+};
+/** Âge moyen et écart type (de la population) d'un cours (ou ENS) et d'un sexe ('G', 'F', 'T') : { n, moy, et } — primaire. */
+export function ageStats(S, v, col, sex) {
+  const rows = S.rows.filter(r => r.sec === 'age'); let n = 0, sm = 0;
+  for (const r of rows) { const a = AGE_NUM_EP[r.k.slice(4)]; if (a === undefined) continue; const x = nAge(S, v, r, col, sex); n += x; sm += x * a; }
+  if (!n) return { n: 0, moy: null, et: null };
+  const moy = sm / n; let q = 0;
+  for (const r of rows) { const a = AGE_NUM_EP[r.k.slice(4)]; if (a === undefined) continue; q += nAge(S, v, r, col, sex) * (a - moy) ** 2; }
+  return { n, moy, et: Math.sqrt(q / n) };
+}
+/** Tableau des catégories d'âge (moins de 5 ans … 16 ans et plus) par cours et par sexe, avec pourcentages de la colonne,
+    âge moyen et écart type : { cols, lignes:[{ l, cells:{ col: { G:[n,%], F:[n,%], T:[n,%] } } }], tot, stats } */
+export function ageTable(S, v) {
+  const rows = S.rows.filter(r => r.sec === 'age'), cols = [...S.ensCols, ENS], SX = ['G', 'F', 'T'], tot = {}, stats = {};
+  for (const c of cols) { tot[c] = {}; stats[c] = {}; for (const x of SX) { tot[c][x] = rows.reduce((a, r) => a + nAge(S, v, r, c, x), 0); stats[c][x] = ageStats(S, v, c, x); } }
+  const lignes = rows.map(r => ({ l: r.l, cells: Object.fromEntries(cols.map(c => [c, Object.fromEntries(SX.map(x => { const n = nAge(S, v, r, c, x); return [x, [n, tot[c][x] ? Math.round(n / tot[c][x] * 1000) / 10 : null]]; }))])) }));
+  return { cols, lignes, tot, stats, vide: !tot[ENS].T };
+}
 /** Synthèse par classe (EP) ou par section (EM) : garçons, filles, total, part des filles, âge le plus fréquent */
 export function classSummary(S, v) {
   return S.ensCols.map(c => {
