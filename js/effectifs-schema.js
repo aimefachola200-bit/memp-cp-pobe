@@ -280,18 +280,22 @@ export function ageSeries(S, v, col = null) {
 }
 /* Âge retenu pour l'âge moyen et l'écart type (primaire) : « moins de 5 ans » = 4 ans, « 16 ans et plus » = 16 ans. */
 const AGE_NUM_EP = { m5: 4, 5: 5, 6: 6, 7: 7, 8: 8, 9: 9, 10: 10, 11: 11, 12: 12, 13: 13, 14: 14, 15: 15, '16p': 16 };
+/* Maternelle (tableau 3) : « moins de 2 ans ½ » = 2 ans, « 2 ans ½ à 3 ans » = 2,75 ans, « plus de 5 ans » = 6 ans. */
+const AGE_NUM_EM = { m2: 2, 2: 2.75, 3: 3, 4: 4, 5: 5, p5: 6 };
+const ageNum = (S) => (S.id === 'EM' ? AGE_NUM_EM : AGE_NUM_EP);
+export const NOTE_AGES = { EP: '« moins de 5 ans » compté 4 ans, « 16 ans et plus » compté 16 ans', EM: '« moins de 2 ans ½ » compté 2 ans, « 2 ans ½ à 3 ans » 2,75 ans, « plus de 5 ans » 6 ans' };
 const nAge = (S, v, r, col, sex) => {
   const cols = col === ENS || !col ? S.ensCols : [col];
   let t = 0; for (const c of cols) { if (!rowCols(S, r).includes(c)) continue; t += sex === 'T' ? (v[dataKey(r.k, c, 'G')] || 0) + (v[dataKey(r.k, c, 'F')] || 0) : (v[dataKey(r.k, c, sex)] || 0); }
   return t;
 };
-/** Âge moyen et écart type (de la population) d'un cours (ou ENS) et d'un sexe ('G', 'F', 'T') : { n, moy, et } — primaire. */
+/** Âge moyen et écart type (de la population) d'un cours / d'une section (ou ENS) et d'un sexe ('G', 'F', 'T') : { n, moy, et }. */
 export function ageStats(S, v, col, sex) {
-  const rows = S.rows.filter(r => r.sec === 'age'); let n = 0, sm = 0;
-  for (const r of rows) { const a = AGE_NUM_EP[r.k.slice(4)]; if (a === undefined) continue; const x = nAge(S, v, r, col, sex); n += x; sm += x * a; }
+  const rows = S.rows.filter(r => r.sec === 'age'), AN = ageNum(S); let n = 0, sm = 0;
+  for (const r of rows) { const a = AN[r.k.slice(4)]; if (a === undefined) continue; const x = nAge(S, v, r, col, sex); n += x; sm += x * a; }
   if (!n) return { n: 0, moy: null, et: null };
   const moy = sm / n; let q = 0;
-  for (const r of rows) { const a = AGE_NUM_EP[r.k.slice(4)]; if (a === undefined) continue; q += nAge(S, v, r, col, sex) * (a - moy) ** 2; }
+  for (const r of rows) { const a = AN[r.k.slice(4)]; if (a === undefined) continue; q += nAge(S, v, r, col, sex) * (a - moy) ** 2; }
   return { n, moy, et: Math.sqrt(q / n) };
 }
 /** Tableau des catégories d'âge (moins de 5 ans … 16 ans et plus) par cours et par sexe, avec pourcentages de la colonne,
@@ -308,4 +312,36 @@ export function classSummary(S, v) {
     const G = v[dataKey('tot', c, 'G')] ?? 0, F = v[dataKey('tot', c, 'F')] ?? 0, s = ageSeries(S, v, c), pic = Math.max(0, ...s.T);
     return { col: c, label: colLabel(S, c), G, F, T: G + F, pF: G + F ? Math.round(F / (G + F) * 100) : null, ageModal: pic > 0 ? s.labels[s.T.indexOf(pic)] : '—' };
   });
+}
+
+/* ---------------- Écoles maternelles par section (SP / SG) : recensement, rentrée, fin d'année ---------------- */
+export const SECTIONS_M = [['pet', 'Section des petits (SP)'], ['gra', 'Section des grands (SG)']];
+export const LIGNES_RENTREE_M = [['debut', "Effectif au début de l'année"], ['bes', 'Dont enfants à besoin spécifique']];
+export const LIGNES_FIN_M = [['debut', "Effectif au début de l'année"], ['fin', "Effectif en fin d'année"], ['bes', 'Dont enfants à besoin spécifique'], ['aband', 'Abandons']];
+export const estPrive = (school) => /priv/i.test(String(school?.secteur || ''));
+const zSec = () => Object.fromEntries(SECTIONS_M.map(([k]) => [k, { G: 0, F: 0 }]));
+function videMat() {
+  return { ecoles: 0, nbRec: 0, nRent: 0, nFin: 0, recs: [], rec: zSec(),
+    rent: Object.fromEntries(LIGNES_RENTREE_M.map(([k]) => [k, zSec()])), fin: Object.fromEntries(LIGNES_FIN_M.map(([k]) => [k, zSec()])) };
+}
+/** Écoles maternelles du périmètre, public et privé à part : { pub, prv } avec recensement (fiche d'effectifs, tableau 3),
+    rapport de rentrée et fiche de fin d'année (grille « Répartition des enfants par section »). */
+export function matSections(schools, records, fiches, annee) {
+  const out = { pub: videMat(), prv: videMat() };
+  for (const sc of schools.filter(x => x.cycle === 'Maternelle')) {
+    const m = estPrive(sc) ? out.prv : out.pub; m.ecoles++;
+    const rec = records.find(r => r.schoolId === sc.id && r.annee === annee);
+    if (rec) {
+      const v = computeValues(EM, rec.data); m.recs.push(rec); m.nbRec++;
+      for (const [c] of SECTIONS_M) for (const s of SEXES) m.rec[c][s] += v[dataKey('tot', c, s)] || 0;
+    }
+    for (const [kind, cle, lignes] of [['EM_RENTREE', 'rent', LIGNES_RENTREE_M], ['EM_FIN', 'fin', LIGNES_FIN_M]]) {
+      const f = fiches.find(x => x.schoolId === sc.id && x.annee === annee && x.kind === kind); if (!f) continue;
+      const grid = sectionsFor(kind).find(x => x.id === 'eff'); let n = 0;
+      for (const [k] of lignes) for (const [c] of SECTIONS_M) for (const s of SEXES) { const x = gridValue(f.data, grid, k, c, s) || 0; m[cle][k][c][s] += x; n += x; }
+      if (n) m[cle === 'rent' ? 'nRent' : 'nFin']++;
+    }
+  }
+  for (const m of [out.pub, out.prv]) m.v = sumValues(m.recs.map(r => computeValues(EM, r.data)));
+  return out;
 }

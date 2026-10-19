@@ -142,6 +142,9 @@ async function overview(ctx) {
         const nb = S.id === 'EP' ? data.agg.nbEP : data.agg.nbEM; if (!nb) continue;
         holder.append(h('h3', { style: { margin: '18px 0 6px' } }, `${S.label} — consolidation de ${nb} fiche(s)`), ...S.blocks.map(b => viewBlock(S, b, data.agg[S.id])), statsEl(S, data.agg[S.id], st.level === 'cs' ? (csList.get(st.cs)?.label || '') : (zones.get(st.zone)?.label || '')));
       }
+      const ecolesPerim = schools.filter(x => (st.level === 'cs' ? (x.codeCs || '') === st.cs : (x.codeZone || '') === st.zone));
+      const ms = E.matSections(ecolesPerim, records.filter(r => E.keepStatut(st.statut, r)), fiches, st.annee);
+      if (ms.pub.ecoles || ms.prv.ecoles) holder.append(h('h3', { style: { margin: '18px 0 6px' } }, 'Écoles maternelles par section (SP, SG) — recensement, rentrée, fin d\'année'), ...matSectionsEl(ms));
       ctx.status(`${data.agg.nbEP + data.agg.nbEM} fiche(s) consolidée(s) — ${st.annee}`);
     }
     setActions();
@@ -251,7 +254,7 @@ function statsEl(S, v, titre = '') {
     h('tbody', {}, ...rows.map(r => h('tr', {}, h('td', { class: 'eff-l' }, r.label), h('td', {}, r.G), h('td', {}, r.F), h('td', { class: 'calc' }, r.T), h('td', {}, r.pF === null ? '' : r.pF + ' %'), h('td', {}, r.ageModal))),
       h('tr', { class: 'eff-grp' }, h('td', {}, 'TOTAL'), h('td', {}, tot.G), h('td', {}, tot.F), h('td', {}, tot.G + tot.F), h('td', {}, tot.G + tot.F ? Math.round(tot.F / (tot.G + tot.F) * 100) + ' %' : ''), h('td', {}))));
   const g1 = h('div', { class: 'card-courbe' }), g2 = h('div', { class: 'card-courbe' });
-  const ages = S.id === 'EP' ? ageTableEl(S, v) : null;
+  const ages = ageTableEl(S, v);
   g1.innerHTML = svgCourbe({ titre: "Courbe d'âge selon le sexe", sousTitre: [S.label, titre].filter(Boolean).join(' — '), ...a });
   g2.innerHTML = svgCourbe({ titre: `Courbe d'âge par ${unite}`, sousTitre: [S.label, titre].filter(Boolean).join(' — '), ...b });
   return h('div', { class: 'card eff-wrap' }, h('h4', {}, `Synthèse par ${unite} et statistique par courbe d'âge`), h('div', { class: 'tbl-wrap' }, tbl), ages, g1, g2);
@@ -262,7 +265,8 @@ const fp = (x) => (x === null || x === undefined ? '' : String(x).replace('.', '
 function ageTableEl(S, v) {
   const t = E.ageTable(S, v), SX = ['G', 'F', 'T'];
   if (t.vide) return h('p', { class: 'muted' }, "Catégories d'âge : aucune répartition par âge saisie.");
-  const lab = (c) => (c === E.ENS ? 'ENSEMBLE' : E.colLabel(S, c));
+  const unite = S.id === 'EP' ? 'cours' : 'section';
+  const lab = (c) => (c === E.ENS ? 'ENSEMBLE' : S.id === 'EM' ? ({ pet: 'Section des petits (SP)', gra: 'Section des grands (SG)' }[c] || E.colLabel(S, c)) : E.colLabel(S, c));
   const head = h('thead', {}, h('tr', {}, h('th', { rowspan: 2 }, "Catégorie d'âge"), ...t.cols.map(c => h('th', { colspan: 3 }, lab(c)))),
     h('tr', {}, ...t.cols.flatMap(() => SX.map(x => h('th', {}, x)))));
   const cel = (n, p, cl) => h('td', { class: 'num ' + (cl || '') }, n ? String(n) : '', n && p !== null ? h('small', { class: 'eff-pc' }, fp(p)) : null);
@@ -272,9 +276,9 @@ function ageTableEl(S, v) {
     h('tr', { class: 'eff-stat' }, h('td', { class: 'eff-l' }, 'Âge moyen (ans)'), ...t.cols.flatMap(c => SX.map(x => h('td', { class: 'num' }, f2(t.stats[c][x].moy))))),
     h('tr', { class: 'eff-stat' }, h('td', { class: 'eff-l' }, 'Écart type (ans)'), ...t.cols.flatMap(c => SX.map(x => h('td', { class: 'num' }, f2(t.stats[c][x].et))))),
   ];
-  return h('div', {}, h('h4', { style: { marginTop: '14px' } }, "Catégories d'âge par sexe et par cours : pourcentages, âge moyen et écart type"),
+  return h('div', {}, h('h4', { style: { marginTop: '14px' } }, `Catégories d'âge par sexe et par ${unite} : pourcentages, âge moyen et écart type`),
     h('div', { class: 'tbl-wrap' }, h('table', { class: 'eff eff-ages' }, head, h('tbody', {}, body))),
-    h('p', { class: 'muted', style: { fontSize: '12px' } }, "Pourcentage : part de la catégorie d'âge dans l'effectif du cours et du sexe (colonne). Âge moyen et écart type : « moins de 5 ans » compté 4 ans, « 16 ans et plus » compté 16 ans."));
+    h('p', { class: 'muted', style: { fontSize: '12px' } }, `Pourcentage : part de la catégorie d'âge dans l'effectif du ${unite} et du sexe (colonne). Âge moyen et écart type : ${E.NOTE_AGES[S.id]}.`));
 }
 
 /* ---------------- Fiche d'une école ---------------- */
@@ -385,4 +389,29 @@ async function editor(ctx) {
     { label: '🗑 Vider', kind: 'danger', show: editable, onClick: clearAll },
   ]);
   return async () => { clearTimeout(timer); if (dirty) await save(); };
+}
+
+/** Écoles maternelles par section (SP, SG), par sexe : recensement, rentrée et fin d'année, public puis privé à part. */
+function matSectionsEl(ms) {
+  const SX = ['G', 'F', 'T'], vg = (o, x) => (x === 'T' ? o.G + o.F : o[x]);
+  const tete = (premiere) => h('thead', {}, h('tr', {}, h('th', { rowspan: 2 }, premiere), ...E.SECTIONS_M.map(([, l]) => h('th', { colspan: 3 }, l)), h('th', { colspan: 3 }, 'TOTAL')),
+    h('tr', {}, ...[0, 1, 2].flatMap(() => SX.map(x => h('th', {}, x)))));
+  const ligne = (lib, o, cl) => h('tr', { class: cl || '' }, h('td', { class: 'eff-l' }, lib),
+    ...E.SECTIONS_M.flatMap(([c]) => SX.map(x => h('td', { class: 'num' + (x === 'T' ? ' calc' : '') }, vg(o[c], x)))),
+    ...SX.map(x => h('td', { class: 'num calc' }, E.SECTIONS_M.reduce((a, [c]) => a + vg(o[c], x), 0))));
+  const tab = (premiere, rows) => h('div', { class: 'tbl-wrap' }, h('table', { class: 'eff' }, tete(premiere), h('tbody', {}, rows)));
+  const out = [];
+  for (const [cle, lib, coul] of [['pub', 'publiques', 'var(--green-d)'], ['prv', 'privées (à part)', '#8e44ad']]) {
+    const m = ms[cle]; if (!m.ecoles) continue;
+    const S = E.SCHEMAS.EM;
+    out.push(h('div', { class: 'card eff-wrap', style: { borderTop: '4px solid ' + coul } },
+      h('h4', { style: { color: coul } }, `Écoles maternelles ${lib} : effectifs par section (SP, SG) — ${m.ecoles} école(s)`),
+      h('h5', {}, `Fiche de recensement (${m.nbRec} fiche(s) d'effectifs)`), tab('', [ligne('Effectif (tableau 3)', m.rec, 'eff-stat')]),
+      m.nbRec ? ageTableEl(S, m.v) : null,
+      h('h5', { style: { marginTop: '14px' } }, `Rapport de rentrée — répartition des enfants par section (${m.nRent} fiche(s))`),
+      tab('Rubrique', E.LIGNES_RENTREE_M.map(([k, l]) => ligne(l, m.rent[k], k === 'debut' ? 'eff-stat' : ''))),
+      h('h5', { style: { marginTop: '14px' } }, `Fiche de fin d'année — répartition des enfants par section (${m.nFin} fiche(s))`),
+      tab('Rubrique', E.LIGNES_FIN_M.map(([k, l]) => ligne(l, m.fin[k], k === 'fin' ? 'eff-stat' : '')))));
+  }
+  return out;
 }
