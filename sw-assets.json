@@ -1,5 +1,5 @@
 {
- "version": "409e7b60c1fa",
+ "version": "4d8696dc4814",
  "files": [
   "./",
   "NOTICE.txt",
@@ -51,6 +51,9 @@
   "js/config.js",
   "js/data.js",
   "js/db.js",
+  "js/effectifs-charts.js",
+  "js/effectifs-export.js",
+  "js/effectifs-schema.js",
   "js/export.js",
   "js/fiche-ui.js",
   "js/main.js",
@@ -64,6 +67,7 @@
   "js/views-admin.js",
   "js/views-bilan.js",
   "js/views-core.js",
+  "js/views-effectifs.js",
   "js/views-more.js",
   "js/views-officiel.js",
   "js/views-reports.js",

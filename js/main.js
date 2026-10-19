@@ -48,6 +48,7 @@ const NAV = [
   { g: 'Collecte', id: 'ecoles', ic: '🏫', t: 'Écoles' },
   { id: 'personnel', ic: '👩‍🏫', t: 'Personnel enseignant' },
   { id: 'fiches', ic: '📝', t: 'Fiches de collecte' },
+  { id: 'effectifs', ic: '👧', t: 'Effectifs des apprenants' },
   { id: 'rapports', ic: '📊', t: "Rapports de fin d'année" },
   { id: 'synoptique', ic: '🗂️', t: 'Synthèse des fiches (consolidation)' },
   { g: 'Pédagogie', id: 'activites', ic: '📅', t: 'Activités pédagogiques' },
@@ -67,7 +68,7 @@ const NAV = [
   { id: 'utilisateurs', ic: '👥', t: 'Utilisateurs', roles: ['ADMIN'] },
   { id: 'parametres', ic: '⚙️', t: 'Paramètres & à propos' },
 ];
-const ROUTES = { accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', rapports: 'views-reports', rapport: 'views-reports', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui',
+const ROUTES = { accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', rapports: 'views-reports', rapport: 'views-reports', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs',
   synoptique: 'views-more', activites: 'views-more', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', synocp: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
   identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
 
@@ -131,7 +132,7 @@ async function route() {
   const id = ROUTES[r] ? r : 'accueil';
   const entry = NAV.find(n => n.id === id);
   if (entry && entry.roles && !entry.roles.includes(session.user.role)) { toast('Accès non autorisé pour votre rôle.', 'err'); location.hash = '#/accueil'; return; }
-  document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.r === (id === 'fiche' ? 'fiches' : id === 'rapport' ? 'rapports' : id === 'bilan' ? 'bilans' : id)));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.r === (id === 'fiche' ? 'fiches' : id === 'rapport' ? 'rapports' : id === 'bilan' ? 'bilans' : id === 'effectif' ? 'effectifs' : id)));
   if (cleanup) { try { await cleanup(); } catch { /* ignore */ } cleanup = null; }
   const body = $('#v-body'), bar = $('#v-bar'), el = h('div'), nbar = h('div', { class: 'actionbar', id: 'v-bar' });
   const _app = el.append.bind(el); el.append = (...a) => _app(...a.flat().filter(x => x !== null && x !== undefined && x !== false));

@@ -230,3 +230,25 @@ button.card.doc-lien:hover,button.card.doc-lien:focus-visible{border-color:var(-
 table.t.planif th{min-width:120px}
 table.t.fiche-carriere th{text-align:left;width:38%;background:var(--green-l);color:var(--ink)}
 table.t.planif th:first-child,table.t.planif td.edt-h:first-child{min-width:54px;width:54px}table.t.planif td.edt-h{min-width:86px}
+/* ---------- Effectifs des apprenants ---------- */
+.seg{display:flex;gap:4px}
+.eff-wrap h4{margin:0 0 8px;color:var(--green)}
+table.eff{border-collapse:collapse;font-size:.8rem;min-width:100%}
+table.eff th{background:var(--green);color:#fff;border:1px solid rgba(255,255,255,.35);padding:4px 6px;text-align:center;font-weight:600}
+table.eff thead th:first-child{position:sticky;left:0;z-index:3}
+table.eff td{border:1px solid var(--line);padding:2px 3px;text-align:center;min-width:44px}
+table.eff td.eff-l{text-align:left;min-width:230px;max-width:340px;position:sticky;left:0;background:var(--card);z-index:1;padding:4px 8px}
+table.eff td.calc{background:var(--green-l);font-weight:700}
+table.eff td.na{background:rgba(0,0,0,.06)}
+table.eff tr.eff-grp td{background:#d9eadf;color:var(--green-d);font-weight:700;text-align:left;padding:5px 8px;position:sticky;left:0;z-index:1}
+table.eff input.eff-in{width:52px;padding:4px 2px;border:1px solid var(--line);border-radius:4px;text-align:center;background:var(--card)}
+table.eff input.eff-in:focus{outline:2px solid var(--green);background:#fff8c4;color:#111}
+table.eff input.eff-in:disabled{background:transparent;border-color:transparent;color:inherit;opacity:1}
+.eff-ident{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px 16px;margin:8px 0}
+.eff-ident small{display:block;color:var(--mute);font-size:.72rem}
+.eff-ident b{font-weight:600}
+@media print{table.eff input.eff-in{border:none}table.eff td.eff-l,table.eff tr.eff-grp td,table.eff thead th:first-child{position:static}.eff-wrap{break-inside:avoid-page}}
+
+.card-courbe{background:var(--card);border-radius:8px;padding:6px;margin:10px 0}
+.card-courbe svg text{fill:currentColor}
+@media print{.card-courbe{break-inside:avoid}}

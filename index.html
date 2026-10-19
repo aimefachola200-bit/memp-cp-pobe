@@ -23,5 +23,34 @@
   <script src="lib/jszip.min.js"></script>
   <script src="lib/pdf-lib.min.js"></script>
   <script type="module" src="js/main.js"></script>
+<!-- Installation de l'application (PC, Android, tablette, iPhone / iPad) -->
+<div id="installBandeau" hidden style="position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;max-width:520px;margin:0 auto;background:#0b5d3b;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.25);font:15px/1.4 system-ui,Segoe UI,Roboto,Arial,sans-serif;display:flex;gap:10px;align-items:center">
+  <span style="font-size:26px" aria-hidden="true">📲</span>
+  <span id="installTexte" style="flex:1">Installer l'application sur cet appareil : elle s'ouvrira comme une application et fonctionnera sans Internet.</span>
+  <button id="installOui" type="button" style="background:#fff;color:#0b5d3b;border:0;border-radius:10px;padding:9px 14px;font-weight:700;cursor:pointer">Installer</button>
+  <button id="installNon" type="button" aria-label="Fermer" style="background:transparent;color:#fff;border:0;font-size:20px;cursor:pointer">✕</button>
+</div>
+<script>
+(function () {
+  var b = document.getElementById('installBandeau'), oui = document.getElementById('installOui'), non = document.getElementById('installNon'), txt = document.getElementById('installTexte');
+  var invite = null, cle = 'installRefus:' + location.pathname;
+  var installee = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  var refus = false; try { refus = localStorage.getItem(cle) === '1'; } catch (e) {}
+  function montrer() { if (!installee && !refus) { b.hidden = false; b.style.display = 'flex'; } }
+  function cacher() { b.hidden = true; b.style.display = 'none'; }
+  cacher();
+  /* PC (Chrome, Edge) et Android : invitation native */
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); invite = e; montrer(); });
+  oui.addEventListener('click', function () {
+    if (invite) { invite.prompt(); invite.userChoice.then(function () { invite = null; cacher(); }); return; }
+    cacher();
+  });
+  non.addEventListener('click', function () { try { localStorage.setItem(cle, '1'); } catch (e) {} cacher(); });
+  window.addEventListener('appinstalled', cacher);
+  /* iPhone / iPad (Safari) : pas d'invitation automatique, on explique le geste */
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (ios && !installee) { txt.textContent = "Pour installer : touchez le bouton Partager (carré avec une flèche), puis « Sur l'écran d'accueil »."; oui.textContent = 'Compris'; setTimeout(montrer, 1500); }
+})();
+</script>
 </body>
 </html>
