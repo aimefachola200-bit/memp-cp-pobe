@@ -2,6 +2,29 @@
    Conception : Maître Aimé FACHE — Tél. 01 96 51 03 33 */
 import { h, modal, toast } from './util.js';
 
+/* v1.10.10 — avant / arrière : appareil choisi d'après son nom (front / back, avant / arrière…), sinon le suivant :
+   certains téléphones ignorent « facingMode » et rouvraient toujours la même caméra. */
+async function camerasVideo() { try { return (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput'); } catch (e) { return []; } }
+function choisirCamera(cams, face, actuel) {
+  if (!cams || cams.length < 2) return null;
+  const re = face === 'user' ? /front|avant|user|selfie|facing front/i : /back|arri[eè]re|rear|environment|facing back/i;
+  const parNom = cams.filter(c => re.test(c.label || ''));
+  const autre = parNom.find(c => c.deviceId !== actuel) || parNom[0];
+  if (autre) return autre.deviceId;
+  const i = cams.findIndex(c => c.deviceId === actuel);
+  return cams[(i + 1) % cams.length].deviceId;
+}
+async function ouvrirFlux(face, appareil) {
+  const base = { width: { ideal: 1920 }, height: { ideal: 1080 } };
+  const essais = appareil ? [{ deviceId: { exact: appareil } }] : [];
+  essais.push({ facingMode: { exact: face } }, { facingMode: { ideal: face } }, {});
+  let err = null;
+  for (const v of essais) {
+    try { return await navigator.mediaDevices.getUserMedia({ video: Object.assign({}, v, base), audio: false }); } catch (e) { err = e; if (e.name === 'NotAllowedError' || e.name === 'SecurityError') throw e; }
+  }
+  throw err;
+}
+
 const MAX = 1280;
 /** Réduit une image (File/Blob/canvas source) à 1280 px max, JPEG 0,8 → dataURL */
 export async function shrink(src, { mirror = false } = {}) {
@@ -30,11 +53,13 @@ export function openCamera({ onCapture, title = 'Appareil photo' } = {}) {
   const info = h('div', { class: 'cam-info' }, 'Démarrage de la caméra…');
   const shots = h('div', { class: 'cam-shots' });
   const stop = () => { if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; } };
+  let appareil = '';
   async function start() {
     stop(); info.textContent = 'Démarrage de la caméra…';
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { info.textContent = "Caméra indisponible dans ce navigateur (HTTPS requis). Utilisez « Photo native » ou « Galerie »."; return; }
     try {
-      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });
+      stream = await ouvrirFlux(facing, appareil);
+      const tr = stream.getVideoTracks()[0], rg = tr && tr.getSettings ? tr.getSettings() : {}; appareil = rg.deviceId || appareil;
       video.srcObject = stream; await video.play().catch(() => {});
       const st = stream.getVideoTracks()[0].getSettings ? stream.getVideoTracks()[0].getSettings() : {};
       if (st.facingMode) facing = st.facingMode === 'user' ? 'user' : 'environment';
@@ -42,7 +67,7 @@ export function openCamera({ onCapture, title = 'Appareil photo' } = {}) {
       info.textContent = facing === 'user' ? 'Caméra avant (selfie)' : 'Caméra arrière';
     } catch (e) { info.textContent = e.name === 'NotAllowedError' ? "Accès à la caméra refusé : autorisez-le dans les réglages du navigateur." : e.name === 'NotFoundError' ? 'Aucune caméra détectée sur cet appareil.' : 'Caméra inaccessible : ' + e.message; }
   }
-  const flip = () => { facing = facing === 'user' ? 'environment' : 'user'; start(); };
+  const flip = async () => { facing = facing === 'user' ? 'environment' : 'user'; appareil = choisirCamera(await camerasVideo(), facing, appareil) || ''; start(); };
   const snap = async () => {
     if (!stream || busy || !video.videoWidth) return toast("La caméra n'est pas prête.", 'warn');
     busy = true;
