@@ -44,17 +44,26 @@ document.addEventListener('DOMContentLoaded', () => oeilPartout(document));
 
 const NAV = [
   { g: null, id: 'accueil', ic: '🏠', t: 'Tableau de bord' },
-  { id: 'espace', ic: '🧑‍🏫', t: 'Espace CP de zone' },
+  { id: 'espacedosp', ic: '🗂️', t: 'Mon espace de travail DOSP', seul: 'dosp' },
+  { id: 'espace', ic: '🧑‍🏫', t: 'Espace CP de zone', pasDosp: true },
   { id: 'synocp', ic: '📋', t: 'Tableau synoptique du CP' },
   { g: 'Collecte', id: 'ecoles', ic: '🏫', t: 'Écoles' },
   { id: 'personnel', ic: '👩‍🏫', t: 'Personnel enseignant' },
+  { id: 'carriere', ic: '📈', t: 'Gestion de carrière' },
   { id: 'fiches', ic: '📝', t: 'Fiches de collecte' },
+  { id: 'envois', ic: '📥', t: 'Réception et acheminement des fiches', seul: 'dosp' },
   { id: 'effectifs', ic: '👧', t: 'Effectifs des apprenants' },
   { id: 'infra', ic: '🏗️', t: 'Infrastructures et mobilier' },
   { id: 'ecolesstruct', ic: '🏫', t: 'Écoles : structure et équipements' },
   { id: 'cep', ic: '🎓', t: 'CEP : candidats et réussite' },
   { id: 'rapports', ic: '📊', t: "Rapports de fin d'année" },
   { id: 'synoptique', ic: '🗂️', t: 'Synthèse des fiches (consolidation)' },
+  { g: 'Prévision et suivi-évaluation', id: 'prevision', ic: '🔮', t: "Prévisions de l'année suivante", seul: 'dosp' },
+  { id: 'besoins', ic: '⚖️', t: 'Besoins et écarts (enseignants, salles, places)', seul: 'dosp' },
+  { id: 'suivieval', ic: '📊', t: 'Suivi-évaluation (tableau de bord)', seul: 'dosp' },
+  { id: 'capacites', ic: '🎓', t: 'Renforcement des capacités', seul: 'dosp' },
+  { id: 'plandosp', ic: '🎯', t: "Attributions et plan d'action", seul: 'dosp' },
+  { id: 'docsdosp', ic: '🧾', t: 'Documents officiels de la DOSP', seul: 'dosp' },
   { g: 'Pédagogie', id: 'activites', ic: '📅', t: 'Activités pédagogiques' },
   { id: 'bilans', ic: '📈', t: 'Bilans trimestriel / annuel' },
   { id: 'themes', ic: '🎯', t: 'Thèmes 2026-2027' },
@@ -64,8 +73,8 @@ const NAV = [
   { id: 'calendrier', ic: '🗓️', t: 'Calendrier scolaire officiel' },
   { id: 'reglement', ic: '⚖️', t: 'Règlement intérieur' },
   { id: 'documents', ic: '📄', t: 'Documents officiels' },
-  { id: 'whatsapp', ic: '💬', t: 'Groupe WhatsApp des directeurs', roles: ['ADMIN', 'DDEMP', 'CCS', 'CP'] },
-  { g: 'Administration', id: 'referentiel', ic: '🌍', t: 'Référentiel national', roles: ['ADMIN', 'DDEMP', 'CCS', 'CP'] },
+  { id: 'whatsapp', ic: '💬', t: 'Groupe WhatsApp des directeurs', roles: ['ADMIN', 'DDEMP', 'CCS', 'DOSP', 'CP'] },
+  { g: 'Administration', id: 'referentiel', ic: '🌍', t: 'Référentiel national', roles: ['ADMIN', 'DDEMP', 'CCS', 'DOSP', 'CP'] },
   { id: 'identite', ic: '✍️', t: 'Identité numérique (signature)' },
   { id: 'transmission', ic: '🔄', t: 'Transmission & sauvegarde' },
   { id: 'verifier', ic: '✅', t: 'Vérifier un document' },
@@ -74,8 +83,8 @@ const NAV = [
   { id: 'parametres', ic: '⚙️', t: 'Paramètres & à propos' },
 ];
 const ROUTES = { accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', rapports: 'views-reports', rapport: 'views-reports', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles', cep: 'views-cep',
-  synoptique: 'views-more', activites: 'views-more', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', synocp: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
-  whatsapp: 'views-whatsapp', identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
+  synoptique: 'views-more', activites: 'views-more', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', synocp: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', carriere: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
+  whatsapp: 'views-whatsapp', espacedosp: 'views-dosp', envois: 'views-dosp', prevision: 'views-dosp', besoins: 'views-dosp', suivieval: 'views-dosp', capacites: 'views-dosp', plandosp: 'views-dosp', docsdosp: 'views-dosp', identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
 
 const app = $('#app');
 let cleanup = null, deferredPrompt = null;
@@ -99,7 +108,7 @@ function loginScreen() {
     h('button', { class: 'btn primary', style: { width: '100%' }, type: 'submit' }, 'Se connecter'));
   app.replaceChildren(h('div', { class: 'login-wrap' }, h('div', { class: 'login-card' },
     h('div', { style: { background: '#fff', padding: '8px' } }, banner('')), h('div', { class: 'tricolor' }, h('i'), h('i'), h('i')),
-    h('div', { class: 'login-body' }, h('h1', APP.full), VARIANT.titre ? h('p', { class: 'sub', style: { fontWeight: '700', color: 'var(--ink)', margin: '.1em 0 0' } }, VARIANT.titre) : null, h('p', { class: 'sub' }, 'Collecte, validation et suivi pédagogique — fonctionne sans connexion Internet.'), form,
+    h('div', { class: 'login-body' }, h('h1', VARIANT.profil === 'dosp' ? 'Application DOSP — Organisation scolaire et prévision' : APP.full), VARIANT.titre ? h('p', { class: 'sub', style: { fontWeight: '700', color: 'var(--ink)', margin: '.1em 0 0' } }, VARIANT.titre) : null, h('p', { class: 'sub' }, 'Collecte, validation et suivi pédagogique — fonctionne sans connexion Internet.'), form,
       h('div', { class: 'hint' }, h('b', 'Premier démarrage : '), 'comptes initiaux ', ...VARIANT.comptes.flatMap(([u, p], i) => [i ? ', ' : '', h('code', `${u} / ${p}`)]), '. Changez les mots de passe dès la première connexion.'),
       h('p', { style: { textAlign: 'center', fontSize: '.8rem', color: 'var(--mute)', marginTop: '14px' } }, CREDIT, h('br'), `Version ${APP.version}`)))));
   u.focus();
@@ -121,11 +130,13 @@ function shell() {
   NAV.forEach(n => {
     if (n.roles && !n.roles.includes(u.role)) return;
     if (n.horsIntegre && VARIANT.integre) return;
+    if (n.seul && n.seul !== VARIANT.profil) return;
+    if (n.pasDosp && VARIANT.profil === 'dosp') return;
     if (n.g) nav.appendChild(h('div', { class: 'grp' }, n.g));
     nav.appendChild(h('button', { 'data-r': n.id, onclick: () => { location.hash = '#/' + n.id; document.body.classList.remove('nav-open'); } }, h('span', { class: 'ic' }, n.ic), n.id === 'espace' && u.role === 'CP' ? `Mon espace CP — zone ${u.numZone || ''}` : n.t));
   });
   const side = h('aside', { class: 'sidebar', id: 'sidebar' },
-    h('div', { class: 'sb-head' }, h('img', { src: 'assets/armoiries.png', alt: 'Armoiries du Bénin' }), h('b', 'APPLICATION CP'), h('span', 'MEMP — RÉPUBLIQUE DU BÉNIN')),
+    h('div', { class: 'sb-head' }, h('img', { src: 'assets/armoiries.png', alt: 'Armoiries du Bénin' }), h('b', VARIANT.profil === 'dosp' ? 'APPLICATION DOSP' : 'APPLICATION CP'), h('span', 'MEMP — RÉPUBLIQUE DU BÉNIN')),
     nav,
     h('div', { class: 'sb-foot' }, h('span', { class: 'who' }, `👤 ${u.prenoms || ''} ${u.nom || u.username}`, h('br'), h('small', ROLES[u.role] + (u.codeZone ? ' · ' + u.codeZone : u.codeCs ? ' · ' + u.codeCs : ''))),
       VARIANT.integre ? h('a', { class: 'btn sm', href: retourEduGestion() }, '← Retour à ÉduGestion') : h('button', { class: 'btn sm', onclick: logout }, 'Se déconnecter'), h('div', { style: { fontSize: '.68rem', opacity: .8, marginTop: '8px' } }, CREDIT)));
@@ -181,7 +192,8 @@ function logout() {
 async function start() {
   await refreshDatalists();
   shell();
-  if (!location.hash || (session.user.role === 'CP' && location.hash === '#/accueil' && !sessionStorage.getItem(CLE_SESSION + '-vu'))) history.replaceState(null, '', session.user.role === 'CP' ? '#/espace' : '#/accueil');
+  const espaceDe = (u) => (u.role === 'CP' && VARIANT.profil !== 'dosp' ? '#/espace' : u.role === 'DOSP' ? '#/espacedosp' : '#/accueil');
+  if (!location.hash || ((session.user.role === 'CP' || session.user.role === 'DOSP') && location.hash === '#/accueil' && !sessionStorage.getItem(CLE_SESSION + '-vu'))) history.replaceState(null, '', espaceDe(session.user));
   sessionStorage.setItem(CLE_SESSION + '-vu', '1');
   await route();
   if (session.user.mustChange) setTimeout(() => import('./views-admin.js').then(m => m.changePasswordDialog(session.user, true)), 400);

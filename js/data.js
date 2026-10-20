@@ -5,7 +5,7 @@ import { h, uid, nowISO, hashPassword, norm } from './util.js';
 import { DEPARTEMENTS } from './refdata.js';
 import { VARIANT } from './config.js';
 
-export const ROLES = { ADMIN: 'Administrateur', CP: 'Conseiller Pédagogique', CCS: 'Chef de Circonscription Scolaire', DDEMP: 'Direction départementale (DDEMP)' };
+export const ROLES = { ADMIN: 'Administrateur', CP: 'Conseiller Pédagogique', CCS: 'Chef de Circonscription Scolaire', DDEMP: 'Direction départementale (DDEMP)', DOSP: "Chef de la Division de l'Organisation Scolaire et de la Prévision (DOSP)" };
 const sansAccentMaj = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
 export const session = { user: null };
 
@@ -14,6 +14,7 @@ export function inScope(user, rec) {
   if (!user) return false;
   if (user.role === 'ADMIN') return true;
   if (user.role === 'DDEMP') return (!!rec.codeCs && (user.csCodes || []).includes(rec.codeCs)) || (!!user.departement && sansAccentMaj(rec.departement) === sansAccentMaj(user.departement));
+  if (user.role === 'DOSP') return !!user.codeCs && (rec.codeCs === user.codeCs || (rec.codeZone || '').startsWith(user.codeCs + '-'));
   if (user.role === 'CCS') return !!user.codeCs && (rec.codeCs === user.codeCs || (rec.codeZone || '').startsWith(user.codeCs + '-'));
   if (user.role === 'CP') return !!user.codeZone && rec.codeZone === user.codeZone;
   return false;
@@ -33,6 +34,7 @@ export async function seedIfEmpty() {
       await mk('admin', 'admin123', { role: 'ADMIN', nom: 'ADMIN', prenoms: 'Système' }),
       await mk('cp', 'cp123', { role: 'CP', nom: 'DOSSOU', prenoms: 'Paul', codeCp: 'CP-0001', departement: 'ZOU', codeCs: 'CS118', nomCs: 'ZOGBODOMEY', numZone: '1', codeZone: 'CS118-ZP01' }),
       await mk('ccs', 'ccs123', { role: 'CCS', nom: 'HOUNTON', prenoms: 'Marie', departement: 'ZOU', codeCs: 'CS118', nomCs: 'ZOGBODOMEY' }),
+      ...(VARIANT.profil === 'dosp' ? [await mk('dosp', 'dosp123', { role: 'DOSP', nom: 'AGOSSOU', prenoms: 'Rémi', departement: 'ZOU', codeCs: 'CS118', nomCs: 'ZOGBODOMEY' })] : []),
     ]);
   }
   if (!(await db.all('ref')).some(r => r.type === 'departement')) {

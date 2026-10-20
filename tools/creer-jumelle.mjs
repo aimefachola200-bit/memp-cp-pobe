@@ -11,7 +11,7 @@ const [id, dest] = process.argv.slice(2);
 if (!id || !dest) { console.error('Usage : node tools/creer-jumelle.mjs <id> <dossier>'); process.exit(1); }
 const root = new URL('..', import.meta.url).pathname, J = join(root, 'tools', 'jumelles', id);
 const V = JSON.parse(readFileSync(join(J, 'variante.json'), 'utf8'));
-const SKIP = new Set(['.git', 'sw-assets.json']);
+const SKIP = new Set(['.git', 'sw-assets.json', 'dosp']);   // dosp/ : application jumelle publiée dans ce dépôt
 // on vide la destination (sauf .git) pour retirer les fichiers supprimés de l'application principale
 if (existsSync(dest)) for (const n of readdirSync(dest)) if (n !== '.git') rmSync(join(dest, n), { recursive: true, force: true });
 (function copy(src, dst) {
@@ -26,7 +26,7 @@ if (existsSync(dest)) for (const n of readdirSync(dest)) if (n !== '.git') rmSyn
 // variante
 const cfg = join(dest, 'js', 'config.js');
 let c = readFileSync(cfg, 'utf8');
-const bloc = `export const VARIANT = ${JSON.stringify({ id: V.id, titre: V.titre, base: V.base, seed: V.seed || null, comptes: V.comptes || [], ...(V.integre ? { integre: V.integre } : {}) }, null, 2)};`;
+const bloc = `export const VARIANT = ${JSON.stringify({ id: V.id, titre: V.titre, base: V.base, seed: V.seed || null, comptes: V.comptes || [], ...(V.integre ? { integre: V.integre } : {}), ...(V.profil ? { profil: V.profil } : {}) }, null, 2)};`;
 c = c.replace(/export const VARIANT = \{[\s\S]*?\n\};/, bloc).replace(/name: 'Application CP',/, `name: ${JSON.stringify(V.nom)},`);
 writeFileSync(cfg, c);
 const man = join(dest, 'manifest.webmanifest'), m = JSON.parse(readFileSync(man, 'utf8'));
@@ -37,7 +37,7 @@ if (V.seed) {
   copyFileSync(join(J, 'seed.json'), join(dest, V.seed));
 }
 // application intégrée dans une autre (ex. ÉduGestion Pro) : pas d'outils ni d'atelier de publication à embarquer
-if (V.integre) for (const n of ['tools', '.github', 'README.md', 'DEPLOIEMENT.md', '.nojekyll', 'CNAME']) rmSync(join(dest, n), { recursive: true, force: true });
+if (V.integre || V.sansOutils) for (const n of ['tools', '.github', 'README.md', 'DEPLOIEMENT.md', '.nojekyll', 'CNAME']) rmSync(join(dest, n), { recursive: true, force: true });
 if (existsSync(join(J, 'README.md'))) copyFileSync(join(J, 'README.md'), join(dest, 'README.md'));
 execFileSync(process.execPath, [join(root, 'tools', 'gen-assets.mjs'), dest], { stdio: 'inherit' });
 console.log(`Application jumelle « ${V.nom} » prête dans ${dest}`);

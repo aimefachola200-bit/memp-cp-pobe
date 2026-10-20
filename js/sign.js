@@ -32,6 +32,7 @@ function loadImg(src) { return new Promise((res, rej) => { const i = new Image()
 export const COULEURS_CACHET = { bleu: '#1E3A8A', rouge: '#B91C1C' };
 export function cachetParDefaut(idn) {
   const cs = (idn.nomCs || '').toUpperCase(), ccs = /circonscription/i.test(idn.titre || ''), dd = /d[ée]partement/i.test(idn.titre || '');
+  if (/organisation scolaire|dosp/i.test(idn.titre || '')) return { sup: 'RÉPUBLIQUE DU BÉNIN - MEMP', inf: cs ? `CIRCONSCRIPTION SCOLAIRE DE ${cs}` : 'CIRCONSCRIPTION SCOLAIRE', centre: 'LE CHEF|DE LA DOSP' };
   if (dd) return { sup: 'RÉPUBLIQUE DU BÉNIN - MEMP', inf: idn.departement ? `DDEMP ${idn.departement.toUpperCase()}` : 'DIRECTION DÉPARTEMENTALE', centre: 'LE DIRECTEUR|DÉPARTEMENTAL' };
   return { sup: 'RÉPUBLIQUE DU BÉNIN - MEMP', inf: cs ? `CIRCONSCRIPTION SCOLAIRE DE ${cs}` : (idn.departement ? `DDEMP ${idn.departement.toUpperCase()}` : 'DIRECTION DÉPARTEMENTALE'),
     centre: ccs ? 'CHEF DE LA|CIRCONSCRIPTION|SCOLAIRE' : `CONSEILLER|PÉDAGOGIQUE${idn.numZone ? '|ZONE ' + idn.numZone : ''}` };
@@ -85,7 +86,7 @@ export async function makeCachetRect(idn, date = new Date()) {
     ...(/d[ée]partement/i.test(idn.titre || '')
       ? [[`DIRECTION DÉPARTEMENTALE DES EMP${idn.departement ? ' — ' + idn.departement.toUpperCase() : ''}`, 'bold 18px Arial'], ['', '17px Arial']]
       : [[`CIRCONSCRIPTION SCOLAIRE DE ${(idn.nomCs || '…').toUpperCase()}`, 'bold 18px Arial'],
-        [/circonscription/i.test(idn.titre || '') ? (idn.departement ? 'Département : ' + idn.departement : '') : `Zone pédagogique n° ${idn.numZone || '…'}${idn.departement ? ' — ' + idn.departement : ''}`, '17px Arial']]),
+        [/organisation scolaire/i.test(idn.titre || '') ? "Division de l'Organisation Scolaire et de la Prévision" : /circonscription/i.test(idn.titre || '') ? (idn.departement ? 'Département : ' + idn.departement : '') : `Zone pédagogique n° ${idn.numZone || '…'}${idn.departement ? ' — ' + idn.departement : ''}`, '17px Arial']]),
     [idn.titre || 'Le Conseiller Pédagogique', 'italic 17px Arial'],
     [`${idn.prenoms || ''} ${(idn.nom || '').toUpperCase()}`.trim(), 'bold 22px Arial'],
     [date.toLocaleDateString('fr-FR') + (idn.codeCp ? '  ·  ' + idn.codeCp : ''), '15px Arial'],

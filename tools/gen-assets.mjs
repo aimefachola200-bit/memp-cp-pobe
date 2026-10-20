@@ -6,7 +6,7 @@ import { createHash } from 'node:crypto';
 
 // dossier de l'application : celui de ce script, ou celui donné en argument (application jumelle ou intégrée)
 const root = process.argv[2] ? resolve(process.argv[2]) + sep : new URL('..', import.meta.url).pathname;
-const SKIP = new Set(['.git', '.github', 'node_modules', 'tools', 'android', 'tests', 'sw-assets.json', 'package.json', 'package-lock.json', 'capacitor.config.json', 'README.md', 'LICENSE', 'NOTICE.md', '.gitignore']);
+const SKIP = new Set(['.git', '.github', 'node_modules', 'tools', 'dosp', 'android', 'tests', 'sw-assets.json', 'package.json', 'package-lock.json', 'capacitor.config.json', 'README.md', 'LICENSE', 'NOTICE.md', '.gitignore']);
 const files = [];
 (function walk(dir) {
   for (const n of readdirSync(dir)) {

@@ -10,11 +10,11 @@ import { getIdentity, makeCachet, ficheHash, reportHash, registerSigned } from '
 export const isEditableStatut = (s) => s === 'Brouillon' || s === 'À corriger' || !s;
 export function canEdit(user, rec) {
   if (user.role === 'ADMIN') return true;
-  if (user.role === 'CP') return inScope(user, rec) && isEditableStatut(rec.statut);
+  if (user.role === 'CP' || user.role === 'DOSP') return inScope(user, rec) && isEditableStatut(rec.statut);
   return false;
 }
-export const canTransmit = (user, rec) => (user.role === 'CP' || user.role === 'ADMIN') && isEditableStatut(rec.statut) && inScope(user, rec);
-export const canValidate = (user, rec) => (user.role === 'CCS' || user.role === 'ADMIN') && rec.statut === 'Transmise' && inScope(user, rec);
+export const canTransmit = (user, rec) => (user.role === 'CP' || user.role === 'DOSP' || user.role === 'ADMIN') && isEditableStatut(rec.statut) && inScope(user, rec);
+export const canValidate = (user, rec) => (user.role === 'CCS' || user.role === 'DOSP' || user.role === 'ADMIN') && rec.statut === 'Transmise' && inScope(user, rec);
 
 /** Taux de remplissage d'une fiche (champs + grilles + personnel), pour information */
 export function completion(f) {

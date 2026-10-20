@@ -1,7 +1,7 @@
 /* République du Bénin — MEMP — Vues : emplois du temps officiels, calendrier scolaire, règlement intérieur, personnel
    Textes officiels repris de SCOLARIS (emplois du temps MEMP 2016, règlement intérieur révisé 2018, arrêté du calendrier 2026-2027).
    Conception : Maître Aimé FACHE */
-import { h, uid, nowISO, toast, modal, confirmBox, pickFile, readAsBuffer, readAsText, download, norm, fmtDate, today } from './util.js';
+import { h, uid, nowISO, toast, modal, confirmBox, pickFile, readAsBuffer, readAsText, download, norm, fmtDate, today, clean } from './util.js';
 import { calculerFiche, lireDate, fmtIso, fmtJour, fmtDuree, ANCIENNETES, CATEGORIES, DIPLOMES } from './carriere.js';
 import { db } from './db.js';
 import { dataTable, formDialog, fieldEl } from './ui.js';
@@ -10,7 +10,7 @@ import { listToXlsx, listToPdf } from './export.js';
 import { readXlsx, parseCsv } from './xlsx.js';
 import { newPdf } from './pdf.js';
 
-export async function render(id, ctx) { return ({ emploi, calendrier, reglement, personnel, planif, espace, synocp })[id](ctx); }
+export async function render(id, ctx) { return ({ emploi, calendrier, reglement, personnel, carriere: (c) => personnel(c, 'carriere'), planif, espace, synocp })[id](ctx); }
 
 const rc = (el, ...k) => el.replaceChildren(...k.flat().filter(x => x !== null && x !== undefined && x !== false));
 const pdfBlob = (b) => new Blob([b], { type: 'application/pdf' });
@@ -146,13 +146,16 @@ async function reglement(ctx) {
 /* ================= PERSONNEL ENSEIGNANT (même module que SCOLARIS / GESCOL) ================= */
 const FONCTIONS = ['Directeur / directrice', 'Adjoint(e)', 'Enseignant(e)', 'Conseiller pédagogique', 'Chef de circonscription scolaire', 'Secrétaire', 'Autre'];
 const OUI_NON = [{ v: 'oui', l: 'Oui' }, { v: 'non', l: 'Non' }];
-const ALIAS_P = { matricule: ['n matricule', 'matricule', 'numero matricule', 'n° matricule'], nip: ['nip'], nom: ['nom'], prenoms: ['prenoms', 'prenom'], nom_epoux: ['nom epoux'],
-  sexe: ['sexe', 'le genre', 'genre'], ecole: ['nom poste', 'ecole', 'poste', 'etablissement'], fonction: ['fonction'], corps: ['corps'], statut: ['nom statut', 'statut', 'categorie'],
-  grade: ['grade'], cs: ['cs', 'circonscription', 'circonscription scolaire'], telephone: ['numero telephone', 'telephone', 'contact', 'tel'],
+/* Colonnes reconnues à l'import : fichiers du ministère (cahier de contrôle DDEMP, FE / ACDPE / ACDPCTD) et extraction EducMaster
+   (fiche d'importation du personnel au format EducMaster : modèle téléchargeable dans la liste du personnel). */
+const ALIAS_P = { matricule: ['n matricule', 'matricule', 'numero matricule', 'n° matricule', 'matricule agent', 'matricule fonction publique'], nip: ['nip', 'npi', 'numero personnel d identification', 'n npi'],
+  code_ecole: ['code etablissement', 'code ecole', 'code de l etablissement', 'code structure'], qualite: ['qualite'], emploi: ['emploi'], nom: ['nom'], prenoms: ['prenoms', 'prenom'], nom_epoux: ['nom epoux'],
+  sexe: ['sexe', 'le genre', 'genre'], ecole: ['nom poste', 'ecole', 'poste', 'etablissement', 'etablissement d affectation', 'nom de l etablissement', 'libelle etablissement', 'structure d affectation'], fonction: ['fonction'], corps: ['corps'], statut: ['nom statut', 'statut', 'categorie', 'statut agent', 'type agent'],
+  grade: ['grade'], cs: ['cs', 'circonscription', 'circonscription scolaire'], telephone: ['numero telephone', 'telephone', 'contact', 'tel', 'telephone 1', 'telephone mobile'],
   date_naissance: ['date de naissance', 'date naissance', 'ne le', 'naissance'], lieu_naissance: ['lieu naissance', 'lieu de naissance'],
-  date_prise_service: ['date 1ere prise service', 'date premiere prise de service', 'date de premiere prise de service', 'premiere prise de service', 'date prise de service'],
-  date_service_dep: ['date arrive departement', 'date arrivee departement', 'prise de service dans le departement'], date_service_ecole: ['date arrive poste', 'date arrivee poste', 'prise de service dans l ecole'],
-  cap: ['date optention du cap', 'date obtention du cap', 'cap'], indice_reel: ['indice reel'], indice_paye: ['indice paye'],
+  date_prise_service: ['date de premiere prise de service', 'date 1ere prise service', 'date premiere prise de service', 'date de premiere prise de service', 'premiere prise de service', 'date prise de service'],
+  date_service_dep: ['date d arrivee dans le departement', 'date arrive departement', 'date arrivee departement', 'prise de service dans le departement'], date_service_ecole: ['date d arrivee au poste', 'date d affectation', 'date arrive poste', 'date arrivee poste', 'prise de service dans l ecole'],
+  cap: ['date d obtention du cap', 'date optention du cap', 'date obtention du cap', 'cap'], indice_reel: ['indice reel'], indice_paye: ['indice paye'],
   note_evaluation: ['note evaluation 2023', 'note evaluation 2022', 'note evaluation', 'note d evaluation'], diplome_academique: ['diplome academique', 'diplome'] };
 const cleEcole = (n) => norm(String(n || '').replace(/\(\s*(pobe|ex[^)]*|la riviere)\s*\)/gi, ' ')).replace(/^(epp|em|epv|ecole) /, '').replace(/ pobe$/, '').trim();
 const distance = (a, b) => { const d = Array.from({ length: b.length + 1 }, (_, i) => i); for (let i = 1; i <= a.length; i++) { let prev = d[0]; d[0] = i; for (let j = 1; j <= b.length; j++) { const t = d[j]; d[j] = Math.min(d[j] + 1, d[j - 1] + 1, prev + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = t; } } return d[b.length]; };
@@ -179,14 +182,14 @@ export async function personnelDuPerimetre(u) {
   return (await db.all('personnel')).filter(p => u.role === 'ADMIN' || inScope(u, p) || (u.role === 'CCS' && p.codeCs === u.codeCs)).map(p => calculerFiche(p));
 }
 
-async function personnel(ctx) {
+async function personnel(ctx, vueInitiale) {
   const u = ctx.user;
-  ctx.title('Personnel enseignant', 'Carrière, anciennetés et départ à la retraite — par zone pédagogique ou par arrondissement');
+  ctx.title(vueInitiale === 'carriere' ? 'Gestion de carrière des enseignants' : 'Personnel enseignant', 'Carrière, anciennetés et départ à la retraite (règles de SCOLARIS et GESCOL) — par zone pédagogique ou par arrondissement');
   const zonesRef = (await db.all('ref')).filter(r => r.type === 'zone');
   const schools = await scoped('schools', u);
   const libZone = (c) => libGroupe(c ? 'z:' + c : 'cs', zonesRef, 'zone');
   let mode = u.role === 'CP' ? 'zone' : ((await db.setting('groupe-mode')) || modeGroupeDefaut(u));
-  let onglet = (await db.setting('personnel-onglet')) || 'tout', vue = 'liste', horizon = 2;
+  let onglet = (await db.setting('personnel-onglet')) || 'tout', vue = vueInitiale || 'liste', horizon = 2;
   const vues = h('div', { class: 'tabs no-print modes' }), modes = h('div', { class: 'tabs no-print modes' }), tabs = h('div', { class: 'tabs no-print' }), holder = h('div');
   ctx.el.append(vues, modes, tabs, holder);
   const COLS = [{ k: 'nom', l: 'Nom', w: 130 }, { k: 'prenoms', l: 'Prénoms', w: 150 }, { k: 'sexe', l: 'Sexe' }, { k: 'fonction', l: 'Fonction', w: 140 }, { k: 'ecole', l: 'École / poste', w: 190 },
@@ -202,17 +205,55 @@ async function personnel(ctx) {
     all = (await personnelDuPerimetre(u)).map(enrichir);
     const gs = [...new Set(all.map(cle))].sort(ordreGroupe);
     if (onglet !== 'tout' && !gs.includes(onglet)) onglet = 'tout';
-    vues.replaceChildren(...[['liste', '👥 Liste du personnel'], ['retraite', '🎓 Départs à la retraite'], ['stats', '📊 Effectifs']].map(([k, l]) => h('button', { class: 'tab' + (k === vue ? ' on' : ''), onclick: () => { vue = k; t = null; draw(); } }, l)));
+    vues.replaceChildren(...[['liste', '👥 Liste du personnel'], ['carriere', '📈 Gestion de carrière'], ['retraite', '🎓 Départs à la retraite'], ['stats', '📊 Effectifs']].map(([k, l]) => h('button', { class: 'tab' + (k === vue ? ' on' : ''), onclick: () => { vue = k; t = null; draw(); } }, l)));
     if (u.role !== 'CP') modes.replaceChildren(...[['arr', 'Par arrondissement'], ['zone', 'Par zone pédagogique']].map(([k, l]) => h('button', { class: 'tab' + (k === mode ? ' on' : ''), onclick: () => { mode = k; onglet = 'tout'; db.setting('groupe-mode', k); draw(); } }, l)));
     const ong = [['tout', mode === 'arr' ? 'Tous les arrondissements' : 'Toutes les zones'], ...gs.map(g => [g, libGroupe(g, zonesRef, mode)])];
     tabs.replaceChildren(...ong.map(([k, l]) => h('button', { class: 'tab' + (k === onglet ? ' on' : ''), onclick: () => { onglet = k; db.setting('personnel-onglet', k); draw(); } }, `${l} (${k === 'tout' ? all.length : all.filter(p => cle(p) === k).length})`)));
     const rows = all.filter(dansOnglet).sort((a, b) => (a.ecole || '').localeCompare(b.ecole || '', 'fr') || (a.fonction || '').localeCompare(b.fonction || '', 'fr') || a.nom.localeCompare(b.nom, 'fr'));
     if (vue === 'retraite') return drawRetraite(rows);
+    if (vue === 'carriere') return drawCarriere(rows);
     if (vue === 'stats') return drawStats(rows);
     if (!t) { t = dataTable({ columns: COLS, rows, onOpen: () => modifier(), pageSize: 50, empty: 'Aucun agent ici. Touchez « Ajouter » ou « Importer Excel ».' }); rc(holder, t.el); } else t.setRows(rows);
     const f = rows.filter(p => p.sexe === 'F').length;
     ctx.status(`${rows.length} agent(s) dont ${f} femme(s) — ${rows.filter(p => /^Directeur/.test(p.fonction)).length} directeur(s)/directrice(s) — ${rows.filter(p => p.alerteRetraite).length} départ(s) à la retraite dans les 2 ans — ${rows.filter(p => p.incomplet).length} dossier(s) incomplet(s)`);
     actionsListe();
+  }
+  /* ---------- gestion de carrière : même tableau que GESCOL (catégorie, grade, indices, anciennetés, retraite, aptitude, dossier) ---------- */
+  const COLS_C = [{ k: 'nomComplet', l: 'Nom et prénoms', w: 170 }, { k: 'nip', l: 'NIP' }, { k: 'ecole', l: 'École / poste', w: 160 }, { k: 'statut', l: 'Catégorie' }, { k: 'grade', l: 'Grade' },
+    { k: 'indice_paye', l: 'Indice payé', num: true }, { k: 'indice_reel', l: 'Indice réel', num: true }, { k: 'ancG', l: 'Anc. générale' }, { k: 'ancD', l: 'Anc. département' }, { k: 'ancC', l: 'Anc. commune' }, { k: 'ancE', l: 'Anc. école' },
+    { k: 'naissTxt', l: 'Naissance' }, { k: 'retTxt', l: 'Retraite probable', w: 110 }, { k: 'aptitude', l: 'Aptitude' }, { k: 'dossier', l: 'Dossier' }];
+  const ligneCarriere = (p) => ({ ...p, nomComplet: `${(p.nom || '').toUpperCase()} ${p.prenoms || ''}`.trim(), ancG: p.ancTxt.generale || '—', ancD: p.ancTxt.departement || '—', ancC: p.ancTxt.commune || '—', ancE: p.ancTxt.ecole || '—',
+    retTxt: p.retraiteTxt ? p.retraiteTxt + (p.retraiteAtteinte ? ' (atteint)' : p.alerteRetraite ? ' ⚠' : '') : '—', aptitude: p.visite_aptitude ? `${p.visite_aptitude}${p.visite_aptitude_note ? ' (' + p.visite_aptitude_note + '/20)' : ''}` : '—',
+    dossier: p.incomplet ? 'incomplet' : 'complet' });
+  function drawCarriere(rows) {
+    t = null;
+    const L = rows.map(ligneCarriere);
+    const parCat = {}; L.forEach(p => { const c = p.statut || 'Non renseignée'; parCat[c] = (parCat[c] || 0) + 1; });
+    const tc = dataTable({ columns: COLS_C, rows: L, onOpen: () => ficheCarriere(), pageSize: 50, empty: 'Aucun agent.' });
+    rc(holder, h('div', { class: 'cards' }, h('div', { class: 'stat' }, h('b', String(L.length)), h('span', 'agents')), ...Object.entries(parCat).map(([c, n]) => h('div', { class: 'stat' }, h('b', String(n)), h('span', c))),
+      h('div', { class: 'stat y' }, h('b', String(L.filter(p => p.alerteRetraite || p.retraiteAtteinte).length)), h('span', 'départs dans les 2 ans ou atteints')), h('div', { class: 'stat' }, h('b', String(L.filter(p => p.incomplet).length)), h('span', 'dossiers incomplets'))),
+      h('p', { class: 'notes' }, "Anciennetés arrêtées au 31 décembre de la première année de l'année scolaire en cours ; retraite : A = 60 ans, B = 58 ans, C = 55 ans, au 1er jour du trimestre qui suit le trimestre de naissance (règles de SCOLARIS et GESCOL). Touchez un agent pour sa fiche de carrière."),
+      tc.el);
+    t = tc;
+    ctx.status(`${L.length} agent(s) — ${L.filter(p => p.incomplet).length} dossier(s) incomplet(s)`);
+    ctx.actions([{ label: '📇 Fiche de carrière', kind: 'primary', onClick: ficheCarriere }, { label: '🖨 Fiche de carrière (PDF signé)', onClick: fichePdf }, { label: '✏️ Modifier', onClick: modifier },
+      { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: 'GESTION DE CARRIÈRE — ' + titre(), subtitle: sousTitre(), columns: COLS_C, rows: L, sheet: 'Carrière' }), 'Gestion_carriere.xlsx') },
+      { label: '⬇ Liste PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: 'GESTION DE CARRIÈRE DES ENSEIGNANTS', subtitle: sousTitre(), columns: COLS_C.map(c => ({ ...c, w: c.w || 70 })), rows: L })), 'Gestion_carriere.pdf') }]);
+  }
+  async function fichePdf() {
+    const s = t && t.selected; if (!s) return toast("Touchez d'abord un agent.", 'warn');
+    const p = ligneCarriere(s), { getIdentity, makeCachet } = await import('./sign.js'), { dataUrlToBytes } = await import('./util.js');
+    const idn = await getIdentity(), pdf = await newPdf({ title: 'Fiche de carrière — ' + p.nomComplet, footer: 'Fiche de carrière' });
+    pdf.titleBox(['FICHE DE CARRIÈRE', p.nomComplet], { size: 12 });
+    const kv = (rows) => pdf.table({ widths: [2.2, 3], size: 8.5, rows: rows.filter(r => r[1] !== undefined).map(([a, b]) => [{ t: a, b: true }, String(b ?? '')]) });
+    pdf.heading('1. Identification'); kv([['Nom et prénoms', p.nomComplet], ['Sexe', p.sexe], ['Date et lieu de naissance', [fmtIso(p.date_naissance), p.lieu_naissance].filter(Boolean).join(' à ')], ['Matricule / NIP', [p.matricule, p.nip].filter(Boolean).join(' / ')], ['Téléphone', p.telephone]]);
+    pdf.heading('2. Situation administrative'); kv([['École / poste', p.ecole], ['Fonction', p.fonction], ['Catégorie', p.statut], ['Grade', p.grade], ['Corps', p.corps], ['Indice payé / réel', [p.indice_paye, p.indice_reel].filter(x => x !== '' && x != null).join(' / ')]]);
+    pdf.heading('3. Prises de service et anciennetés'); kv([...ANCIENNETES.map(([cle, champ, lib]) => [lib, s[champ] ? `${fmtDuree(s.anc[cle]) || '—'} (depuis le ${fmtIso(s[champ])})` : 'non renseignée']), ['Date de référence', fmtJour(s.reference)]]);
+    pdf.heading('4. Diplômes, examens professionnels et évaluation'); kv([['Diplôme académique', [p.diplome_academique, p.diplome_academique_annee].filter(Boolean).join(' — ')], ['CEAP', [p.ceap, p.ceap_annee].filter(Boolean).join(' — ')], ['CAP', [p.cap, p.cap_annee].filter(Boolean).join(' — ')],
+      ["Visite d'aptitude", p.aptitude], ['Visites du CP / du CCS', `${p.visites_cp || 0} / ${p.visites_ccs || 0}`], ["Participation à l'UP", p.participation_up ? p.participation_up + ' %' : ''], ["Note d'évaluation", p.note_evaluation ? p.note_evaluation + '/20' : ''], ['Dernière formation', fmtIso(p.date_derniere_formation)]]);
+    pdf.heading('5. Départ à la retraite'); kv([['Âge légal', s.ageRetraite ? s.ageRetraite + ' ans (grade ' + s.lettreGrade + ')' : ''], ['Date probable', s.retraiteTxt || 'non calculable : ' + s.retraiteRaison], ['Reste', s.retraiteAtteinte ? 'âge de départ atteint' : s.restantTxt || ''], ['Dossier', s.incomplet ? 'incomplet — manque : ' + s.manquants.join(', ') : 'complet']]);
+    if (idn) await pdf.authBlock({ role: idn.titre || 'Le responsable', nom: `${idn.prenoms || ''} ${idn.nom || ''}`.trim(), signature: idn.signature && dataUrlToBytes(idn.signature), cachet: dataUrlToBytes(await makeCachet(idn)), qrText: `MEMP-BJ|CARRIERE|${p.matricule || p.nip || p.id}|${p.nomComplet}`, lines: [`Édité le ${new Date().toLocaleDateString('fr-FR')}`] });
+    download(pdfBlob(await pdf.finish()), clean('Fiche_carriere_' + p.nomComplet) + '.pdf');
   }
   /* ---------- départs à la retraite ---------- */
   const COLS_R = [{ k: 'nom', l: 'Nom', w: 120 }, { k: 'prenoms', l: 'Prénoms', w: 140 }, { k: 'fonction', l: 'Fonction', w: 110 }, { k: 'ecole', l: 'École / poste', w: 170 }, { k: 'zoneLib', l: 'Zone / arrondissement', w: 110 },
@@ -317,6 +358,15 @@ async function personnel(ctx) {
         L("Participation à l'UP", s.participation_up ? s.participation_up + ' %' : ''), L("Note d'évaluation", s.note_evaluation ? s.note_evaluation + '/20' : ''), L('Téléphone', s.telephone), L('Observations', s.obs)))),
       actions: [{ label: '✏️ Modifier', onClick: () => setTimeout(modifier, 50) }, { label: 'Fermer', kind: 'primary' }] });
   }
+  async function modeleEducMaster() {
+    const C = [['matricule', 'Matricule'], ['npi', 'NPI'], ['nom', 'Nom'], ['prenoms', 'Prénoms'], ['sexe', 'Sexe'], ['dn', 'Date de naissance'], ['ln', 'Lieu de naissance'], ['statut', 'Statut'], ['qualite', 'Qualité'],
+      ['corps', 'Corps'], ['emploi', 'Emploi'], ['grade', 'Grade'], ['ir', 'Indice réel'], ['ip', 'Indice payé'], ['fonction', 'Fonction'], ['code', 'Code établissement'], ['etab', 'Établissement'], ['cs', 'Circonscription scolaire'],
+      ['ps', 'Date de première prise de service'], ['dep', "Date d'arrivée dans le département"], ['poste', "Date d'arrivée au poste"], ['dipl', 'Diplôme académique'], ['cap', "Date d'obtention du CAP"], ['tel', 'Téléphone']];
+    const ex = { matricule: '123456', npi: '1234567890', nom: 'DOSSOU', prenoms: 'Paul Koffi', sexe: 'M', dn: '12/04/1985', ln: 'Abomey', statut: 'FE', qualite: 'Instituteur', corps: 'Instituteurs', emploi: 'Enseignant',
+      grade: 'B1-4', ir: '1234', ip: '1234', fonction: 'Adjoint', code: (schools[0] && schools[0].code) || 'EP001', etab: (schools[0] && schools[0].nom) || 'EPP …', cs: u.nomCs || '', ps: '01/10/2008', dep: '01/10/2012', poste: '01/10/2020', dipl: 'BAC', cap: '2011', tel: '01 97 00 00 00' };
+    download(await listToXlsx({ title: "FICHE D'IMPORTATION DU PERSONNEL — FORMAT EDUCMASTER", subtitle: 'Une ligne par agent. Remplacez la ligne d’exemple ; les dates au format JJ/MM/AAAA. Statut : FE, ACDPE, ACDPCTD, ACE, Privé. Sexe : M ou F. Fonction : Directeur / directrice, Adjoint(e)…',
+      columns: C.map(([k, l]) => ({ k, l, w: 120 })), rows: [ex], sheet: 'Personnel' }), 'Fiche_importation_personnel_EducMaster.xlsx');
+  }
   async function importer() {
     const f = await pickFile('.xlsx,.csv,.txt'); if (!f) return;
     try {
@@ -340,7 +390,7 @@ async function personnel(ctx) {
             date_naissance: lireDate(g('date_naissance'), true), lieu_naissance: g('lieu_naissance'), date_prise_service: lireDate(g('date_prise_service')), date_service_dep: lireDate(g('date_service_dep')),
             date_service_ecole: lireDate(g('date_service_ecole')), cap: capAn ? 'oui' : '', cap_annee: capAn, indice_reel: nombre(g('indice_reel')), indice_paye: nombre(g('indice_paye')),
             note_evaluation: nombre(g('note_evaluation')), diplome_academique: g('diplome_academique') };
-          const ec = g('ecole'), s = ec ? trouver(ec) : null;
+          const ec = g('ecole'), parCode = g('code_ecole') ? schools.find(x => norm(x.code) === norm(g('code_ecole'))) : null, s = parCode || (ec ? trouver(ec) : null);
           if (ec && !s && !/^(la )?cs |circonscription/i.test(ec)) sans++;
           const old = exist.find(p => norm(p.nom) === norm(o.nom) && norm(p.prenoms) === norm(o.prenoms));
           const p = lier({ ...(old || { id: uid(), created: nowISO() }), ...Object.fromEntries(Object.entries(o).filter(([, v]) => v !== '')), schoolId: s ? s.id : (old ? old.schoolId : ''), ecole: s ? s.nom : (/^(la )?cs /i.test(ec) ? (old?.ecole || 'Circonscription scolaire de ' + (u.nomCs || ec.replace(/^(la )?cs /i, ''))) : (ec || old?.ecole || '')) });
@@ -362,7 +412,8 @@ async function personnel(ctx) {
   function actionsListe() {
     ctx.actions([
       { label: '➕ Ajouter', kind: 'primary', onClick: ajouter }, { label: '✏️ Modifier', onClick: modifier }, { label: '🗑 Supprimer', onClick: supprimer }, { label: '📇 Fiche de carrière', onClick: ficheCarriere },
-      { label: '⬆ Importer Excel', title: 'Fichier du personnel (ex. cahier de contrôle DDEMP) : complète matricules, dates, téléphones…', onClick: importer },
+      { label: '⬆ Importer Excel', title: 'Fichier du personnel (cahier de contrôle DDEMP, fichiers FE / ACDPE, ou fiche au format EducMaster) : complète matricules, dates, téléphones…', onClick: importer },
+      { label: '📄 Fiche d’importation (EducMaster)', title: 'Modèle Excel à remplir ou à coller depuis EducMaster, puis à importer', onClick: modeleEducMaster },
       { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: titre(), subtitle: sousTitre(), columns: COLS_X, rows: pourExport(t.visible), sheet: 'Personnel' }), 'Personnel.xlsx') },
       { label: '⬇ PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: titre(), subtitle: sousTitre(), columns: COLS.filter(c => !['corps', 'dossier', 'telephone', 'arrondissement'].includes(c.k)).map(c => ({ ...c, render: undefined })), rows: t.visible })), 'Personnel.pdf') }]);
   }
