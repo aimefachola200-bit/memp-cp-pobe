@@ -51,6 +51,10 @@ const SCHOOL_FIELDS = (user) => {
     { k: 'numZone', l: 'N° zone pédagogique', t: 'number', w: 'half', ro: lock }, { k: 'codeZone', l: 'Code zone (auto)', t: 'text', w: 'half', ro: lock },
     { k: 'commune', l: 'Commune', t: 'text', list: 'dl-commune', w: 'half' }, { k: 'arrondissement', l: 'Arrondissement', t: 'text', list: 'dl-arrondissement', w: 'half' },
     { k: 'localite', l: 'Village / quartier', t: 'text', list: 'dl-localite', w: 'half' }, { k: 'up', l: 'Unité pédagogique', t: 'text', list: 'dl-up', w: 'half' },
+    // équipements de l'école (fiche de recensement) : consolidés dans « Écoles : structure et équipements »
+    { k: 'eau', l: "Point d'eau potable dans le domaine ?", t: 'select', options: ['Oui', 'Non'], w: 'half' }, { k: 'eauSource', l: "Source de l'eau", t: 'select', options: ['SONEB', 'Forage', "Adduction d'eau villageoise", 'Puits', 'Citerne', 'Autre'], w: 'half' },
+    { k: 'electricite', l: 'Électricité ?', t: 'select', options: ['Oui', 'Non'], w: 'half' }, { k: 'elecSource', l: "Source de l'électricité", t: 'select', options: ['SBEE', 'Groupe électrogène', 'Énergie solaire', 'Autre'], w: 'half' },
+    { k: 'latrines', l: 'Latrines fonctionnelles ?', t: 'select', options: ['Oui', 'Non'], w: 'half' }, { k: 'cloture', l: 'Clôture ?', t: 'select', options: ['Oui', 'Non'], w: 'half' },
   ];
 };
 const schoolDefaults = (u) => u.role === 'CP' || u.role === 'CCS' ? { departement: u.departement || '', codeCs: u.codeCs || '', nomCs: u.nomCs || '', numZone: u.numZone || '', codeZone: u.codeZone || '' } : {};

@@ -50,6 +50,7 @@ const NAV = [
   { id: 'fiches', ic: '📝', t: 'Fiches de collecte' },
   { id: 'effectifs', ic: '👧', t: 'Effectifs des apprenants' },
   { id: 'infra', ic: '🏗️', t: 'Infrastructures et mobilier' },
+  { id: 'ecolesstruct', ic: '🏫', t: 'Écoles : structure et équipements' },
   { id: 'rapports', ic: '📊', t: "Rapports de fin d'année" },
   { id: 'synoptique', ic: '🗂️', t: 'Synthèse des fiches (consolidation)' },
   { g: 'Pédagogie', id: 'activites', ic: '📅', t: 'Activités pédagogiques' },
@@ -70,7 +71,7 @@ const NAV = [
   { id: 'utilisateurs', ic: '👥', t: 'Utilisateurs', roles: ['ADMIN'] },
   { id: 'parametres', ic: '⚙️', t: 'Paramètres & à propos' },
 ];
-const ROUTES = { accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', rapports: 'views-reports', rapport: 'views-reports', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra',
+const ROUTES = { accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', rapports: 'views-reports', rapport: 'views-reports', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles',
   synoptique: 'views-more', activites: 'views-more', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', synocp: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
   whatsapp: 'views-whatsapp', identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
 
