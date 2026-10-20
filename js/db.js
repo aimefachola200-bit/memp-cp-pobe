@@ -2,8 +2,9 @@
 import { VARIANT } from './config.js';
 // 5 : magasins « personnel » (versions 1.1 à 1.3) et « effectifs » (version 1.1.0 fournie) réunis, quelle que soit la version d'origine
 // 6 : magasin « dosp » (application DOSP : tâches, agenda, envois, formations, plan d'action, documents)
-const NAME = VARIANT.base, VERSION = 6;
-const STORES = ['users', 'schools', 'fiches', 'classReports', 'activities', 'ref', 'logs', 'docs', 'themesDone', 'bilans', 'photos', 'personnel', 'effectifs', 'dosp'];
+// 7 : magasin « recensements » (fiches de recensement annuel EP / EM, modèle GESCOL)
+const NAME = VARIANT.base, VERSION = 7;
+const STORES = ['users', 'schools', 'fiches', 'classReports', 'activities', 'ref', 'logs', 'docs', 'themesDone', 'bilans', 'photos', 'personnel', 'effectifs', 'dosp', 'recensements'];
 let _db;
 
 function open() {

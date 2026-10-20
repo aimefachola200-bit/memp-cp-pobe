@@ -61,11 +61,11 @@ async function saisie(ctx) {
         h('button', { class: 'btn sm' + (f ? '' : ' primary'), onclick: () => remplir(s, k, f) }, f ? '✏️ Remplir' : '➕ Créer et remplir'));
     };
     const lignes = schools.map(s => h('tr', h('td', h('strong', s.nom), h('div', { class: 'muted' }, nomGroupe(s) + (s.directeur ? ' · ' + s.directeur : ''))), h('td', s.cycle === 'Maternelle' ? 'EM' : 'EP'), h('td', s.secteur || ''),
-      KINDS(s).map(k => cell(s, k))));
+      h('td', h('button', { class: 'btn sm', onclick: () => ctx.go(`recfiche/${s.id}/${s.cycle === 'Maternelle' ? 'maternelle' : 'primaire'}/${annee}`) }, '🗂️ Remplir')), KINDS(s).map(k => cell(s, k))));
     rc(holder, h('div', { class: 'card', style: { marginBottom: '10px' } },
       h('p', { style: { margin: 0 } }, 'Chaque fiche se remplit directement à l\'écran (mêmes rubriques, mêmes calculs, même PDF que la fiche officielle). Les fiches inexistantes sont créées pré-remplies avec l\'identification de l\'école.'),
       h('div', { style: { marginTop: '8px' } }, h('label', h('span', { class: 'muted' }, 'Année scolaire : '), selA))),
-      schools.length ? h('div', { class: 'gridwrap' }, h('table', { class: 'g' }, h('thead', h('tr', h('th', 'École'), h('th', 'Cycle'), h('th', 'Secteur'), h('th', 'Fiche de rentrée'), h('th', "Fiche de fin d'année"))), h('tbody', lignes)))
+      schools.length ? h('div', { class: 'gridwrap' }, h('table', { class: 'g' }, h('thead', h('tr', h('th', 'École'), h('th', 'Cycle'), h('th', 'Secteur'), h('th', 'Fiche de recensement'), h('th', 'Fiche de rentrée'), h('th', "Fiche de fin d'année"))), h('tbody', lignes)))
         : h('p', { class: 'muted' }, 'Aucune école dans votre périmètre : ajoutez d\'abord les écoles (menu « Écoles », bouton « Ajouter »).'));
     ctx.status(`${schools.length} école(s) — année ${annee}`);
   }

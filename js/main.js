@@ -51,6 +51,7 @@ const NAV = [
   { g: 'Collecte', id: 'ecoles', ic: '🏫', t: 'Écoles' },
   { id: 'personnel', ic: '👩‍🏫', t: 'Personnel enseignant' },
   { id: 'carriere', ic: '📈', t: 'Gestion de carrière' },
+  { id: 'recensement', ic: '🗂️', t: 'Fiches de recensement (EP, EM)' },
   { id: 'fiches', ic: '📝', t: 'Fiches de collecte' },
   { id: 'saisie', ic: '✍️', t: 'Saisie manuelle (sans Excel)' },
   { id: 'envois', ic: '📥', t: 'Réception et acheminement des fiches', seul: 'dosp' },
@@ -86,7 +87,7 @@ const NAV = [
 ];
 const ROUTES = { accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', rapports: 'views-reports', rapport: 'views-reports', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles', cep: 'views-cep',
   synoptique: 'views-more', activites: 'views-more', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', synocp: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', carriere: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
-  saisie: 'views-saisie', synodosp: 'views-synodosp', whatsapp: 'views-whatsapp', espacedosp: 'views-dosp', envois: 'views-dosp', prevision: 'views-dosp', besoins: 'views-dosp', suivieval: 'views-dosp', capacites: 'views-dosp', plandosp: 'views-dosp', docsdosp: 'views-dosp', identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
+  saisie: 'views-saisie', recensement: 'views-recensement', recfiche: 'views-recensement', synodosp: 'views-synodosp', whatsapp: 'views-whatsapp', espacedosp: 'views-dosp', envois: 'views-dosp', prevision: 'views-dosp', besoins: 'views-dosp', suivieval: 'views-dosp', capacites: 'views-dosp', plandosp: 'views-dosp', docsdosp: 'views-dosp', identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
 
 const app = $('#app');
 let cleanup = null, deferredPrompt = null;
@@ -163,7 +164,7 @@ async function route() {
   const id = ROUTES[r] ? r : 'accueil';
   const entry = NAV.find(n => n.id === id);
   if (entry && entry.roles && !entry.roles.includes(session.user.role)) { toast('Accès non autorisé pour votre rôle.', 'err'); location.hash = '#/accueil'; return; }
-  document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.r === (id === 'fiche' ? 'fiches' : id === 'rapport' ? 'rapports' : id === 'bilan' ? 'bilans' : id === 'effectif' ? 'effectifs' : id)));
+  document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.r === (id === 'fiche' ? 'fiches' : id === 'rapport' ? 'rapports' : id === 'bilan' ? 'bilans' : id === 'effectif' ? 'effectifs' : id === 'recfiche' ? 'recensement' : id)));
   if (cleanup) { try { await cleanup(); } catch { /* ignore */ } cleanup = null; }
   const body = $('#v-body'), bar = $('#v-bar'), el = h('div'), nbar = h('div', { class: 'actionbar', id: 'v-bar' });
   const _app = el.append.bind(el); el.append = (...a) => _app(...a.flat().filter(x => x !== null && x !== undefined && x !== false));
