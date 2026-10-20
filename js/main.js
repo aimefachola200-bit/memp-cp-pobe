@@ -6,6 +6,7 @@ import { APP, CREDIT, VARIANT } from './config.js';
 const CLE_SESSION = 'memp-user-' + VARIANT.id;
 import { session, seedIfEmpty, refreshDatalists, ROLES } from './data.js';
 import { actionBar } from './ui.js';
+import { connexionIntegree, retourEduGestion } from './integre.js';
 
 /* ---------------- Œil « afficher / masquer » sur tous les champs de mot de passe ---------------- */
 const OEIL_OUVERT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
@@ -63,13 +64,13 @@ const NAV = [
   { id: 'calendrier', ic: '🗓️', t: 'Calendrier scolaire officiel' },
   { id: 'reglement', ic: '⚖️', t: 'Règlement intérieur' },
   { id: 'documents', ic: '📄', t: 'Documents officiels' },
-  { id: 'whatsapp', ic: '💬', t: 'Groupe WhatsApp des directeurs', roles: ['ADMIN', 'CCS', 'CP'] },
-  { g: 'Administration', id: 'referentiel', ic: '🌍', t: 'Référentiel national', roles: ['ADMIN', 'CCS', 'CP'] },
+  { id: 'whatsapp', ic: '💬', t: 'Groupe WhatsApp des directeurs', roles: ['ADMIN', 'DDEMP', 'CCS', 'CP'] },
+  { g: 'Administration', id: 'referentiel', ic: '🌍', t: 'Référentiel national', roles: ['ADMIN', 'DDEMP', 'CCS', 'CP'] },
   { id: 'identite', ic: '✍️', t: 'Identité numérique (signature)' },
   { id: 'transmission', ic: '🔄', t: 'Transmission & sauvegarde' },
   { id: 'verifier', ic: '✅', t: 'Vérifier un document' },
   { id: 'journal', ic: '📜', t: 'Journal des validations' },
-  { id: 'utilisateurs', ic: '👥', t: 'Utilisateurs', roles: ['ADMIN'] },
+  { id: 'utilisateurs', ic: '👥', t: 'Utilisateurs', roles: ['ADMIN'], horsIntegre: true },
   { id: 'parametres', ic: '⚙️', t: 'Paramètres & à propos' },
 ];
 const ROUTES = { accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', rapports: 'views-reports', rapport: 'views-reports', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles', cep: 'views-cep',
@@ -104,12 +105,22 @@ function loginScreen() {
   u.focus();
 }
 
+/* Mode intégré à ÉduGestion : pas de connexion propre, on renvoie vers ÉduGestion */
+function ecranIntegre(message) {
+  app.replaceChildren(h('div', { class: 'login-wrap' }, h('div', { class: 'login-card' },
+    h('div', { style: { background: '#fff', padding: '8px' } }, banner('')), h('div', { class: 'tricolor' }, h('i'), h('i'), h('i')),
+    h('div', { class: 'login-body' }, h('h1', 'Espace CP, CCS et DDEMP'), h('p', { class: 'sub' }, message),
+      h('a', { class: 'btn primary', style: { width: '100%', textAlign: 'center', display: 'block' }, href: retourEduGestion() }, '← Ouvrir ÉduGestion Pro'),
+      h('p', { style: { textAlign: 'center', fontSize: '.8rem', color: 'var(--mute)', marginTop: '14px' } }, CREDIT, h('br'), `Version ${APP.version}`)))));
+}
+
 /* ---------------- Coque + routage ---------------- */
 function shell() {
   const u = session.user;
   const nav = h('nav', { class: 'nav', 'aria-label': 'Menu principal' });
   NAV.forEach(n => {
     if (n.roles && !n.roles.includes(u.role)) return;
+    if (n.horsIntegre && VARIANT.integre) return;
     if (n.g) nav.appendChild(h('div', { class: 'grp' }, n.g));
     nav.appendChild(h('button', { 'data-r': n.id, onclick: () => { location.hash = '#/' + n.id; document.body.classList.remove('nav-open'); } }, h('span', { class: 'ic' }, n.ic), n.id === 'espace' && u.role === 'CP' ? `Mon espace CP — zone ${u.numZone || ''}` : n.t));
   });
@@ -117,9 +128,9 @@ function shell() {
     h('div', { class: 'sb-head' }, h('img', { src: 'assets/armoiries.png', alt: 'Armoiries du Bénin' }), h('b', 'APPLICATION CP'), h('span', 'MEMP — RÉPUBLIQUE DU BÉNIN')),
     nav,
     h('div', { class: 'sb-foot' }, h('span', { class: 'who' }, `👤 ${u.prenoms || ''} ${u.nom || u.username}`, h('br'), h('small', ROLES[u.role] + (u.codeZone ? ' · ' + u.codeZone : u.codeCs ? ' · ' + u.codeCs : ''))),
-      h('button', { class: 'btn sm', onclick: logout }, 'Se déconnecter'), h('div', { style: { fontSize: '.68rem', opacity: .8, marginTop: '8px' } }, CREDIT)));
+      VARIANT.integre ? h('a', { class: 'btn sm', href: retourEduGestion() }, '← Retour à ÉduGestion') : h('button', { class: 'btn sm', onclick: logout }, 'Se déconnecter'), h('div', { style: { fontSize: '.68rem', opacity: .8, marginTop: '8px' } }, CREDIT)));
   const main = h('div', { class: 'main' },
-    h('header', { class: 'topbar' }, h('button', { class: 'icon-btn burger', 'aria-label': 'Menu', onclick: (e) => { e.stopPropagation(); document.body.classList.toggle('nav-open'); } }, '☰'), h('div', { class: 'grow' }, banner())),
+    h('header', { class: 'topbar' }, h('button', { class: 'icon-btn burger', 'aria-label': 'Menu', onclick: (e) => { e.stopPropagation(); document.body.classList.toggle('nav-open'); } }, '☰'), h('div', { class: 'grow' }, banner()), VARIANT.integre ? h('a', { class: 'btn sm no-print', href: retourEduGestion(), title: 'Revenir à ÉduGestion Pro', style: { whiteSpace: 'nowrap', marginLeft: '8px' } }, '← ÉduGestion') : null),
     h('div', { class: 'titlebar' }, h('h2', { id: 'v-title' }), h('span', { class: 'sub', id: 'v-sub' })),
     h('div', { class: 'actionbar', id: 'v-bar' }),
     h('section', { class: 'view', id: 'v-body' }),
@@ -164,7 +175,8 @@ async function route() {
   cleanup = fn; body.replaceChildren(el); bar.replaceWith(nbar); window.scrollTo(0, 0);
 }
 
-function logout() { sessionStorage.removeItem(CLE_SESSION); sessionStorage.removeItem(CLE_SESSION + '-vu'); session.user = null; loginScreen(); }
+function logout() {
+  if (VARIANT.integre) { location.href = retourEduGestion(); return; } sessionStorage.removeItem(CLE_SESSION); sessionStorage.removeItem(CLE_SESSION + '-vu'); session.user = null; loginScreen(); }
 
 async function start() {
   await refreshDatalists();
@@ -179,6 +191,12 @@ window.addEventListener('hashchange', route);
 (async function boot() {
   try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch { /* ignore */ }
   try { await seedIfEmpty(); } catch (e) { app.textContent = 'Stockage local indisponible : ' + e.message; return; }
+  if (VARIANT.integre) {
+    let r;
+    try { r = await connexionIntegree(); } catch (e) { r = { message: 'Lecture des données d’ÉduGestion impossible : ' + (e && e.message || e) }; }
+    if (r.user) { session.user = r.user; sessionStorage.setItem(CLE_SESSION, r.user.id); return start(); }
+    return ecranIntegre(r.message);
+  }
   const id = sessionStorage.getItem(CLE_SESSION);
   if (id) { const rec = await db.get('users', id); if (rec && rec.actif !== false) { session.user = rec; return start(); } }
   loginScreen();

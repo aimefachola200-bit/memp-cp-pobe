@@ -1,10 +1,11 @@
 // République du Bénin — MEMP — Application CP — Conception : Maître Aimé FACHE (01 96 51 03 33)
 // Génère sw-assets.json : liste des fichiers à mettre en cache pour le mode hors ligne + empreinte de version.
 import { readdirSync, statSync, readFileSync, writeFileSync } from 'node:fs';
-import { join, relative, sep } from 'node:path';
+import { join, relative, sep, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 
-const root = new URL('..', import.meta.url).pathname;
+// dossier de l'application : celui de ce script, ou celui donné en argument (application jumelle ou intégrée)
+const root = process.argv[2] ? resolve(process.argv[2]) + sep : new URL('..', import.meta.url).pathname;
 const SKIP = new Set(['.git', '.github', 'node_modules', 'tools', 'android', 'tests', 'sw-assets.json', 'package.json', 'package-lock.json', 'capacitor.config.json', 'README.md', 'LICENSE', 'NOTICE.md', '.gitignore']);
 const files = [];
 (function walk(dir) {

@@ -1,5 +1,5 @@
 {
- "version": "0cf7f163b3a5",
+ "version": "8f9a5380f4dc",
  "files": [
   "./",
   "NOTICE.txt",
@@ -57,6 +57,7 @@
   "js/export.js",
   "js/fiche-ui.js",
   "js/graphiques.js",
+  "js/integre.js",
   "js/main.js",
   "js/pdf.js",
   "js/qr.js",

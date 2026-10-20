@@ -28,12 +28,12 @@ async function list(ctx) {
     await db.put('classReports', r); ctx.go('rapport/' + r.id);
   }
   ctx.actions([
-    { label: '➕ Nouveau rapport', kind: 'primary', show: u.role !== 'CCS', onClick: create }, { label: '📂 Ouvrir', onClick: () => { const s = sel(); s && ctx.go('rapport/' + s.id); } },
-    { label: '📤 Transmettre', show: u.role !== 'CCS', onClick: act(s => transmit(u, s, 'classReports')) },
-    { label: '✅ Valider', show: u.role !== 'CP', kind: 'accent', onClick: act(s => validate(u, s, 'classReports')) }, { label: '↩ Correction', show: u.role !== 'CP', onClick: act(s => requestCorrection(u, s, 'classReports')) },
+    { label: '➕ Nouveau rapport', kind: 'primary', show: u.role !== 'CCS' && u.role !== 'DDEMP', onClick: create }, { label: '📂 Ouvrir', onClick: () => { const s = sel(); s && ctx.go('rapport/' + s.id); } },
+    { label: '📤 Transmettre', show: u.role !== 'CCS' && u.role !== 'DDEMP', onClick: act(s => transmit(u, s, 'classReports')) },
+    { label: '✅ Valider', show: u.role !== 'CP' && u.role !== 'DDEMP', kind: 'accent', onClick: act(s => validate(u, s, 'classReports')) }, { label: '↩ Correction', show: u.role !== 'CP' && u.role !== 'DDEMP', onClick: act(s => requestCorrection(u, s, 'classReports')) },
     { label: '🔓 Déverrouiller', show: u.role === 'ADMIN', onClick: act(s => unlock(u, s, 'classReports')) },
     { label: '⬇ PDF', onClick: act(s => exportReport(s, 'pdf').then(() => false)) }, { label: '🖋 PDF signé', onClick: act(s => exportReport(s, 'pdf', { signed: true }).then(() => false)) }, { label: '⬇ Excel', onClick: act(s => exportReport(s, 'xlsx').then(() => false)) },
-    { label: '🗑 Supprimer', show: u.role !== 'CCS', onClick: act(async s => { if (!canEdit(u, s)) { toast('Suppression non autorisée.', 'err'); return false; } if (!(await confirmBox('Supprimer ce rapport ?', 'Supprimer', true))) return false; await db.del('classReports', s.id); return true; }) },
+    { label: '🗑 Supprimer', show: u.role !== 'CCS' && u.role !== 'DDEMP', onClick: act(async s => { if (!canEdit(u, s)) { toast('Suppression non autorisée.', 'err'); return false; } if (!(await confirmBox('Supprimer ce rapport ?', 'Supprimer', true))) return false; await db.del('classReports', s.id); return true; }) },
   ]);
   await refresh();
 }

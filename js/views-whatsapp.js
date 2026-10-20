@@ -33,8 +33,8 @@ const MODELES = {
 
 async function groupe(ctx) {
   const u = ctx.user;
-  const emetteur = u.role === 'CP' ? 'CP de la zone ' + (u.numZone || '') + (u.nomCs ? ' — CS ' + u.nomCs : '') : (u.role === 'CCS' ? 'Circonscription Scolaire' + (u.nomCs ? ' de ' + u.nomCs : '') : 'MEMP');
-  const signataire = u.role === 'CP' ? 'Le Conseiller Pédagogique' + (u.numZone ? ' de la zone ' + u.numZone : '') : (u.role === 'CCS' ? 'Le Chef de la Circonscription Scolaire' : 'L’administration');
+  const emetteur = u.role === 'CP' ? 'CP de la zone ' + (u.numZone || '') + (u.nomCs ? ' — CS ' + u.nomCs : '') : (u.role === 'CCS' ? 'Circonscription Scolaire' + (u.nomCs ? ' de ' + u.nomCs : '') : u.role === 'DDEMP' ? 'Direction départementale' + (u.departement ? ' du ' + u.departement : '') : 'MEMP');
+  const signataire = u.role === 'CP' ? 'Le Conseiller Pédagogique' + (u.numZone ? ' de la zone ' + u.numZone : '') : (u.role === 'CCS' ? 'Le Chef de la Circonscription Scolaire' : u.role === 'DDEMP' ? 'Le Directeur départemental' : 'L’administration');
   const prefixe = u.role === 'CP' ? 'CPZ' + (u.numZone || '') + ' Dir' : 'CS Dir';
   const CLE = 'whatsapp-' + u.id;
   const g = Object.assign({ nom: 'Directeurs — ' + emetteur, lien: '', contacts: {}, modele: { type: 'convocation' },

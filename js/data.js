@@ -5,13 +5,15 @@ import { h, uid, nowISO, hashPassword, norm } from './util.js';
 import { DEPARTEMENTS } from './refdata.js';
 import { VARIANT } from './config.js';
 
-export const ROLES = { ADMIN: 'Administrateur', CP: 'Conseiller Pédagogique', CCS: 'Chef de Circonscription Scolaire' };
+export const ROLES = { ADMIN: 'Administrateur', CP: 'Conseiller Pédagogique', CCS: 'Chef de Circonscription Scolaire', DDEMP: 'Direction départementale (DDEMP)' };
+const sansAccentMaj = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
 export const session = { user: null };
 
-/** Périmètre : ADMIN = tout ; CCS = sa circonscription ; CP = sa zone pédagogique */
+/** Périmètre : ADMIN = tout ; DDEMP = son département (consultation) ; CCS = sa circonscription ; CP = sa zone pédagogique */
 export function inScope(user, rec) {
   if (!user) return false;
   if (user.role === 'ADMIN') return true;
+  if (user.role === 'DDEMP') return (!!rec.codeCs && (user.csCodes || []).includes(rec.codeCs)) || (!!user.departement && sansAccentMaj(rec.departement) === sansAccentMaj(user.departement));
   if (user.role === 'CCS') return !!user.codeCs && (rec.codeCs === user.codeCs || (rec.codeZone || '').startsWith(user.codeCs + '-'));
   if (user.role === 'CP') return !!user.codeZone && rec.codeZone === user.codeZone;
   return false;
@@ -24,7 +26,8 @@ export async function addLog(user, { action, target, from = '', to = '', comment
 
 export async function seedIfEmpty() {
   if (VARIANT.seed) return seedVariant();
-  if (!(await db.count('users'))) {
+  // intégrée à ÉduGestion : les comptes viennent d'ÉduGestion, aucun compte de démonstration
+  if (!VARIANT.integre && !(await db.count('users'))) {
     const mk = async (u, pw, extra) => ({ id: uid(), username: u, pwd: await hashPassword(pw), actif: true, mustChange: true, created: nowISO(), ...extra });
     await db.putMany('users', [
       await mk('admin', 'admin123', { role: 'ADMIN', nom: 'ADMIN', prenoms: 'Système' }),

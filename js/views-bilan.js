@@ -104,7 +104,7 @@ async function list(ctx) {
   const sel = () => { const s = t.selected; if (!s) toast('Sélectionnez un bilan.', 'warn'); return s; };
   const act = (fn) => async () => { const s = sel(); if (!s) return; try { if (await fn(s)) await refresh(); } catch (e) { toast(e.message, 'err'); } };
   ctx.actions([
-    { label: '➕ Nouveau bilan', kind: 'primary', show: u.role !== 'CCS' || true, onClick: () => create(u, ctx) },
+    { label: '➕ Nouveau bilan', kind: 'primary', show: u.role !== 'DDEMP', onClick: () => create(u, ctx) },
     { label: '📂 Ouvrir', onClick: () => { const s = sel(); s && ctx.go('bilan/' + s.id); } },
     { label: '⬆ Charger', onClick: async () => { const b = await loadFile(u); if (b) await refresh(); } },
     { label: '⬇ PDF', onClick: act(s => exportB(u, s, 'pdf').then(() => false)) }, { label: '🖋 PDF signé', onClick: act(s => exportB(u, s, 'pdf-signe').then(() => false)) },

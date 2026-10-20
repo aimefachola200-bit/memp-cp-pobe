@@ -213,14 +213,14 @@ async function fiches(ctx) {
   const act = (fn) => async () => { const s = sel(); if (!s) return; try { if (await fn(s)) await refresh(); } catch (e) { console.error(e); toast(e.message, 'err'); } };
   ctx.actions([
     { label: '📂 Ouvrir', kind: 'primary', onClick: () => open() },
-    { label: '📤 Transmettre au CCS', show: u.role !== 'CCS', onClick: act(s => transmit(u, s)) },
-    { label: '✅ Valider', show: u.role !== 'CP', kind: 'accent', onClick: act(s => validate(u, s)) },
-    { label: '↩ Demander correction', show: u.role !== 'CP', onClick: act(s => requestCorrection(u, s)) },
+    { label: '📤 Transmettre au CCS', show: u.role !== 'CCS' && u.role !== 'DDEMP', onClick: act(s => transmit(u, s)) },
+    { label: '✅ Valider', show: u.role !== 'CP' && u.role !== 'DDEMP', kind: 'accent', onClick: act(s => validate(u, s)) },
+    { label: '↩ Demander correction', show: u.role !== 'CP' && u.role !== 'DDEMP', onClick: act(s => requestCorrection(u, s)) },
     { label: '🔓 Déverrouiller', show: u.role === 'ADMIN', onClick: act(s => unlock(u, s)) },
     { label: '⬇ PDF', onClick: act(s => exportFiche(s, 'pdf').then(() => false)) },
     { label: '🖋 PDF signé', onClick: act(s => exportFiche(s, 'pdf', { signed: true }).then(() => false)) },
     { label: '⬇ Excel', onClick: act(s => exportFiche(s, 'xlsx').then(() => false)) },
-    { label: '🗑 Supprimer', show: u.role !== 'CCS', onClick: act(async s => { if (!canEdit(u, s)) { toast('Suppression non autorisée (fiche transmise ou validée).', 'err'); return false; } if (!(await confirmBox('Supprimer cette fiche ?', 'Supprimer', true))) return false; await db.del('fiches', s.id); await addLog(u, { action: 'Suppression fiche', target: s.schoolNom + ' ' + s.annee }); return true; }) },
+    { label: '🗑 Supprimer', show: u.role !== 'CCS' && u.role !== 'DDEMP', onClick: act(async s => { if (!canEdit(u, s)) { toast('Suppression non autorisée (fiche transmise ou validée).', 'err'); return false; } if (!(await confirmBox('Supprimer cette fiche ?', 'Supprimer', true))) return false; await db.del('fiches', s.id); await addLog(u, { action: 'Suppression fiche', target: s.schoolNom + ' ' + s.annee }); return true; }) },
   ]);
   await refresh();
 }
