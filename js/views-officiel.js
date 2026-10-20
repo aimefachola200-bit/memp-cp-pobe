@@ -144,7 +144,8 @@ async function reglement(ctx) {
 }
 
 /* ================= PERSONNEL ENSEIGNANT (même module que SCOLARIS / GESCOL) ================= */
-const FONCTIONS = ['Directeur / directrice', 'Adjoint(e)', 'Enseignant(e)', 'Conseiller pédagogique', 'Chef de circonscription scolaire', 'Secrétaire', 'Autre'];
+const FONCTIONS = ['Directeur / directrice', 'Adjoint(e)', 'Enseignant(e)', 'Conseiller pédagogique', 'Chef de circonscription scolaire', 'Secrétaire', 'Comptable / gestionnaire',
+  'Agent de saisie / informaticien', 'Agent de liaison / planton', 'Gardien', 'Chauffeur', 'Agent d\'entretien', 'Cuisinier(ère) de cantine', 'Autre'];
 const OUI_NON = [{ v: 'oui', l: 'Oui' }, { v: 'non', l: 'Non' }];
 /* Colonnes reconnues à l'import : fichiers du ministère (cahier de contrôle DDEMP, FE / ACDPE / ACDPCTD) et extraction EducMaster
    (fiche d'importation du personnel au format EducMaster : modèle téléchargeable dans la liste du personnel). */
@@ -411,7 +412,7 @@ async function personnel(ctx, vueInitiale) {
   const pourExport = (rows) => rows.map(p => ({ ...p, psTxt: fmtIso(p.date_prise_service), depTxt: fmtIso(p.date_service_dep), ecoleTxt: fmtIso(p.date_service_ecole), ancDep: p.ancTxt.departement, manque: p.manquants.join(', ') }));
   function actionsListe() {
     ctx.actions([
-      { label: '➕ Ajouter', kind: 'primary', onClick: ajouter }, { label: '✏️ Modifier', onClick: modifier }, { label: '🗑 Supprimer', onClick: supprimer }, { label: '📇 Fiche de carrière', onClick: ficheCarriere },
+      { label: '➕ Ajouter', kind: 'primary', onClick: ajouter }, { label: '✍️ Saisie par école (tableau)', onClick: async () => { await db.setting('saisie-onglet', 'personnel'); ctx.go('saisie'); } }, { label: '✏️ Modifier', onClick: modifier }, { label: '🗑 Supprimer', onClick: supprimer }, { label: '📇 Fiche de carrière', onClick: ficheCarriere },
       { label: '⬆ Importer Excel', title: 'Fichier du personnel (cahier de contrôle DDEMP, fichiers FE / ACDPE, ou fiche au format EducMaster) : complète matricules, dates, téléphones…', onClick: importer },
       { label: '📄 Fiche d’importation (EducMaster)', title: 'Modèle Excel à remplir ou à coller depuis EducMaster, puis à importer', onClick: modeleEducMaster },
       { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: titre(), subtitle: sousTitre(), columns: COLS_X, rows: pourExport(t.visible), sheet: 'Personnel' }), 'Personnel.xlsx') },

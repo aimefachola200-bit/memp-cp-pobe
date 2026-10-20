@@ -212,7 +212,7 @@ async function fiches(ctx) {
   const open = (r) => { const s = r || sel(); if (s) ctx.go('fiche/' + s.id); };
   const act = (fn) => async () => { const s = sel(); if (!s) return; try { if (await fn(s)) await refresh(); } catch (e) { console.error(e); toast(e.message, 'err'); } };
   ctx.actions([
-    { label: '📂 Ouvrir', kind: 'primary', onClick: () => open() },
+    { label: '📂 Ouvrir', kind: 'primary', onClick: () => open() }, { label: '✍️ Saisie manuelle (sans Excel)', onClick: async () => { await db.setting('saisie-onglet', 'fiches'); ctx.go('saisie'); } },
     { label: '📤 Transmettre au CCS', show: u.role !== 'CCS' && u.role !== 'DDEMP', onClick: act(s => transmit(u, s)) },
     { label: '✅ Valider', show: u.role !== 'CP' && u.role !== 'DDEMP', kind: 'accent', onClick: act(s => validate(u, s)) },
     { label: '↩ Demander correction', show: u.role !== 'CP' && u.role !== 'DDEMP', onClick: act(s => requestCorrection(u, s)) },

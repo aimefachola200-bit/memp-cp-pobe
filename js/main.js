@@ -51,6 +51,7 @@ const NAV = [
   { id: 'personnel', ic: '👩‍🏫', t: 'Personnel enseignant' },
   { id: 'carriere', ic: '📈', t: 'Gestion de carrière' },
   { id: 'fiches', ic: '📝', t: 'Fiches de collecte' },
+  { id: 'saisie', ic: '✍️', t: 'Saisie manuelle (sans Excel)' },
   { id: 'envois', ic: '📥', t: 'Réception et acheminement des fiches', seul: 'dosp' },
   { id: 'effectifs', ic: '👧', t: 'Effectifs des apprenants' },
   { id: 'infra', ic: '🏗️', t: 'Infrastructures et mobilier' },
@@ -84,7 +85,7 @@ const NAV = [
 ];
 const ROUTES = { accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', rapports: 'views-reports', rapport: 'views-reports', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles', cep: 'views-cep',
   synoptique: 'views-more', activites: 'views-more', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', synocp: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', carriere: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
-  whatsapp: 'views-whatsapp', espacedosp: 'views-dosp', envois: 'views-dosp', prevision: 'views-dosp', besoins: 'views-dosp', suivieval: 'views-dosp', capacites: 'views-dosp', plandosp: 'views-dosp', docsdosp: 'views-dosp', identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
+  saisie: 'views-saisie', whatsapp: 'views-whatsapp', espacedosp: 'views-dosp', envois: 'views-dosp', prevision: 'views-dosp', besoins: 'views-dosp', suivieval: 'views-dosp', capacites: 'views-dosp', plandosp: 'views-dosp', docsdosp: 'views-dosp', identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
 
 const app = $('#app');
 let cleanup = null, deferredPrompt = null;
