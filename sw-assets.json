@@ -1,5 +1,5 @@
 {
- "version": "aac4c6f0fe1e",
+ "version": "9ec2de04ae94",
  "files": [
   "./",
   "NOTICE.txt",
@@ -67,6 +67,7 @@
   "js/util.js",
   "js/views-admin.js",
   "js/views-bilan.js",
+  "js/views-cep.js",
   "js/views-core.js",
   "js/views-ecoles.js",
   "js/views-effectifs.js",

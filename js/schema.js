@@ -142,6 +142,9 @@ function schemaEP(variant = 'FIN') {
       groups: [...classes(c => single(c, c)), { ...single('ens', 'ENSEMBLE'), calc: 'groups' }] },
     ...(R ? [] : [{ id: 'fonct', type: 'grid', title: '7. Fonctionnement des structures de gestion', rows: [{ k: 'n', l: 'Nombre' }],
       groups: [single('ag', 'Assemblée générale'), single('ape', 'Réunion bureau APE'), single('cm', 'Conseil des maîtres')] }]),
+    // rubrique « Résultats aux examens de la dernière session » (fiche de recensement, rubrique 9) : CEP par sexe
+    ...(R ? [] : [{ id: 'cep', type: 'grid', title: 'Résultats au CEP (dernière session)', rows: [{ k: 'insc', l: 'Inscrits' }, { k: 'comp', l: 'Ont composé' }, { k: 'adm', l: 'Admis' }],
+      groups: [gft('cep', 'CEP'), gft('eh', 'Dont enfants handicapés')] }]),
     { id: 'perso', type: 'personnel', title: (R ? '7' : '8') + '. État nominatif du personnel enseignant', minRows: 12, firstFonction: 'Directeur/trice', otherFonction: 'Adjoint',
       cols: [
         col('matricule', 'N° matricule (1)'), col('nom', 'Nom et prénoms', { w: 220 }), col('sexe', 'Sexe (2)', { t: 'select', options: ['M', 'F'], w: 70 }), col('naiss', 'Année de naissance', { t: 'number', w: 90 }),
