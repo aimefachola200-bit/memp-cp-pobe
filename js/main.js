@@ -119,13 +119,14 @@ function shell() {
     h('div', { class: 'sb-foot' }, h('span', { class: 'who' }, `👤 ${u.prenoms || ''} ${u.nom || u.username}`, h('br'), h('small', ROLES[u.role] + (u.codeZone ? ' · ' + u.codeZone : u.codeCs ? ' · ' + u.codeCs : ''))),
       h('button', { class: 'btn sm', onclick: logout }, 'Se déconnecter'), h('div', { style: { fontSize: '.68rem', opacity: .8, marginTop: '8px' } }, CREDIT)));
   const main = h('div', { class: 'main' },
-    h('header', { class: 'topbar' }, h('button', { class: 'icon-btn burger', 'aria-label': 'Menu', onclick: () => document.body.classList.toggle('nav-open') }, '☰'), h('div', { class: 'grow' }, banner())),
+    h('header', { class: 'topbar' }, h('button', { class: 'icon-btn burger', 'aria-label': 'Menu', onclick: (e) => { e.stopPropagation(); document.body.classList.toggle('nav-open'); } }, '☰'), h('div', { class: 'grow' }, banner())),
     h('div', { class: 'titlebar' }, h('h2', { id: 'v-title' }), h('span', { class: 'sub', id: 'v-sub' })),
     h('div', { class: 'actionbar', id: 'v-bar' }),
     h('section', { class: 'view', id: 'v-body' }),
     h('div', { class: 'statusbar', id: 'v-status' }, 'Prêt'));
   app.replaceChildren(h('div', { class: 'shell' }, side, main));
-  main.addEventListener('click', () => document.body.classList.remove('nav-open'));
+  // un toucher dans la page referme le menu (mais pas le bouton ☰ lui-même, qui l'ouvre)
+  main.addEventListener('click', (e) => { if (!e.target.closest('.burger')) document.body.classList.remove('nav-open'); });
 }
 
 let routeSeq = 0;
