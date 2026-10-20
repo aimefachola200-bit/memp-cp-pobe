@@ -132,8 +132,10 @@ function shell() {
   NAV.forEach(n => {
     if (n.roles && !n.roles.includes(u.role)) return;
     if (n.horsIntegre && VARIANT.integre) return;
-    if (n.seul && n.seul !== VARIANT.profil) return;
-    if (n.pasDosp && VARIANT.profil === 'dosp') return;
+    // écrans de la DOSP : application DOSP, ou compte DOSP ouvert dans l'application CP
+    const dosp = VARIANT.profil === 'dosp' || u.role === 'DOSP';
+    if (n.seul === 'dosp' ? !dosp : (n.seul && n.seul !== VARIANT.profil)) return;
+    if (n.pasDosp && dosp) return;
     if (n.g) nav.appendChild(h('div', { class: 'grp' }, n.g));
     nav.appendChild(h('button', { 'data-r': n.id, onclick: () => { location.hash = '#/' + n.id; document.body.classList.remove('nav-open'); } }, h('span', { class: 'ic' }, n.ic), n.id === 'espace' && u.role === 'CP' ? `Mon espace CP — zone ${u.numZone || ''}` : n.t));
   });
@@ -217,7 +219,12 @@ window.addEventListener('hashchange', route);
 })();
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  // mise à jour vérifiée au démarrage, au retour sur l'application et toutes les 30 min (sans cache HTTP)
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((reg) => {
+    const verifier = () => reg.update().catch(() => {});
+    verifier(); setInterval(verifier, 30 * 60 * 1000);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') verifier(); });
+  }).catch(() => {}));
   // nouvelle version installée pendant l'utilisation : rechargement pour repartir sur des fichiers cohérents
   let dejaControle = !!navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
