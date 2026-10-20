@@ -46,7 +46,8 @@ const NAV = [
   { g: null, id: 'accueil', ic: '🏠', t: 'Tableau de bord' },
   { id: 'espacedosp', ic: '🗂️', t: 'Mon espace de travail DOSP', seul: 'dosp' },
   { id: 'espace', ic: '🧑‍🏫', t: 'Espace CP de zone', pasDosp: true },
-  { id: 'synocp', ic: '📋', t: 'Tableau synoptique du CP' },
+  { id: 'synocp', ic: '📋', t: 'Tableau synoptique du CP', pasDosp: true },
+  { id: 'synodosp', ic: '📋', t: 'Tableau synoptique de la DOSP', seul: 'dosp' },
   { g: 'Collecte', id: 'ecoles', ic: '🏫', t: 'Écoles' },
   { id: 'personnel', ic: '👩‍🏫', t: 'Personnel enseignant' },
   { id: 'carriere', ic: '📈', t: 'Gestion de carrière' },
@@ -85,7 +86,7 @@ const NAV = [
 ];
 const ROUTES = { accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', rapports: 'views-reports', rapport: 'views-reports', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles', cep: 'views-cep',
   synoptique: 'views-more', activites: 'views-more', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', synocp: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', carriere: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
-  saisie: 'views-saisie', whatsapp: 'views-whatsapp', espacedosp: 'views-dosp', envois: 'views-dosp', prevision: 'views-dosp', besoins: 'views-dosp', suivieval: 'views-dosp', capacites: 'views-dosp', plandosp: 'views-dosp', docsdosp: 'views-dosp', identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
+  saisie: 'views-saisie', synodosp: 'views-synodosp', whatsapp: 'views-whatsapp', espacedosp: 'views-dosp', envois: 'views-dosp', prevision: 'views-dosp', besoins: 'views-dosp', suivieval: 'views-dosp', capacites: 'views-dosp', plandosp: 'views-dosp', docsdosp: 'views-dosp', identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
 
 const app = $('#app');
 let cleanup = null, deferredPrompt = null;

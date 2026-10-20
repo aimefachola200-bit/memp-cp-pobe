@@ -104,7 +104,7 @@ async function espacedosp(ctx) {
     else if (ONGLET_ESPACE === 'notes') await ongletNotes(u, zone);
     else if (ONGLET_ESPACE === 'docs') await ongletDocs(u, zone);
     else zone.append(card('Raccourcis', h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '8px' } },
-      [['envois', '📥 Réception des fiches'], ['fiches', '📝 Fiches de collecte'], ['prevision', '🔮 Prévisions'], ['besoins', '⚖️ Besoins et écarts'], ['suivieval', '📊 Suivi-évaluation'], ['capacites', '🎓 Renforcement des capacités'],
+      [['synodosp', '📋 Tableau synoptique de la DOSP'], ['envois', '📥 Réception des fiches'], ['fiches', '📝 Fiches de collecte'], ['prevision', '🔮 Prévisions'], ['besoins', '⚖️ Besoins et écarts'], ['suivieval', '📊 Suivi-évaluation'], ['capacites', '🎓 Renforcement des capacités'],
         ['docsdosp', '📄 Documents officiels'], ['plandosp', '🎯 Plan d’action'], ['synoptique', '🗂️ Synthèse des fiches'], ['identite', '✍️ Ma signature et mes cachets']].map(([r, l]) => h('button', { class: 'btn', onclick: () => ctx.go(r) }, l)))));
   };
   ctx.actions([{ label: '＋ Tâche', kind: 'primary', onClick: async () => { await editerTache(u, null); ONGLET_ESPACE = 'taches'; dessiner(); } }, { label: '＋ Rendez-vous', onClick: async () => { await editerAgenda(u, null); ONGLET_ESPACE = 'agenda'; dessiner(); } }]);
