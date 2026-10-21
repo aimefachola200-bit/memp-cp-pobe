@@ -1,5 +1,5 @@
 {
- "version": "c691e9993eff",
+ "version": "0c388273d1fa",
  "files": [
   "./",
   "NOTICE.txt",
@@ -61,6 +61,7 @@
   "js/graphiques.js",
   "js/integre.js",
   "js/main.js",
+  "js/motdepasse.js",
   "js/pdf.js",
   "js/qr.js",
   "js/recensement-pdf.js",

@@ -108,7 +108,8 @@ function loginScreen() {
     session.user = rec; sessionStorage.setItem(CLE_SESSION, rec.id); start();
   } },
     h('label', { class: 'field' }, h('span', 'Identifiant'), u), h('label', { class: 'field' }, h('span', 'Mot de passe'), p), err,
-    h('button', { class: 'btn primary', style: { width: '100%' }, type: 'submit' }, 'Se connecter'));
+    h('button', { class: 'btn primary', style: { width: '100%' }, type: 'submit' }, 'Se connecter'),
+    h('p', { style: { textAlign: 'right', margin: '8px 0 0' } }, h('a', { href: '#', onclick: (e) => { e.preventDefault(); import('./motdepasse.js').then(m => m.dialogueOubli(u.value.trim())); } }, '🔑 Mot de passe oublié ?')));
   app.replaceChildren(h('div', { class: 'login-wrap' }, h('div', { class: 'login-card' },
     h('div', { style: { background: '#fff', padding: '8px' } }, banner('')), h('div', { class: 'tricolor' }, h('i'), h('i'), h('i')),
     h('div', { class: 'login-body' }, h('h1', VARIANT.profil === 'dosp' ? 'Application DOSP — Organisation scolaire et prévision' : APP.full), VARIANT.titre ? h('p', { class: 'sub', style: { fontWeight: '700', color: 'var(--ink)', margin: '.1em 0 0' } }, VARIANT.titre) : null, h('p', { class: 'sub' }, 'Collecte, validation et suivi pédagogique — fonctionne sans connexion Internet.'), form,
@@ -147,7 +148,7 @@ function shell() {
       VARIANT.integre ? h('a', { class: 'btn sm', href: retourEduGestion() }, '← Retour à ÉduGestion') : h('button', { class: 'btn sm', onclick: logout }, 'Se déconnecter'), h('div', { style: { fontSize: '.68rem', opacity: .8, marginTop: '8px' } }, CREDIT)));
   const main = h('div', { class: 'main' },
     h('header', { class: 'topbar' }, h('button', { class: 'icon-btn burger', 'aria-label': 'Menu', onclick: (e) => { e.stopPropagation(); document.body.classList.toggle('nav-open'); } }, '☰'), h('div', { class: 'grow' }, banner()), VARIANT.integre ? h('a', { class: 'btn sm no-print', href: retourEduGestion(), title: 'Revenir à ÉduGestion Pro', style: { whiteSpace: 'nowrap', marginLeft: '8px' } }, '← ÉduGestion') : null),
-    h('div', { class: 'titlebar' }, h('h2', { id: 'v-title' }), h('span', { class: 'sub', id: 'v-sub' })),
+    h('div', { class: 'titlebar' }, h('button', { class: 'btn sm no-print btn-retour', type: 'button', title: 'Revenir à la page précédente', 'aria-label': 'Revenir à la page précédente', onclick: retourArriere }, '← Retour'), h('h2', { id: 'v-title' }), h('span', { class: 'sub', id: 'v-sub' })),
     h('div', { class: 'actionbar', id: 'v-bar' }),
     h('section', { class: 'view', id: 'v-body' }),
     h('div', { class: 'statusbar', id: 'v-status' }, 'Prêt'));
@@ -157,8 +158,15 @@ function shell() {
 }
 
 let routeSeq = 0;
+/* Bouton « ← Retour » : écran précédent de l'application (historique), sinon le tableau de bord */
+let pagesVues = 0;
+function retourArriere() {
+  if (pagesVues > 1) { pagesVues -= 2; history.back(); }
+  else location.hash = '#/accueil';
+}
 async function route() {
   if (!session.user) return;
+  pagesVues++;
   const my = ++routeSeq;
   const [r, ...args] = (location.hash.replace(/^#\/?/, '') || 'accueil').split('/');
   const id = ROUTES[r] ? r : 'accueil';
