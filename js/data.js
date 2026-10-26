@@ -31,11 +31,18 @@ export async function seedIfEmpty() {
   if (!VARIANT.integre && !(await db.count('users'))) {
     const mk = async (u, pw, extra) => ({ id: uid(), username: u, pwd: await hashPassword(pw), actif: true, mustChange: true, created: nowISO(), ...extra });
     await db.putMany('users', [
-      await mk('admin', 'admin123', { role: 'ADMIN', nom: 'ADMIN', prenoms: 'Système' }),
-      await mk('cp', 'cp123', { role: 'CP', nom: 'DOSSOU', prenoms: 'Paul', codeCp: 'CP-0001', departement: 'ZOU', codeCs: 'CS118', nomCs: 'ZOGBODOMEY', numZone: '1', codeZone: 'CS118-ZP01' }),
-      await mk('ccs', 'ccs123', { role: 'CCS', nom: 'HOUNTON', prenoms: 'Marie', departement: 'ZOU', codeCs: 'CS118', nomCs: 'ZOGBODOMEY' }),
-      ...(VARIANT.profil === 'dosp' ? [await mk('dosp', 'dosp123', { role: 'DOSP', nom: 'AGOSSOU', prenoms: 'Rémi', departement: 'ZOU', codeCs: 'CS118', nomCs: 'ZOGBODOMEY' })] : []),
+      await mk('admin', 'admin123', { role: 'ADMIN', nom: 'ADMINISTRATEUR', prenoms: '' }),
+      await mk('cp', 'cp123', { role: 'CP', nom: 'CONSEILLER PÉDAGOGIQUE', prenoms: '', codeCp: 'CP-0001', departement: 'ZOU', codeCs: 'CS118', nomCs: 'ZOGBODOMEY', numZone: '1', codeZone: 'CS118-ZP01' }),
+      await mk('ccs', 'ccs123', { role: 'CCS', nom: 'CHEF DE CIRCONSCRIPTION', prenoms: '', departement: 'ZOU', codeCs: 'CS118', nomCs: 'ZOGBODOMEY' }),
+      ...(VARIANT.profil === 'dosp' ? [await mk('dosp', 'dosp123', { role: 'DOSP', nom: 'CHEF DE LA DOSP', prenoms: '', departement: 'PLATEAU', codeCs: 'CSPOBE', nomCs: 'POBE' })] : []),
     ]);
+  }
+  // comptes de départ des versions précédentes : noms de personnes fictives remplacés par la fonction (une fois)
+  if (!(await db.setting('comptes-fictifs-retires'))) {
+    const FICTIFS = { cp: ['DOSSOU', 'Paul', 'CONSEILLER PÉDAGOGIQUE'], ccs: ['HOUNTON', 'Marie', 'CHEF DE CIRCONSCRIPTION'], dosp: ['AGOSSOU', 'Rémi', 'CHEF DE LA DOSP'], admin: ['ADMIN', 'Système', 'ADMINISTRATEUR'] };
+    const maj = (await db.all('users')).filter(x => FICTIFS[x.username] && x.nom === FICTIFS[x.username][0] && x.prenoms === FICTIFS[x.username][1]).map(x => ({ ...x, nom: FICTIFS[x.username][2], prenoms: '' }));
+    if (maj.length) await db.putMany('users', maj);
+    await db.setting('comptes-fictifs-retires', true);
   }
   if (!(await db.all('ref')).some(r => r.type === 'departement')) {
     await db.putMany('ref', DEPARTEMENTS.map(([code, nom, nbCs, nbZones]) => ({ id: 'dep-' + code, type: 'departement', code, nom, nbCs, nbZones })));
@@ -59,6 +66,20 @@ async function seedVariant() {
     for (const c of S.comptes.filter(c => c.profil.role === 'CP')) if (!(await db.all('users')).some(x => x.username === c.username)) cps.push({ id: uid(), username: c.username, pwd: await hashPassword(c.mdp), actif: true, mustChange: true, created: nowISO(), ...c.profil });
     await db.putMany('users', cps);
   }
+  // DOSP : rattachement à la CS Pobè (référentiel, comptes de départ) des installations sans école, une seule fois
+  if (VARIANT.profil === 'dosp' && !(await db.setting('dosp-pobe'))) {
+    const S = await (await fetch(VARIANT.seed)).json(), cs = S.ref.find(r => r.type === 'cs');
+    if (!(await db.count('schools'))) {
+      const refs = await db.all('ref');
+      const manque = S.ref.filter(r => !refs.some(x => x.type === r.type && (x.code || x.nom) === (r.code || r.nom)));
+      if (refs.some(r => r.type === 'departement')) await db.putMany('ref', manque.map(r => ({ id: uid(), ...r })));
+      const comptes = new Map(S.comptes.map(c => [c.username, c.profil]));
+      const maj = (await db.all('users')).filter(x => comptes.has(x.username) && x.role !== 'ADMIN' && cs && x.codeCs !== cs.code)
+        .map(x => { const p = { ...comptes.get(x.username) }; delete p.nom; delete p.prenoms; return { ...x, ...p }; });
+      if (maj.length) await db.putMany('users', maj);
+    }
+    await db.setting('dosp-pobe', nowISO());
+  }
   const besoin = !(await db.count('users')) || !(await db.all('ref')).some(r => r.type === 'departement')
     || (!(await db.count('schools')) && !(await db.setting('seed-ecoles'))) || (!(await db.count('personnel')) && !(await db.setting('seed-personnel')));
   if (!besoin) return;
@@ -77,7 +98,7 @@ async function seedVariant() {
     await db.setting('seed-ecoles', nowISO());
   }
   if (!(await db.count('personnel')) && !(await db.setting('seed-personnel'))) {
-    await db.putMany('personnel', S.personnel.map(x => ({ ...x, created: nowISO() })));
+    await db.putMany('personnel', (S.personnel || []).map(x => ({ ...x, created: nowISO() })));
     await db.setting('seed-personnel', nowISO());
   }
 }
@@ -118,6 +139,6 @@ export const ordreGroupe = (a, b) => (a[0] === 'c') - (b[0] === 'c') || (a[0] ==
 export const schoolLabel = (s) => `${s.nom}${s.code ? ' (' + s.code + ')' : ''}`;
 export function ficheOf(kind, school, annee, data, perso) {
   return { id: uid(), kind, annee, schoolId: school.id, schoolCode: school.code || '', schoolNom: school.nom, cycle: school.cycle, codeZone: school.codeZone || '', codeCs: school.codeCs || '', departement: school.departement || '',
-    data, perso, statut: 'Brouillon', comment: '', history: [{ date: nowISO(), action: 'Création', by: session.user?.username || '' }], created: nowISO(), updated: nowISO() };
+    data, perso, ...(/_(RENTREE|FIN)$/.test(kind) ? { format: 'gescol', valeurs: {} } : {}), statut: 'Brouillon', comment: '', history: [{ date: nowISO(), action: 'Création', by: session.user?.username || '' }], created: nowISO(), updated: nowISO() };
 }
 export { norm };

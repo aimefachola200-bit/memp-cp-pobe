@@ -11,7 +11,7 @@ export function canonical(o) {
   if (o && typeof o === 'object') return '{' + Object.keys(o).sort().map(k => JSON.stringify(k) + ':' + canonical(o[k])).join(',') + '}';
   return JSON.stringify(o ?? null);
 }
-export const ficheHash = (f) => sha256(canonical({ kind: f.kind, annee: f.annee, ecole: f.schoolCode, data: f.data, perso: f.perso }));
+export const ficheHash = (f) => sha256(canonical({ kind: f.kind, annee: f.annee, ecole: f.schoolCode, data: f.data, perso: f.perso, ...(f.format === 'gescol' ? { valeurs: f.valeurs || {} } : {}) }));
 export const reportHash = (r) => sha256(canonical({ annee: r.annee, ecole: r.schoolCode, cours: r.cours, rows: r.rows }));
 
 export const bilanHash = (b) => sha256(canonical({ niveau: b.niveau, periode: b.periode, annee: b.annee, cs: b.codeCs, zone: b.codeZone, actors: b.actors, data: b.data, lists: b.lists, textes: b.textes, entete: b.entete }));

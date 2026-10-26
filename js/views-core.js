@@ -31,7 +31,7 @@ async function accueil(ctx) {
   document.addEventListener('installable', showInstall); showInstall();
   ctx.el.append(
     h('div', { class: 'cards' }, stat(schools.length, 'écoles dans votre périmètre', '', 'ecoles'), stat(fiches.length, 'fiches de collecte', '', 'fiches'),
-      stat(by('Brouillon') + by('À corriger'), 'à compléter / corriger', 'y', 'fiches'), stat(by('Transmise'), 'en attente de validation CCS', 'y', 'fiches'), stat(by('Validée'), 'fiches validées', '', 'fiches'), stat(reports.length, "rapports de fin d'année", '', 'rapports')),
+      stat(by('Brouillon') + by('À corriger'), 'à compléter / corriger', 'y', 'fiches'), stat(by('Transmise'), 'en attente de validation CCS', 'y', 'fiches'), stat(by('Validée'), 'fiches validées', '', 'fiches')),
     nextOnes.length ? h('div', { class: 'card' }, h('h3', '🎯 Prochaine unité pédagogique'), h('p', h('b', fmtDate(nextDate))), ...nextOnes.map(t => h('p', `${t.niv} — ${t.theme}`)), h('button', { class: 'btn sm', onclick: () => ctx.go('themes') }, 'Voir le planning')) : null,
     h('div', { class: 'card' }, h('h3', '📅 Activités à venir'), upcoming.length ? h('ul', upcoming.map(a => h('li', `${fmtDate(a.date)} — ${a.type} : ${a.theme || a.lieu || ''}`))) : h('p', { class: 'sub' }, 'Aucune activité programmée.'), h('button', { class: 'btn sm', onclick: () => ctx.go('activites') }, 'Gérer les activités')),
     h('div', { class: 'card' }, h('h3', 'Circuit de collecte'), h('ol', h('li', 'Le CP enregistre les écoles de sa zone puis génère les fiches de l\'année.'), h('li', 'Les fiches sont remplies (calculs automatiques), puis transmises au CCS.'), h('li', 'Le CCS valide ou demande une correction ; le CP corrige et retransmet.'), h('li', 'Les fiches validées alimentent le tableau synoptique et peuvent être signées (signature, cachet, QR).'))),
@@ -198,14 +198,30 @@ async function fiches(ctx) {
   const mk = (k, label, opts) => h('select', { class: 'search', style: { maxWidth: '190px' }, 'aria-label': label, onchange: (e) => { filt[k] = e.target.value; refresh(); } }, h('option', { value: '' }, label), opts.map(o => h('option', { value: o.v ?? o }, o.l ?? o)));
   const selA = mk('annee', 'Toutes années', []), selK = mk('kind', 'Tous types', Object.entries(FICHE_TYPES).map(([v, x]) => ({ v, l: x.court }))), selS = mk('statut', 'Tous statuts', STATUTS_FICHE);
   const COLS = [{ k: 'schoolNom', l: 'École', w: 200 }, { k: 'type', l: 'Type de fiche', text: r => FICHE_TYPES[r.kind].label, w: 220 }, { k: 'annee', l: 'Année' }, { k: 'statut', l: 'Statut', render: r => badge(r.statut) }, { k: 'pct', l: 'Rempli', num: true, text: r => completion(r) + ' %' }, { k: 'codeZone', l: 'Zone' }, { k: 'updated', l: 'Mise à jour', text: r => new Date(r.updated).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' }) }, { k: 'comment', l: 'Commentaire CCS' }];
-  const t = dataTable({ columns: COLS, rows: [], onOpen: (r) => open(r), tools: [selA, selK, selS], empty: 'Aucune fiche. Ajoutez des écoles puis « Générer les fiches ».' });
-  ctx.el.append(t.el);
+  COLS.splice(1, 0, { k: 'groupeLib', l: 'Zone / arrondissement', w: 150 }, { k: 'secteur', l: 'Secteur', w: 70 });
+  // regroupement : par zone pédagogique ou par arrondissement (tri, filtre et sous-totaux du nombre de fiches)
+  let gmode = (await db.setting('fiches-groupe')) || (u.role === 'CP' ? 'zone' : 'arr'), gval = '';
+  const zonesRef = (await db.all('ref')).filter(r => r.type === 'zone');
+  const selG = h('select', { class: 'search', style: { maxWidth: '200px' }, 'aria-label': 'Regroupement', onchange: (e) => { gmode = e.target.value; gval = ''; db.setting('fiches-groupe', gmode); refresh(); } },
+    [['zone', 'Par zone pédagogique'], ['arr', 'Par arrondissement']].map(([v, l]) => h('option', { value: v, selected: v === gmode }, l)));
+  const selV = h('select', { class: 'search', style: { maxWidth: '230px' }, 'aria-label': 'Groupe', onchange: (e) => { gval = e.target.value; refresh(); } });
+  const sousTot = h('div', { class: 'notes', style: { margin: '6px 0' } });
+  const t = dataTable({ columns: COLS, rows: [], onOpen: (r) => open(r), tools: [selA, selK, selS, selG, selV], empty: 'Aucune fiche. Ajoutez des écoles puis « Générer les fiches ».' });
+  ctx.el.append(t.el, sousTot);
   let all = [];
   async function refresh() {
     all = await scoped('fiches', u);
+    const ecs = new Map((await scoped('schools', u)).map(s => [s.id, s]));
+    for (const f of all) { const s = ecs.get(f.schoolId) || f; f._g = cleGroupe(s, gmode); f.groupeLib = libGroupe(f._g, zonesRef, gmode, 'Sans zone'); f.secteur = /priv/i.test(s.secteur || '') ? 'Privé' : 'Public'; }
+    const gs = [...new Set(all.map(f => f._g))].sort(ordreGroupe);
+    selV.replaceChildren(h('option', { value: '' }, 'Tous les groupes'), ...gs.map(g => h('option', { value: g, selected: g === gval }, libGroupe(g, zonesRef, gmode, 'Sans zone'))));
     const years = [...new Set(all.map(f => f.annee))].sort().reverse();
     if (selA.options.length - 1 !== years.length) { const cur = selA.value; selA.replaceChildren(h('option', { value: '' }, 'Toutes années'), ...years.map(y => h('option', { value: y }, y))); selA.value = cur; }
-    t.setRows(all.filter(f => (!filt.annee || f.annee === filt.annee) && (!filt.kind || f.kind === filt.kind) && (!filt.statut || f.statut === filt.statut)).sort((a, b) => b.updated.localeCompare(a.updated)));
+    const vis = all.filter(f => (!filt.annee || f.annee === filt.annee) && (!filt.kind || f.kind === filt.kind) && (!filt.statut || f.statut === filt.statut) && (!gval || f._g === gval))
+      .sort((a, b) => ordreGroupe(a._g, b._g) || (a.secteur || '').localeCompare(b.secteur || '') || (a.schoolNom || '').localeCompare(b.schoolNom || '', 'fr') || b.updated.localeCompare(a.updated));
+    t.setRows(vis);
+    const st = (l) => `${l.length} (public ${l.filter(f => f.secteur === 'Public').length}, privé ${l.filter(f => f.secteur === 'Privé').length})`;
+    sousTot.textContent = 'Sous-totaux : ' + [...new Set(vis.map(f => f._g))].map(g => `${libGroupe(g, zonesRef, gmode, 'Sans zone')} : ${st(vis.filter(f => f._g === g))}`).join(' · ') + ` — Total : ${st(vis)}`;
     ctx.status(`${t.rows.length} fiche(s) affichée(s) sur ${all.length}`);
   }
   const sel = () => { const s = t.selected; if (!s) toast('Sélectionnez une fiche dans le tableau.', 'warn'); return s; };

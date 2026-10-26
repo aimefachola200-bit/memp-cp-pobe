@@ -5,6 +5,7 @@
    signatures et visas, guide de remplissage. Valeurs inscrites à l'encre bleue, comme au stylo.
    Conception : Maître Aimé FACHE */
 import { fetchBytes } from './util.js';
+import { Canvas, decouper } from './pdf-canvas.js';
 import { APP } from './config.js';
 import { feuilles, profondeur, lignesTableau, enteteCellules, milliers, OUINON, valeursVierges, nbLignesDyn } from './recensement.js';
 
@@ -13,56 +14,6 @@ const A4 = [595.2755905511812, 841.8897637795277];
 const hex = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
 const NOIR = [0, 0, 0], BLANC = [1, 1, 1], ENCRE = hex('#0B3D91'), GRISE = hex('#948A85');
 
-/* ------------------------------------------------------------------ « canvas » à la reportlab sur pdf-lib */
-class Canvas {
-  constructor(P, doc, polices) {
-    Object.assign(this, { P, doc, F: polices, page: null, st: this.etatInitial(), pile: [] });
-    this.jeux = Object.fromEntries(Object.entries(polices).map(([k, f]) => [k, new Set(f.getCharacterSet())]));
-  }
-  etatInitial() { return { fill: NOIR, stroke: NOIR, lw: 1, dash: null, font: 'Helvetica', size: 12, alpha: 1 }; }
-  nouvellePage(w, h) { this.page = this.doc.addPage([w, h]); this.st = this.etatInitial(); this.pile = []; }
-  saveState() { this.pile.push({ ...this.st }); }
-  restoreState() { this.st = this.pile.pop() || this.etatInitial(); }
-  setFillColor(c) { this.st.fill = c; } setStrokeColor(c) { this.st.stroke = c; } setLineWidth(w) { this.st.lw = w; }
-  setDash(a, b) { this.st.dash = a === undefined ? null : [a, b]; } setFont(f, s) { this.st.font = f; this.st.size = s; } setFillAlpha(a) { this.st.alpha = a; }
-  rgb(c) { return this.P.rgb(...c); }
-  texte(t, f) {
-    const s = String(t ?? '').replace(/[  ]/g, ' ').replace(/≤/g, '<=').replace(/≥/g, '>=').replace(/≠/g, '<>').replace(/[‐‑]/g, '-').replace(/[\r\t]/g, ' ');
-    const jeu = this.jeux[f]; let o = '';
-    for (const ch of s) o += jeu.has(ch.codePointAt(0)) ? ch : (ch.normalize('NFD')[0] && jeu.has(ch.normalize('NFD').codePointAt(0)) ? ch.normalize('NFD')[0] : '?');
-    return o;
-  }
-  /** Largeur sans crénage (comme reportlab stringWidth et comme le texte est réellement dessiné) */
-  sw(t, f = this.st.font, s = this.st.size) {
-    const cache = this.lc || (this.lc = {}), m = cache[f] || (cache[f] = new Map()); let w = 0;
-    for (const ch of this.texte(t, f)) { let x = m.get(ch); if (x === undefined) { x = this.F[f].widthOfTextAtSize(ch, 1000); m.set(ch, x); } w += x; }
-    return w * s / 1000;
-  }
-  drawString(x, y, t, opt = {}) {
-    const f = this.st.font, s = this.texte(t, f); if (!s) return;
-    this.page.drawText(s, { x, y, size: this.st.size, font: this.F[f], color: this.rgb(this.st.fill), opacity: this.st.alpha, ...(opt.rotate ? { rotate: this.P.degrees(opt.rotate) } : {}) });
-  }
-  drawCentredString(x, y, t) { this.drawString(x - this.sw(t) / 2, y, t); }
-  drawRightString(x, y, t) { this.drawString(x - this.sw(t), y, t); }
-  rect(x, y, w, h, fill = 0, stroke = 1) {
-    if (!fill && !stroke) return;
-    this.page.drawRectangle({ x, y, width: w, height: h, ...(fill ? { color: this.rgb(this.st.fill), opacity: this.st.alpha } : {}),
-      ...(stroke ? { borderColor: this.rgb(this.st.stroke), borderWidth: this.st.lw, ...(this.st.dash ? { borderDashArray: this.st.dash } : {}) } : { borderWidth: 0 }) });
-  }
-  line(x1, y1, x2, y2) { this.page.drawLine({ start: { x: x1, y: y1 }, end: { x: x2, y: y2 }, thickness: this.st.lw, color: this.rgb(this.st.stroke), ...(this.st.dash ? { dashArray: this.st.dash } : {}) }); }
-  drawImage(img, x, y, w, h) { this.page.drawImage(img, { x, y, width: w, height: h }); }
-}
-/** Découpe d'un texte en lignes (reportlab simpleSplit) */
-function decouper(c, txt, f, s, w) {
-  const out = [];
-  for (const l of String(txt ?? '').split('\n')) {
-    const mots = l.split(/\s+/).filter(Boolean), esp = c.sw(' ', f, s); let O = [], lw = -esp;
-    for (const m of mots) { const lt = c.sw(m, f, s); if (lw + esp + lt <= w || !O.length) { O.push(m); lw += esp + lt; } else { out.push(O.join(' ')); O = [m]; lw = lt; } }
-    if (O.length) out.push(O.join(' '));
-    if (!mots.length) out.push('');
-  }
-  return out;
-}
 function dessinerCase(c, x, y, cote, coche) {
   c.saveState(); c.setStrokeColor(NOIR); c.setLineWidth(0.6); c.rect(x, y, cote, cote);
   if (coche) { c.setStrokeColor(ENCRE); c.setLineWidth(1.1); c.line(x + 0.5, y + 0.5, x + cote - 0.5, y + cote - 0.5); c.line(x + 0.5, y + cote - 0.5, x + cote - 0.5, y + 0.5); }

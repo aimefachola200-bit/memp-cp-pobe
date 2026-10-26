@@ -34,7 +34,12 @@ Object.assign(m, { name: V.nom, short_name: V.nomCourt, description: `${V.titre}
 writeFileSync(man, JSON.stringify(m, null, 2));
 if (V.seed) {
   mkdirSync(join(dest, 'data'), { recursive: true });
-  copyFileSync(join(J, 'seed.json'), join(dest, V.seed));
+  if (V.seedSource) {   // données de départ d'une autre jumelle (ex. DOSP de la CS Pobè : référentiel et écoles de memp-cp-pobe)
+    const S = JSON.parse(readFileSync(join(root, 'tools', 'jumelles', V.seedSource, 'seed.json'), 'utf8'));
+    if (V.seedComptes) S.comptes = V.seedComptes;
+    if (V.seedSansPersonnel) S.personnel = [];
+    writeFileSync(join(dest, V.seed), JSON.stringify(S, null, 1));
+  } else copyFileSync(join(J, 'seed.json'), join(dest, V.seed));
 }
 // application intégrée dans une autre (ex. ÉduGestion Pro) : pas d'outils ni d'atelier de publication à embarquer
 if (V.integre || V.sansOutils) for (const n of ['tools', '.github', 'README.md', 'DEPLOIEMENT.md', '.nojekyll', 'CNAME']) rmSync(join(dest, n), { recursive: true, force: true });

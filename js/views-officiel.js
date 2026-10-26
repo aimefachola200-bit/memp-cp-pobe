@@ -363,7 +363,7 @@ async function personnel(ctx, vueInitiale) {
     const C = [['matricule', 'Matricule'], ['npi', 'NPI'], ['nom', 'Nom'], ['prenoms', 'Prénoms'], ['sexe', 'Sexe'], ['dn', 'Date de naissance'], ['ln', 'Lieu de naissance'], ['statut', 'Statut'], ['qualite', 'Qualité'],
       ['corps', 'Corps'], ['emploi', 'Emploi'], ['grade', 'Grade'], ['ir', 'Indice réel'], ['ip', 'Indice payé'], ['fonction', 'Fonction'], ['code', 'Code établissement'], ['etab', 'Établissement'], ['cs', 'Circonscription scolaire'],
       ['ps', 'Date de première prise de service'], ['dep', "Date d'arrivée dans le département"], ['poste', "Date d'arrivée au poste"], ['dipl', 'Diplôme académique'], ['cap', "Date d'obtention du CAP"], ['tel', 'Téléphone']];
-    const ex = { matricule: '123456', npi: '1234567890', nom: 'DOSSOU', prenoms: 'Paul Koffi', sexe: 'M', dn: '12/04/1985', ln: 'Abomey', statut: 'FE', qualite: 'Instituteur', corps: 'Instituteurs', emploi: 'Enseignant',
+    const ex = { matricule: '123456', npi: '1234567890', nom: 'NOM (exemple à remplacer)', prenoms: 'Prénoms', sexe: 'M', dn: '12/04/1985', ln: 'Abomey', statut: 'FE', qualite: 'Instituteur', corps: 'Instituteurs', emploi: 'Enseignant',
       grade: 'B1-4', ir: '1234', ip: '1234', fonction: 'Adjoint', code: (schools[0] && schools[0].code) || 'EP001', etab: (schools[0] && schools[0].nom) || 'EPP …', cs: u.nomCs || '', ps: '01/10/2008', dep: '01/10/2012', poste: '01/10/2020', dipl: 'BAC', cap: '2011', tel: '01 97 00 00 00' };
     download(await listToXlsx({ title: "FICHE D'IMPORTATION DU PERSONNEL — FORMAT EDUCMASTER", subtitle: 'Une ligne par agent. Remplacez la ligne d’exemple ; les dates au format JJ/MM/AAAA. Statut : FE, ACDPE, ACDPCTD, ACE, Privé. Sexe : M ou F. Fonction : Directeur / directrice, Adjoint(e)…',
       columns: C.map(([k, l]) => ({ k, l, w: 120 })), rows: [ex], sheet: 'Personnel' }), 'Fiche_importation_personnel_EducMaster.xlsx');
@@ -492,7 +492,7 @@ async function espace(ctx) {
       ret.length ? h('div', { class: 'card' }, h('h3', '🎓 Départs à la retraite proches'), h('ul', ret.slice(0, 8).map(p => h('li', `${p.nom} ${p.prenoms || ''} — ${p.ecole} — ${p.retraiteAtteinte ? 'âge atteint (' + p.retraiteTxt + ')' : p.retraiteTxt}`)))) : null,
       ec.length ? h('div', { class: 'card' }, h('h3', `🏫 Écoles de la zone (${ec.length})`), h('p', { class: 'sub' }, ec.sort((a, b) => a.nom.localeCompare(b.nom, 'fr')).map(s => s.nom + (s.directeur ? ` (${s.directeur})` : '')).join(' · '))) : null,
       h('h2', { class: 'sec-h' }, 'Mes outils'),
-      h('div', { class: 'espace-liens' }, lien('ecoles', '🏫 Écoles'), lien('personnel', '👩‍🏫 Personnel'), lien('fiches', '📝 Fiches de collecte'), lien('rapports', "📊 Rapports de fin d'année"), lien('activites', '📅 Activités'), lien('bilans', '📈 Bilans'),
+      h('div', { class: 'espace-liens' }, lien('ecoles', '🏫 Écoles'), lien('personnel', '👩‍🏫 Personnel'), lien('fiches', '📝 Fiches de collecte'), lien('activites', '📅 Activités'), lien('bilans', '📈 Bilans'),
         lien('themes', '🎯 Thèmes UP'), lien('planif', '🗓️ Planification EM et EP'), lien('planification', '📚 Planification CI → CM2'), lien('emploi', '🕘 Emplois du temps'), lien('calendrier', '📆 Calendrier'), lien('reglement', '⚖️ Règlement'), lien('documents', '📄 Documents officiels')));
     ctx.status(`${nomZone()} — ${ec.length} école(s), ${pe.length} agent(s), ${fi.length} fiche(s)`);
   }

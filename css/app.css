@@ -254,3 +254,12 @@ table.eff input.eff-in:disabled{background:transparent;border-color:transparent;
 .card-courbe{background:var(--card);border-radius:8px;padding:6px;margin:10px 0}
 .card-courbe svg text{fill:currentColor}
 @media print{.card-courbe{break-inside:avoid}}
+/* fiches de rapport (modèle GESCOL) */
+.rp-man,input.rp-man,select.rp-man{background:#fff3b0 !important}
+.rp-calc,td.rp-calc{background:rgba(11,93,59,.12)}
+input.rp-err{outline:2px solid var(--err)}
+h4.rp-sous{margin:10px 0 4px;font-size:.95rem;color:var(--mute)}
+table.g td input{min-width:44px}
+table.sect tr.sect-st td{background:rgba(11,93,59,.07);font-weight:600}
+table.sect tr.sect-tot td{background:#fff2cc;font-weight:800}
+.sect-card{margin-top:14px}

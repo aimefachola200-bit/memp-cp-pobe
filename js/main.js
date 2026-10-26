@@ -59,7 +59,6 @@ const NAV = [
   { id: 'infra', ic: '🏗️', t: 'Infrastructures et mobilier' },
   { id: 'ecolesstruct', ic: '🏫', t: 'Écoles : structure et équipements' },
   { id: 'cep', ic: '🎓', t: 'CEP : candidats et réussite' },
-  { id: 'rapports', ic: '📊', t: "Rapports de fin d'année" },
   { id: 'synoptique', ic: '🗂️', t: 'Synthèse des fiches (consolidation)' },
   { g: 'Prévision et suivi-évaluation', id: 'prevision', ic: '🔮', t: "Prévisions de l'année suivante", seul: 'dosp' },
   { id: 'besoins', ic: '⚖️', t: 'Besoins et écarts (enseignants, salles, places)', seul: 'dosp' },
@@ -85,7 +84,7 @@ const NAV = [
   { id: 'utilisateurs', ic: '👥', t: 'Utilisateurs', roles: ['ADMIN'], horsIntegre: true },
   { id: 'parametres', ic: '⚙️', t: 'Paramètres & à propos' },
 ];
-const ROUTES = { accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', rapports: 'views-reports', rapport: 'views-reports', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles', cep: 'views-cep',
+const ROUTES = { accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles', cep: 'views-cep',
   synoptique: 'views-more', activites: 'views-more', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', synocp: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', carriere: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
   saisie: 'views-saisie', recensement: 'views-recensement', recfiche: 'views-recensement', synodosp: 'views-synodosp', whatsapp: 'views-whatsapp', espacedosp: 'views-dosp', envois: 'views-dosp', prevision: 'views-dosp', besoins: 'views-dosp', suivieval: 'views-dosp', capacites: 'views-dosp', plandosp: 'views-dosp', docsdosp: 'views-dosp', identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
 
@@ -157,6 +156,11 @@ function shell() {
   main.addEventListener('click', (e) => { if (!e.target.closest('.burger')) document.body.classList.remove('nav-open'); });
 }
 
+const CEP_SECT = { titre: 'Candidats présentés au CEP dans la circonscription, par sexe (inscrits, présents, admis)', colonnes: 'cep', note: 'Source : fiche de fin d’année des EP (rubrique CEP), à défaut le rapport du CM2. Modes « Par zone », « Par arrondissement » et « Par école » : sous-totaux public / privé.' };
+const GEN_SECT = { titre: 'Chiffres de la circonscription : public / privé', colonnes: 'general' };
+const SECTEURS = { accueil: [GEN_SECT], ecoles: [GEN_SECT], ecolesstruct: [GEN_SECT], infra: [GEN_SECT], synoptique: [GEN_SECT], synodosp: [GEN_SECT, CEP_SECT], synocp: [GEN_SECT],
+  effectifs: [{ titre: 'Effectifs des apprenants : public / privé', colonnes: 'effectifs' }], personnel: [{ titre: 'Personnel enseignant par sexe : public / privé', colonnes: 'personnel' }],
+  suivieval: [GEN_SECT, CEP_SECT], besoins: [GEN_SECT], prevision: [GEN_SECT], cep: [CEP_SECT], espacedosp: [GEN_SECT] };
 let routeSeq = 0;
 /* Bouton « ← Retour » : écran précédent de l'application (historique), sinon le tableau de bord */
 let pagesVues = 0;
@@ -188,6 +192,12 @@ async function route() {
   try {
     const mod = await import('./' + ROUTES[id] + '.js');
     fn = (await mod.render(id, ctx)) || null;
+    // répartition public / privé (EP, EM, total public, total privé, synthèse, total de la circonscription) sous les écrans de chiffres
+    const SECT = SECTEURS[id];
+    if (SECT && live() && !(id === 'effectifs' && args.length)) {
+      const { blocSecteurs } = await import('./secteurs.js');
+      for (const o of SECT) el.append(await blocSecteurs(session.user, o));
+    }
   } catch (e) {
     console.error(e);
     // fichiers d'une ancienne et d'une nouvelle version mélangés (mise à jour arrivée pendant l'utilisation) : on recharge une fois

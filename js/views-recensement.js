@@ -8,7 +8,7 @@
    Conception : Maître Aimé FACHE */
 import { h, toast, download, pickFile, readAsBuffer, confirmBox, currentSchoolYear, norm } from './util.js';
 import { db } from './db.js';
-import { scoped, inScope, addLog } from './data.js';
+import { scoped, inScope, addLog, cleGroupe, libGroupe, ordreGroupe } from './data.js';
 import * as R from './recensement.js';
 import { pdfFiche } from './recensement-pdf.js';
 import { XlsxBook, readXlsx } from './xlsx.js';
@@ -39,16 +39,30 @@ async function liste(ctx) {
   ctx.el.append(h('div', { class: 'card', style: { marginBottom: '10px' } },
     h('p', { style: { margin: 0 } }, 'La fiche officielle du Ministère, rubrique par rubrique. Les valeurs connues de l\'application (identité de l\'école, personnel, effectifs des apprenants) sont proposées ; tout reste modifiable. Le PDF redessine la fiche dans sa forme d\'origine.'),
     h('div', { style: { marginTop: '8px' } }, h('label', h('span', { class: 'muted' }, 'Année scolaire : '), sel))), holder);
+  let gmode = (await db.setting('rec-groupe')) || (u.role === 'CP' ? 'zone' : 'arr');
+  const zonesRef = (await db.all('ref')).filter(r => r.type === 'zone');
+  const selG = h('select', { class: 'search', style: { maxWidth: '220px', marginLeft: '8px' }, 'aria-label': 'Regroupement', onchange: async (e) => { gmode = e.target.value; await db.setting('rec-groupe', gmode); dessiner(); } },
+    [['zone', 'Par zone pédagogique'], ['arr', 'Par arrondissement']].map(([v, l]) => h('option', { value: v, selected: v === gmode }, l)));
+  sel.after(selG);
   async function dessiner() {
-    const schools = (await scoped('schools', u)).sort((a, b) => (a.numZone || 99) - (b.numZone || 99) || a.nom.localeCompare(b.nom, 'fr'));
+    const schools = (await scoped('schools', u)).sort((a, b) => ordreGroupe(cleGroupe(a, gmode), cleGroupe(b, gmode)) || (/priv/i.test(a.secteur || '') - /priv/i.test(b.secteur || '')) || a.nom.localeCompare(b.nom, 'fr'));
     const recs = new Map((await db.all('recensements')).map(r => [r.id, r]));
-    const lignes = schools.map(s => {
+    const compte = (l) => { const c = (em, p) => l.filter(s => (s.cycle === 'Maternelle') === em && /priv/i.test(s.secteur || '') === p).length; return `${l.length} école(s) : EP publiques ${c(false, false)}, EM publiques ${c(true, false)}, EP privées ${c(false, true)}, EM privées ${c(true, true)}`; };
+    const lignes = [];
+    let gPrec = null;
+    for (const s of schools) {
+      const g = cleGroupe(s, gmode);
+      if (g !== gPrec) { gPrec = g; const l = schools.filter(x => cleGroupe(x, gmode) === g); lignes.push(h('tr', h('td', { colspan: 5, style: { background: 'rgba(11,93,59,.08)', fontWeight: 700 } }, `${libGroupe(g, zonesRef, gmode, 'Sans zone')} — ${compte(l)}`))); }
+      lignes.push(ligneEcole(s));
+    }
+    if (schools.length) lignes.push(h('tr', h('td', { colspan: 5, style: { background: '#fff2cc', fontWeight: 800 } }, `Total — ${compte(schools)}`)));
+    function ligneEcole(s) {
       const typ = R.typeEcole(s), rec = recs.get(R.recId(s.id, typ, annee)), n = rec ? Object.keys(rec.valeurs || {}).length : 0;
       return h('tr', h('td', h('strong', s.nom), h('div', { class: 'muted' }, [s.numZone ? 'Zone ' + s.numZone : '', s.directeur].filter(Boolean).join(' · '))), h('td', typ === 'primaire' ? 'EP' : 'EM'), h('td', s.secteur || ''),
         h('td', rec ? h('span', { class: 'badge Validée' }, `${n} valeur(s) saisie(s)`) : h('span', { class: 'muted' }, 'calculée seulement'), rec && rec.maj ? h('div', { class: 'muted' }, new Date(rec.maj).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })) : null),
         h('td', { style: { whiteSpace: 'nowrap' } }, h('button', { class: 'btn sm primary', onclick: () => ctx.go(`recfiche/${s.id}/${typ}/${annee}`) }, '✏️ Remplir'), ' ',
           h('button', { class: 'btn sm', onclick: () => telechargerPdf(s, typ, annee, false).catch(e => toast(e.message, 'err')) }, '📄 PDF rempli')));
-    });
+    }
     holder.replaceChildren(schools.length ? h('div', { class: 'gridwrap' }, h('table', { class: 'g' }, h('thead', h('tr', h('th', 'École'), h('th', 'Type'), h('th', 'Secteur'), h('th', 'Fiche ' + annee), h('th', ''))), h('tbody', lignes)))
       : h('p', { class: 'muted' }, 'Aucune école dans votre périmètre : ajoutez d\'abord les écoles (menu « Écoles »).'));
     ctx.status(`${schools.length} école(s) — année ${annee}`);

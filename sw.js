@@ -3,7 +3,7 @@
 // Préfixe propre à chaque application (même domaine github.io pour l'application CP et ses jumelles)
 const PREFIX = 'memp-cp-' + new URL(self.registration.scope).pathname.replace(/[^a-z0-9]+/gi, '-') + '-';
 // Empreinte de la publication (écrite par tools/gen-assets.mjs) : sw.js change à chaque mise à jour, les appareils la reçoivent.
-const BUILD = '0c388273d1fa';
+const BUILD = '94ab72c7fd1d';
 const CACHE = PREFIX + BUILD;   // une seule version servie à la fois : jamais de mélange ancien / nouveau
 
 self.addEventListener('install', (event) => {
@@ -27,7 +27,8 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
   // application jumelle publiée dans un sous-dossier (dosp/) : elle a son propre service worker
-  if (new URL(req.url).pathname.startsWith(new URL(self.registration.scope).pathname + 'dosp/')) return;
+  const sousApp = new URL(req.url).pathname.slice(new URL(self.registration.scope).pathname.length).split('/')[0];
+  if (['dosp', 'edugestion', 'edugestion-master'].includes(sousApp)) return;   // applications publiées dans un sous-dossier : leur propre service worker
   event.respondWith((async () => {
     const cache = await caches.open(CACHE);
     const hit = await cache.match(req, { ignoreSearch: req.mode === 'navigate' });
