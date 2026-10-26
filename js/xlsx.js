@@ -45,12 +45,16 @@ export class XlsxBook {
     z.file('_rels/.rels', '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>');
     z.file('docProps/core.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>République du Bénin — Ministère des Enseignements Maternel et Primaire</dc:title><dc:creator>Application CP — MEMP · ${esc(CREDIT)}</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:created></cp:coreProperties>`);
     let wbSheets = '', wbRels = '', imgN = 0;
+    // Table des chaînes partagées : les lecteurs Android (WPS, aperçu du téléphone) et les outils d'importation
+    // (EducMaster…) n'affichent pas les « chaînes en ligne » — rubriques et noms apparaissaient vides.
+    const chaines = [], index = new Map(); let total = 0;
+    const sst = (t) => { t = String(t); total++; if (!index.has(t)) { index.set(t, chaines.length); chaines.push(t); } return index.get(t); };
     this.sheets.forEach((ws, i) => {
       const n = i + 1;
       ct.push(`<Override PartName="/xl/worksheets/sheet${n}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`);
       wbSheets += `<sheet name="${esc(ws.name)}" sheetId="${n}" r:id="rId${n}"/>`;
       wbRels += `<Relationship Id="rId${n}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${n}.xml"/>`;
-      z.file(`xl/worksheets/sheet${n}.xml`, ws._xml());
+      z.file(`xl/worksheets/sheet${n}.xml`, ws._xml(sst));
       if (ws.img) {
         imgN++;
         ct.push(`<Override PartName="/xl/drawings/drawing${n}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`);
@@ -61,9 +65,11 @@ export class XlsxBook {
         z.file(`xl/drawings/drawing${n}.xml`, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><xdr:oneCellAnchor><xdr:from><xdr:col>0</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>0</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:ext cx="${cx}" cy="${cy}"/><xdr:pic><xdr:nvPicPr><xdr:cNvPr id="2" name="Emblème du Ministère" descr="République du Bénin - Ministère des Enseignements Maternel et Primaire"/><xdr:cNvPicPr><a:picLocks noChangeAspect="1"/></xdr:cNvPicPr></xdr:nvPicPr><xdr:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></xdr:blipFill><xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic><xdr:clientData/></xdr:oneCellAnchor></xdr:wsDr>`);
       }
     });
+    ct.push('<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>');
+    z.file('xl/sharedStrings.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="${total}" uniqueCount="${chaines.length}">${chaines.map(t => `<si><t xml:space="preserve">${esc(t)}</t></si>`).join('')}</sst>`);
     z.file('[Content_Types].xml', ct.join('') + '</Types>');
     z.file('xl/workbook.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${wbSheets}</sheets></workbook>`);
-    z.file('xl/_rels/workbook.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${wbRels}<Relationship Id="rIdS" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`);
+    z.file('xl/_rels/workbook.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${wbRels}<Relationship Id="rIdS" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/><Relationship Id="rIdT" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/></Relationships>`);
     const xfs = STYLE_NAMES.map(nm => { const s = STYLES[nm];
       return `<xf numFmtId="${s.fmt || 0}" fontId="${s.font || 0}" fillId="${s.fill || 0}" borderId="${s.border || 0}" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="${s.h || 'general'}" vertical="${s.v || 'bottom'}" wrapText="${s.wrap ? 1 : 0}"/></xf>`; }).join('');
     z.file('xl/styles.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="${FONTS.length}">${FONTS.join('')}</fonts><fills count="${FILLS.length}">${FILLS.join('')}</fills><borders count="${BORDERS.length}">${BORDERS.join('')}</borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="${STYLE_NAMES.length}">${xfs}</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`);
@@ -88,7 +94,7 @@ class XlsxSheet {
     for (let r = 0; r < rows; r++) this.heights[r] = pt;
     return rows + 1;
   }
-  _xml() {
+  _xml(sst) {
     const byRow = new Map(); let maxR = 0, maxC = 0;
     for (const [k, cell] of this.cells) { const [r, c] = k.split(',').map(Number); if (!byRow.has(r)) byRow.set(r, []); byRow.get(r).push([c, cell]); maxR = Math.max(maxR, r); maxC = Math.max(maxC, c); }
     for (const r of Object.keys(this.heights)) { maxR = Math.max(maxR, +r); byRow.has(+r) || byRow.set(+r, []); }
@@ -100,7 +106,7 @@ class XlsxSheet {
         const ref = colName(c) + (r + 1), v = cell.v;
         if (v === null || v === undefined || v === '') rows += `<c r="${ref}" s="${cell.s}"/>`;
         else if (typeof v === 'number' && isFinite(v)) rows += `<c r="${ref}" s="${cell.s}"><v>${v}</v></c>`;
-        else rows += `<c r="${ref}" s="${cell.s}" t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
+        else rows += `<c r="${ref}" s="${cell.s}" t="s"><v>${sst(v)}</v></c>`;
       });
       rows += '</row>';
     });
@@ -162,3 +168,39 @@ export function parseCsv(text) {
   return rows.filter(r => r.some(c => String(c).trim() !== ''));
 }
 export const csvEscape = (v) => { v = String(v ?? ''); return /[;"\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+
+/* ---------------- Tableaux affichés -> vrai classeur ----------------
+   Remplace les anciennes pages HTML renommées « .xls » (vides sur Android, refusées à l'importation). */
+export async function htmlVersXlsx(html, nomFeuille = 'Tableau', banniere = null) {
+  const doc = new DOMParser().parseFromString(String(html).replace(/^﻿/, ''), 'text/html');
+  doc.querySelectorAll('script,style,svg,button,.no-print').forEach(x => x.remove());
+  const txt = (n) => (n.textContent || '').replace(/ /g, ' ').replace(/[ \t]+/g, ' ').replace(/\s*\n\s*/g, '\n').trim();
+  const num = (t) => /^-?(0|[1-9]\d{0,10})([.,]\d+)?$/.test(t) ? Number(t.replace(',', '.')) : t;
+  const wb = new XlsxBook(), ws = wb.sheet(nomFeuille);
+  let r = banniere ? ws.banner(banniere, 820) : 0; const largeurs = {};
+  const visiter = (n) => {
+    for (const c of n.children) {
+      if (c.tagName === 'TABLE') {
+        const occ = [];
+        [...c.rows].forEach((tr, ri) => {
+          const o = occ[ri] || []; let j = 0;
+          for (const td of tr.cells) {
+            while (o[j]) j++;
+            const cs = Math.max(1, +td.colSpan || 1), rs = Math.max(1, +td.rowSpan || 1), t = txt(td), th = td.tagName === 'TH' || !!td.closest('thead');
+            const tot = tr.classList.contains('tot') || /^total/i.test(txt(tr.cells[0] || td));
+            ws.set(r + ri, j, th ? t : num(t), th ? 'th' : tot ? 'total' : (j === 0 ? 'td' : 'tdc'));
+            if (cs > 1 || rs > 1) { ws.merge(r + ri, j, r + ri + rs - 1, j + cs - 1); for (let k = 1; k < cs; k++) ws.set(r + ri, j + k, '', th ? 'th' : 'td'); }
+            for (let q = 1; q < rs; q++) { occ[ri + q] = occ[ri + q] || []; for (let k = 0; k < cs; k++) occ[ri + q][j + k] = 1; }
+            if (cs === 1) largeurs[j] = Math.max(largeurs[j] || 8, Math.min(40, t.length + 2));
+            j += cs;
+          }
+        });
+        r += c.rows.length + 1;
+      } else if (/^H[1-6]$|^P$|^CAPTION$/.test(c.tagName)) { const t = txt(c); if (t) { ws.set(r, 0, t, /^H[12]$/.test(c.tagName) ? 'title' : 'bold'); r++; } }
+      else visiter(c);
+    }
+  };
+  visiter(doc.body);
+  Object.entries(largeurs).forEach(([c, w]) => ws.width(+c, w));
+  return wb.toBlob();
+}

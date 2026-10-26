@@ -6,6 +6,8 @@
    écart type des taux des écoles. Graphiques au choix, Excel.
    Conception : Maître Aimé FACHE */
 import { h, download, clean, currentSchoolYear } from './util.js';
+import { htmlVersXlsx } from './xlsx.js';
+import { bannerBytes } from './pdf.js';
 import { scoped } from './data.js';
 import { sectionsFor, gridValue } from './schema.js';
 import { reportStats } from './export.js';
@@ -134,9 +136,9 @@ export async function render(id, ctx) {
     }
     ctx.status(`${c.tot.pub.fiches + c.tot.prv.fiches} école(s) renseignée(s) — ${st.annee}`);
   }
-  function exporter() {
+  async function exporter() {
     const tabs = [...holder.querySelectorAll('h3, h4, table')].map(t => t.outerHTML).join('');
-    download(new Blob(['﻿<html><head><meta charset="utf-8"><style>table{border-collapse:collapse;font-family:Arial;font-size:10pt}td,th{border:1px solid #444;padding:3px 6px}th{background:#006633;color:#fff}</style></head><body><h3>CEP : candidats et réussite — ' + st.annee + '</h3>' + tabs + '</body></html>'], { type: 'application/vnd.ms-excel' }), clean('CEP_' + st.annee) + '.xls');
+    htmlVersXlsx('<html><head><meta charset="utf-8"><style>table{border-collapse:collapse;font-family:Arial;font-size:10pt}td,th{border:1px solid #444;padding:3px 6px}th{background:#006633;color:#fff}</style></head><body><h3>CEP : candidats et réussite — ' + st.annee + '</h3>' + tabs + '</body></html>', 'Tableau', await bannerBytes().catch(() => null)).then(b => download(b, clean('CEP_' + st.annee) + '.xlsx'));
   }
   draw();
 }
