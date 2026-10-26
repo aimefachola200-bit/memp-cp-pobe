@@ -9,6 +9,7 @@ import { FICHE_TYPES, STATUTS_FICHE, prefill, sectionsFor } from './schema.js';
 import { listToXlsx, listToPdf } from './export.js';
 import { XlsxBook, readXlsx, parseCsv } from './xlsx.js';
 import { bannerBytes } from './pdf.js';
+import { VARIANT } from './config.js';
 import { canEdit, canTransmit, canValidate, completion, transmit, validate, requestCorrection, unlock, exportFiche } from './workflow.js';
 
 export async function render(id, ctx) {
@@ -29,7 +30,18 @@ async function accueil(ctx) {
   const installBtn = h('button', { class: 'btn accent hidden', onclick: async () => { const p = window.__installPrompt; if (!p) return; p.prompt(); await p.userChoice; } }, '⬇ Installer l\'application sur cet appareil');
   const showInstall = () => installBtn.classList.toggle('hidden', !window.__installPrompt);
   document.addEventListener('installable', showInstall); showInstall();
+  // Tuiles d'accès rapide (comme le tableau de bord de SCOLARIS / GESCOL)
+  const dosp = VARIANT.profil === 'dosp' || u.role === 'DOSP';
+  const T = dosp
+    ? [['🗂️', 'Mon espace DOSP', 'Travail du jour', 'espacedosp'], ['📋', 'Tableau synoptique', 'Chiffres consolidés', 'synodosp'], ['📥', 'Fiches reçues', 'Réception et acheminement', 'envois'],
+       ['📊', 'Suivi-évaluation', 'Indicateurs de la CS', 'suivieval'], ['⚖️', 'Besoins et écarts', 'Enseignants, salles, places', 'besoins'], ['🎓', 'Candidats au CEP', 'Par sexe, public / privé', 'cep'],
+       ['📄', 'Documents officiels', 'Calendrier, planifications…', 'documents']]
+    : [['🧑‍🏫', 'Mon espace CP', 'Zone et écoles', 'espace'], ['✍️', 'Saisie manuelle', 'Fiches, personnel, directeurs', 'saisie'], ['🗂️', 'Fiches de recensement', 'EP, EM — modèle GESCOL', 'recensement'],
+       ['📝', 'Fiches de collecte', 'Rentrée, fin d’année', 'fiches'], ['📋', 'Tableau synoptique', 'Chiffres de la zone', 'synocp'], ['🎓', 'Candidats au CEP', 'Par sexe, public / privé', 'cep'],
+       ['📄', 'Documents officiels', 'Calendrier, planifications…', 'documents']];
+  const tuiles = h('div', { class: 'tuiles' }, T.map(([ic, t, d, r]) => h('button', { class: 'tuile', type: 'button', onclick: () => ctx.go(r) }, h('span', { class: 'tuile-ic' }, ic), h('b', t), h('small', d))));
   ctx.el.append(
+    tuiles,
     h('div', { class: 'cards' }, stat(schools.length, 'écoles dans votre périmètre', '', 'ecoles'), stat(fiches.length, 'fiches de collecte', '', 'fiches'),
       stat(by('Brouillon') + by('À corriger'), 'à compléter / corriger', 'y', 'fiches'), stat(by('Transmise'), 'en attente de validation CCS', 'y', 'fiches'), stat(by('Validée'), 'fiches validées', '', 'fiches')),
     nextOnes.length ? h('div', { class: 'card' }, h('h3', '🎯 Prochaine unité pédagogique'), h('p', h('b', fmtDate(nextDate))), ...nextOnes.map(t => h('p', `${t.niv} — ${t.theme}`)), h('button', { class: 'btn sm', onclick: () => ctx.go('themes') }, 'Voir le planning')) : null,

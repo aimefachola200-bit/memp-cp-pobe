@@ -1,6 +1,6 @@
 /* République du Bénin — Ministère des Enseignements Maternel et Primaire (MEMP)
    Application CP — point d'entrée.   Conception : Maître Aimé FACHE — Tél. 01 96 51 03 33 */
-import { h, $, toast, checkPassword, hashPassword, modal } from './util.js';
+import { h, $, toast, checkPassword, hashPassword, modal, currentSchoolYear } from './util.js';
 import { db } from './db.js';
 import { APP, CREDIT, VARIANT } from './config.js';
 const CLE_SESSION = 'memp-user-' + VARIANT.id;
@@ -146,7 +146,7 @@ function shell() {
     h('div', { class: 'sb-foot' }, h('span', { class: 'who' }, `👤 ${u.prenoms || ''} ${u.nom || u.username}`, h('br'), h('small', ROLES[u.role] + (u.codeZone ? ' · ' + u.codeZone : u.codeCs ? ' · ' + u.codeCs : ''))),
       VARIANT.integre ? h('a', { class: 'btn sm', href: retourEduGestion() }, '← Retour à ÉduGestion') : h('button', { class: 'btn sm', onclick: logout }, 'Se déconnecter'), h('div', { style: { fontSize: '.68rem', opacity: .8, marginTop: '8px' } }, CREDIT)));
   const main = h('div', { class: 'main' },
-    h('header', { class: 'topbar' }, h('button', { class: 'icon-btn burger', 'aria-label': 'Menu', onclick: (e) => { e.stopPropagation(); document.body.classList.toggle('nav-open'); } }, '☰'), h('div', { class: 'grow' }, banner()), VARIANT.integre ? h('a', { class: 'btn sm no-print', href: retourEduGestion(), title: 'Revenir à ÉduGestion Pro', style: { whiteSpace: 'nowrap', marginLeft: '8px' } }, '← ÉduGestion') : null),
+    h('header', { class: 'topbar' }, h('button', { class: 'icon-btn burger', 'aria-label': 'Menu', onclick: (e) => { e.stopPropagation(); document.body.classList.toggle('nav-open'); } }, '☰'), h('div', { class: 'grow bh-titre' }, h('strong', VARIANT.profil === 'dosp' ? 'Application DOSP' : APP.name), h('small', `${ROLES[u.role] || ''}${u.codeCs ? ' · ' + u.codeCs : ''} · ${currentSchoolYear()}`)), h('span', { class: 'bh-user' }, `${u.prenoms || ''} ${u.nom || u.username}`.trim()), VARIANT.integre ? h('a', { class: 'btn sm no-print', href: retourEduGestion(), title: 'Revenir à ÉduGestion Pro', style: { whiteSpace: 'nowrap', marginLeft: '8px' } }, '← ÉduGestion') : null),
     h('div', { class: 'titlebar' }, h('button', { class: 'btn sm no-print btn-retour', type: 'button', title: 'Revenir à la page précédente', 'aria-label': 'Revenir à la page précédente', onclick: retourArriere }, '← Retour'), h('h2', { id: 'v-title' }), h('span', { class: 'sub', id: 'v-sub' })),
     h('div', { class: 'actionbar', id: 'v-bar' }),
     h('section', { class: 'view', id: 'v-body' }),
