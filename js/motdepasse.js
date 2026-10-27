@@ -63,7 +63,7 @@ export async function dialogueOubli(identInitial = '') {
           h('p', { class: 'notes' }, 'Connectez-vous avec ce mot de passe : un nouveau vous sera demandé.'), h('button', { class: 'btn primary', style: { width: '100%' }, onclick: () => fermer() }, 'Revenir à la connexion'));
       } }, 'Réinitialiser le mot de passe'));
     const msg = encodeURIComponent(`Bonjour, j'ai oublié mon mot de passe de l'${APP.name} (identifiant : ${u.username}). Merci de m'aider à le réinitialiser.`);
-    blocs.push(h('h3', { style: { fontSize: '1rem', margin: '16px 0 6px' } }, 'Ou demander de l’aide'), h('a', { class: 'btn', style: { width: '100%', textAlign: 'center', display: 'block' }, href: `https://wa.me/229${APP.concepteurTelRaw}?text=${msg}`, target: '_blank', rel: 'noopener' }, '💬 Demander par WhatsApp'));
+    blocs.push(h('h3', { style: { fontSize: '1rem', margin: '16px 0 6px' } }, 'Ou demander de l’aide'), h('a', { class: 'btn', style: { width: '100%', textAlign: 'center', display: 'block' }, href: `https://wa.me/229${APP.concepteurTelRaw}?text=${msg}`, target: '_blank', rel: 'noopener' }, '\uE035 Demander par WhatsApp'));
     corps.replaceChildren(...blocs);
   }
   function nouveau(u) {
@@ -77,7 +77,7 @@ export async function dialogueOubli(identInitial = '') {
       } }, 'Enregistrer le nouveau mot de passe'));
   }
   etape1();
-  modal({ title: '🔑 Mot de passe oublié', body: corps, actions: [{ label: 'Fermer' }] });
+  modal({ title: '\uE032 Mot de passe oublié', body: corps, actions: [{ label: 'Fermer' }] });
   fermer = () => document.querySelector('.overlay .dialog-head .icon-btn')?.click();
 }
 
@@ -89,7 +89,7 @@ export function dialogueSecours(user, apres) {
     fieldEl({ k: 'q', l: 'Question', t: 'select', options: [...QUESTIONS, 'Autre question (à écrire)…'] }, enListe ? v.q : 'Autre question (à écrire)…', (k, x) => { v.q = x; }),
     fieldEl({ k: 'autre', l: 'Autre question (si choisie)' }, enListe ? '' : v.q, (k, x) => { v.autre = x; }),
     fieldEl({ k: 'r', l: 'Réponse' }, '', (k, x) => { v.r = x; }), fieldEl({ k: 'mdp', l: 'Mot de passe actuel', t: 'password' }, '', (k, x) => { v.mdp = x; }));
-  modal({ title: '🔑 Ma question de secours', body, actions: [{ label: 'Annuler' }, { label: 'Enregistrer', kind: 'primary', keepOpen: true, onClick: async (e, close) => {
+  modal({ title: '\uE032 Ma question de secours', body, actions: [{ label: 'Annuler' }, { label: 'Enregistrer', kind: 'primary', keepOpen: true, onClick: async (e, close) => {
     const rec = await db.get('users', user.id);
     if (!(await checkPassword(v.mdp, rec.pwd))) { toast('Mot de passe actuel incorrect.', 'err'); return false; }
     const question = v.q.startsWith('Autre question') ? v.autre.trim() : v.q;

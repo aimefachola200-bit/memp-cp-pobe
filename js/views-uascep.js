@@ -39,13 +39,10 @@ export async function verifierUascep(d) {
   return { same: now === d.hash, resume: x.resume || {} };
 }
 
-export async function render(id, ctx) {
-  if (!window.UASCEP) { ctx.el.append(Object.assign(document.createElement('p'), { textContent: 'Module UASCEP indisponible : rechargez l’application.' })); return; }
-  const u = ctx.user;
-  ctx.title && ctx.title('Bureaux UASCEP', 'Membres et responsables par école, UP, zone, circonscription et département');
+/** Adaptateur des bureaux UASCEP pour un compte (réutilisé par « Pilotage et vie scolaire ») */
+export async function adaptateurUascep(u) {
   const ROLES = { CP: ['ECOLE', 'UP', 'ZONE'], CCS: ['ECOLE', 'UP', 'ZONE', 'CS'], DOSP: ['ECOLE', 'UP', 'ZONE', 'CS'], DDEMP: ['ECOLE', 'UP', 'ZONE', 'CS', 'DDEMP'], ADMIN: ['ECOLE', 'UP', 'ZONE', 'CS', 'DDEMP'] };
   const niveaux = ROLES[u.role] || ['ECOLE'];
-  const racine = document.createElement('div'); ctx.el.append(racine);
 
   async function contexte() {
     const ecoles = (await scoped('schools', u)).filter(s => s && s.nom);
@@ -98,7 +95,7 @@ export async function render(id, ctx) {
       + '<div style="border-bottom:2px solid #1F4E79;width:60%;margin-top:4px"></div></div>';
   }
 
-  await window.UASCEP.monter(racine, {
+  return {
     app: 'MEMP-CP', sansTitre: true,
     charger: async () => (await db.setting('uascep')) || null,
     enregistrer: async (etat) => { await db.setting('uascep', etat); },
@@ -117,6 +114,14 @@ export async function render(id, ctx) {
     xlsxEcrire: async (feuilles) => window.XlsxEcrire.classeur(feuilles),
     xlsxLire: async (f) => (await readXlsx(await f.arrayBuffer())).map(x => ({ nom: x.name, lignes: x.rows })),
     telecharger: (nom, blob) => download(blob, nom)
-  });
+  };
+}
+
+export async function render(id, ctx) {
+  if (!window.UASCEP) { ctx.el.append(Object.assign(document.createElement('p'), { textContent: 'Module UASCEP indisponible : rechargez l’application.' })); return; }
+  const u = ctx.user;
+  ctx.title && ctx.title('Bureaux UASCEP', 'Membres et responsables par école, UP, zone, circonscription et département');
+  const racine = document.createElement('div'); ctx.el.append(racine);
+  await window.UASCEP.monter(racine, await adaptateurUascep(u));
   ctx.actions && ctx.actions([]);
 }

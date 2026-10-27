@@ -36,7 +36,7 @@ async function saisie(ctx) {
   let onglet = (await db.setting('saisie-onglet')) || 'fiches', annee = currentSchoolYear(), ecoleId = (await db.setting('saisie-ecole')) || '';
   const tabs = h('div', { class: 'tabs no-print' }), holder = h('div');
   ctx.el.append(tabs, holder);
-  const ONGLETS = [['fiches', '📝 Fiches des écoles'], ['personnel', "👩‍🏫 Personnel d'une école"], ['structure', '🗂️ Personnel de la circonscription'], ['directeurs', '🏫 Directeurs des écoles']];
+  const ONGLETS = [['fiches', '\uE00E Fiches des écoles'], ['personnel', "\uE01E Personnel d'une école"], ['structure', '\uE011 Personnel de la circonscription'], ['directeurs', '\uE022 Directeurs des écoles']];
   const nomGroupe = (s) => libGroupe(cleGroupe(s, mode), zonesRef, mode, 'Sans zone');
   let schools = [];
 
@@ -58,10 +58,10 @@ async function saisie(ctx) {
     const cell = (s, k) => {
       const f = fiches.find(x => x.schoolId === s.id && x.kind === k && x.annee === annee);
       return h('td', { style: { whiteSpace: 'nowrap' } }, f ? [badge(f.statut), ' ', h('span', { class: 'muted' }, completion(f) + ' %'), ' '] : h('span', { class: 'muted' }, 'à créer '),
-        h('button', { class: 'btn sm' + (f ? '' : ' primary'), onclick: () => remplir(s, k, f) }, f ? '✏️ Remplir' : '➕ Créer et remplir'));
+        h('button', { class: 'btn sm' + (f ? '' : ' primary'), onclick: () => remplir(s, k, f) }, f ? '\uE006 Remplir' : '\uE001 Créer et remplir'));
     };
     const lignes = schools.map(s => h('tr', h('td', h('strong', s.nom), h('div', { class: 'muted' }, nomGroupe(s) + (s.directeur ? ' · ' + s.directeur : ''))), h('td', s.cycle === 'Maternelle' ? 'EM' : 'EP'), h('td', s.secteur || ''),
-      h('td', h('button', { class: 'btn sm', onclick: () => ctx.go(`recfiche/${s.id}/${s.cycle === 'Maternelle' ? 'maternelle' : 'primaire'}/${annee}`) }, '🗂️ Remplir')), KINDS(s).map(k => cell(s, k))));
+      h('td', h('button', { class: 'btn sm', onclick: () => ctx.go(`recfiche/${s.id}/${s.cycle === 'Maternelle' ? 'maternelle' : 'primaire'}/${annee}`) }, '\uE011 Remplir')), KINDS(s).map(k => cell(s, k))));
     rc(holder, h('div', { class: 'card', style: { marginBottom: '10px' } },
       h('p', { style: { margin: 0 } }, 'Chaque fiche se remplit directement à l\'écran (mêmes rubriques, mêmes calculs, même PDF que la fiche officielle). Les fiches inexistantes sont créées pré-remplies avec l\'identification de l\'école.'),
       h('div', { style: { marginTop: '8px' } }, h('label', h('span', { class: 'muted' }, 'Année scolaire : '), selA))),
@@ -103,7 +103,7 @@ async function saisie(ctx) {
       return h('input', { type: c.t || 'text', value: p[c.k] || '', oninput: set, 'aria-label': c.l, style: { width: '100%' } });
     };
     const dessiner = () => rc(body, lignes.map((p, i) => h('tr', h('td', { class: 'n' }, String(i + 1).padStart(2, '0')), COLONNES.map(c => h('td', champ(p, c))),
-      h('td', h('button', { class: 'icon-btn', title: 'Retirer la ligne', onclick: () => { lignes.splice(i, 1); dessiner(); } }, '🗑')))));
+      h('td', h('button', { class: 'icon-btn', title: 'Retirer la ligne', onclick: () => { lignes.splice(i, 1); dessiner(); } }, '\uE005')))));
     dessiner();
     async function enregistrer() {
       const garder = lignes.filter(p => (p.nom || '').trim());
@@ -132,10 +132,10 @@ async function saisie(ctx) {
       sel ? h('div', { style: { marginTop: '8px' } }, h('label', h('span', { class: 'muted' }, 'École : '), sel)) : null),
       h('div', { class: 'gridwrap' }, h('table', { class: 'g p' }, h('thead', h('tr', h('th', 'N°'), COLONNES.map(c => h('th', { style: { minWidth: c.w + 'px' } }, c.l)), h('th', ''))), body)),
       h('p', { class: 'no-print', style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
-        h('button', { class: 'btn', onclick: () => { lignes.push({ fonction: structure ? 'Secrétaire' : 'Adjoint(e)' }); dessiner(); } }, '➕ Ajouter une ligne'),
-        h('button', { class: 'btn primary', onclick: enregistrer }, "💾 Enregistrer l'état nominatif")),
+        h('button', { class: 'btn', onclick: () => { lignes.push({ fonction: structure ? 'Secrétaire' : 'Adjoint(e)' }); dessiner(); } }, '\uE001 Ajouter une ligne'),
+        h('button', { class: 'btn primary', onclick: enregistrer }, "\uE007 Enregistrer l'état nominatif")),
       h('p', { class: 'notes' }, 'Seules les lignes avec un nom sont enregistrées. Les dates servent au calcul des anciennetés et du départ à la retraite (menu « Gestion de carrière »). Les autres renseignements (diplômes, indices, visites…) se complètent dans « Personnel enseignant » → « Modifier ».'));
-    ctx.actions([{ label: "💾 Enregistrer l'état nominatif", kind: 'primary', onClick: enregistrer }]);
+    ctx.actions([{ label: "\uE007 Enregistrer l'état nominatif", kind: 'primary', onClick: enregistrer }]);
     ctx.status(`${structure ? 'Circonscription' : ecole.nom} — ${miens.length} agent(s) enregistré(s)`);
   }
 
@@ -173,8 +173,8 @@ async function saisie(ctx) {
       h('label', { class: 'chk', style: { marginTop: '8px', display: 'inline-flex', gap: '6px' } }, creerAgent, 'Créer / mettre à jour aussi la fiche agent du directeur (personnel, gestion de carrière)')),
       schools.length ? h('div', { class: 'gridwrap' }, h('table', { class: 'g' }, h('thead', h('tr', h('th', 'École'), h('th', 'Cycle'), h('th', { style: { minWidth: '240px' } }, 'Directeur / directrice'), h('th', { style: { minWidth: '140px' } }, 'Contact'))), h('tbody', lignes)))
         : h('p', { class: 'muted' }, 'Aucune école dans votre périmètre.'),
-      h('p', { class: 'no-print' }, h('button', { class: 'btn primary', onclick: enregistrer }, '💾 Enregistrer les directeurs')));
-    ctx.actions([{ label: '💾 Enregistrer les directeurs', kind: 'primary', onClick: enregistrer }]);
+      h('p', { class: 'no-print' }, h('button', { class: 'btn primary', onclick: enregistrer }, '\uE007 Enregistrer les directeurs')));
+    ctx.actions([{ label: '\uE007 Enregistrer les directeurs', kind: 'primary', onClick: enregistrer }]);
     ctx.status(`${schools.length} école(s) — ${schools.filter(s => s.directeur).length} directeur(s) renseigné(s)`);
   }
 

@@ -57,7 +57,7 @@ async function synodosp(ctx) {
   ctx.title('Tableau synoptique de la DOSP', 'Division de l’Organisation Scolaire et de la Prévision' + (u.nomCs ? ' — Circonscription scolaire de ' + u.nomCs : ''));
   let onglet = (await db.setting('synodosp-onglet')) || 'identite';
   const tabs = h('div', { class: 'tabs no-print' }), holder = h('div'); ctx.el.append(tabs, holder);
-  const ONG = [['identite', '🪪 Identité'], ['personnel', '👥 Personnel de la DOSP'], ['reseau', '🏫 Réseau : zones et écoles'], ['attributions', '🎯 Attributions'], ['comites', '🤝 Comités et instances'], ['transfert', '⇅ Import / export Excel']];
+  const ONG = [['identite', '\uE02B Identité'], ['personnel', '\uE01C Personnel de la DOSP'], ['reseau', '\uE022 Réseau : zones et écoles'], ['attributions', '\uE02E Attributions'], ['comites', '\uE044 Comités et instances'], ['transfert', '⇅ Import / export Excel']];
   let data = {}, agents = [], membres = [], zones = [], ecoles = [], perso = [], users = [], lignes = [];
 
   async function charger() {
@@ -202,39 +202,39 @@ async function synodosp(ctx) {
 
   function draw() {
     rc(tabs, ONG.map(([k, l]) => h('button', { class: 'tab' + (k === onglet ? ' on' : ''), onclick: () => { onglet = k; db.setting('synodosp-onglet', k); draw(); } }, l)));
-    const act = [{ label: '⬇ PDF complet (signé)', onClick: pdfComplet }, { label: '⬇ Excel (onglet)', onClick: excelOnglet }, { label: '⬇ Excel complet', onClick: excelComplet },
-      { label: '⬆ Importer Excel', show: peut, onClick: importer }, { label: "📄 Modèle d'import", onClick: modele }, { label: '🖨 Imprimer', onClick: () => window.print() }];
+    const act = [{ label: '\uE009 PDF complet (signé)', onClick: pdfComplet }, { label: '\uE009 Excel (onglet)', onClick: excelOnglet }, { label: '\uE009 Excel complet', onClick: excelComplet },
+      { label: '\uE00A Importer Excel', show: peut, onClick: importer }, { label: "\uE00D Modèle d'import", onClick: modele }, { label: '\uE008 Imprimer', onClick: () => window.print() }];
     if (onglet === 'identite') {
       rc(holder, h('div', { class: 'card' }, h('h3', 'Identité de la division et de la circonscription'),
         h('div', { class: 'grid12' }, RUB_ID.map(([k, l]) => fieldEl({ k, l, t: k === 'obs' ? 'textarea' : k === 'resp_prise_fonction' ? 'date' : 'text', w: k === 'obs' ? null : 'half', ro: !peut }, data[k], (kk, v) => { data[kk] = v; })))),
         h('div', { class: 'cards' }, nombres().map(([l, v]) => h('div', { class: 'stat' }, h('b', String(v)), h('span', l)))));
-      ctx.actions([{ label: '💾 Enregistrer', kind: 'primary', show: peut, onClick: sauver }, ...act]);
+      ctx.actions([{ label: '\uE007 Enregistrer', kind: 'primary', show: peut, onClick: sauver }, ...act]);
     } else if (onglet === 'personnel') {
       const t = dataTable({ columns: COLS_AG, rows: agents.map(ligneAg), onOpen: (r) => peut && editerAgent(agents.find(a => a.id === r.id)), pageSize: 100, empty: 'Aucun agent : touchez « Ajouter » ou « Importer Excel ».' });
       rc(holder, t.el, h('p', { class: 'notes' }, 'Anciennetés au 31 décembre de l’année scolaire et départ à la retraite calculés comme dans SCOLARIS / GESCOL (A : 60 ans, B : 58 ans, C : 55 ans, 1er jour du trimestre suivant la naissance).'));
-      ctx.actions([{ label: '➕ Ajouter', kind: 'primary', show: peut, onClick: () => editerAgent(null) }, { label: '✏️ Modifier', show: peut, onClick: () => (t.selected ? editerAgent(agents.find(a => a.id === t.selected.id)) : toast('Touchez une ligne.', 'warn')) },
-        { label: '🗑 Retirer', show: peut, onClick: () => supprimer(t.selected, t.selected ? t.selected.nom : '') }, ...act]);
+      ctx.actions([{ label: '\uE001 Ajouter', kind: 'primary', show: peut, onClick: () => editerAgent(null) }, { label: '\uE006 Modifier', show: peut, onClick: () => (t.selected ? editerAgent(agents.find(a => a.id === t.selected.id)) : toast('Touchez une ligne.', 'warn')) },
+        { label: '\uE005 Retirer', show: peut, onClick: () => supprimer(t.selected, t.selected ? t.selected.nom : '') }, ...act]);
     } else if (onglet === 'reseau') {
       rc(holder, h('h3', { class: 'sec-h' }, 'Zones pédagogiques'), dataTable({ columns: COLS_ZN, rows: lignesZones(), pageSize: 50, empty: 'Aucune zone (Référentiel national → Zones pédagogiques).' }).el,
         h('h3', { class: 'sec-h' }, 'Écoles et directeurs'), dataTable({ columns: COLS_EC, rows: lignesEcoles(), pageSize: 300, empty: 'Aucune école dans le périmètre.' }).el,
-        h('p', { class: 'no-print' }, h('button', { class: 'btn', onclick: async () => { await db.setting('saisie-onglet', 'directeurs'); ctx.go('saisie'); } }, '✍️ Compléter les directeurs (saisie manuelle)')));
+        h('p', { class: 'no-print' }, h('button', { class: 'btn', onclick: async () => { await db.setting('saisie-onglet', 'directeurs'); ctx.go('saisie'); } }, '\uE029 Compléter les directeurs (saisie manuelle)')));
       ctx.actions(act);
     } else if (onglet === 'attributions') {
       rc(holder, h('div', { class: 'card' }, h('h3', 'Attributions (AOF, article 13)'), h('div', { style: { whiteSpace: 'pre-line' } }, ATTRIBUTIONS_DOSP)),
         h('div', { class: 'card' }, h('h3', `Plan d'action ${currentSchoolYear()} (${lignes.length} ligne(s))`), lignes.length ? h('ol', lignes.map(l => h('li', `${l.libelle} — ${l.etat || 'Prévue'}${l.taux ? ' (' + l.taux + ' %)' : ''}`))) : h('p', { class: 'muted' }, 'Aucune ligne d’action.'),
-          h('button', { class: 'btn', onclick: () => ctx.go('plandosp') }, "🎯 Ouvrir le plan d'action")));
+          h('button', { class: 'btn', onclick: () => ctx.go('plandosp') }, "\uE02E Ouvrir le plan d'action")));
       ctx.actions(act);
     } else if (onglet === 'comites') {
       const t = dataTable({ columns: COLS_MB, rows: membres, onOpen: (r) => peut && editerMembre(r), pageSize: 200, empty: 'Aucun membre : touchez « Ajouter » ou « Importer Excel ».' });
       rc(holder, t.el, h('datalist', { id: 'dl-qualite' }, ['Président(e)', 'Vice-président(e)', 'Rapporteur', 'Secrétaire', 'Membre'].map(x => h('option', { value: x }))));
-      ctx.actions([{ label: '➕ Ajouter', kind: 'primary', show: peut, onClick: () => editerMembre(null) }, { label: '✏️ Modifier', show: peut, onClick: () => (t.selected ? editerMembre(t.selected) : toast('Touchez une ligne.', 'warn')) },
-        { label: '🗑 Retirer', show: peut, onClick: () => supprimer(t.selected, t.selected ? t.selected.nom : '') }, ...act]);
+      ctx.actions([{ label: '\uE001 Ajouter', kind: 'primary', show: peut, onClick: () => editerMembre(null) }, { label: '\uE006 Modifier', show: peut, onClick: () => (t.selected ? editerMembre(t.selected) : toast('Touchez une ligne.', 'warn')) },
+        { label: '\uE005 Retirer', show: peut, onClick: () => supprimer(t.selected, t.selected ? t.selected.nom : '') }, ...act]);
     } else {
       const btn = (l, f, k = '') => h('button', { class: 'btn ' + k, onclick: f }, l);
       rc(holder, h('div', { class: 'card' }, h('h3', 'Export'), h('p', 'Classeur Excel complet : feuilles Identité, Personnel, Zones, Écoles, Comités et Plan d’action. PDF complet signé (cachet, QR de vérification).'),
-        h('p', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } }, btn('⬇ Excel complet', excelComplet, 'primary'), btn('⬇ PDF complet (signé)', pdfComplet))),
+        h('p', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } }, btn('\uE009 Excel complet', excelComplet, 'primary'), btn('\uE009 PDF complet (signé)', pdfComplet))),
         h('div', { class: 'card' }, h('h3', 'Import'), h('p', 'Importe les feuilles « Identité », « Personnel » et « Comités » d’un classeur (modèle ci-dessous, ou classeur complet exporté puis complété). Les agents déjà présents (même matricule, ou mêmes nom et prénoms) sont mis à jour.'),
-          h('p', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } }, peut ? btn('⬆ Importer Excel', importer, 'primary') : null, btn("📄 Modèle d'import", modele))));
+          h('p', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } }, peut ? btn('\uE00A Importer Excel', importer, 'primary') : null, btn("\uE00D Modèle d'import", modele))));
       ctx.actions(act);
     }
     ctx.status(`${agents.length} agent(s) DOSP · ${zones.length} zone(s) · ${ecoles.length} école(s) · ${membres.length} membre(s) de comités`);

@@ -24,10 +24,10 @@ export function normaliser(brut) {
 const lisible = (n) => n ? '+229 ' + n.slice(3).replace(/(\d{2})(?=\d)/g, '$1 ') : '';
 
 const MODELES = {
-  convocation: { l: 'Convocation (réunion, UP, formation)', t: '📢 *CONVOCATION — {emetteur}*\n\n{salut}Les directeurs et directrices sont convoqués à {objet} le *{date}* à *{heure}* à {lieu}.\n{precisions}\nPrésence obligatoire.\n\n{signataire}' },
-  visite: { l: 'Annonce de visite de classe', t: '🔎 *VISITE PÉDAGOGIQUE — {emetteur}*\n\n{salut}{objet} est prévue le *{date}*{heure_a}.\n{precisions}\nMerci de préparer les documents pédagogiques (cahier journal, fiches, emploi du temps, registre d’appel).\n\n{signataire}' },
-  rappel: { l: 'Rappel de document à rendre', t: '⏰ *RAPPEL — {emetteur}*\n\n{salut}{objet} est attendu au plus tard le *{date}*.\n{precisions}\n\n{signataire}' },
-  information: { l: 'Information générale', t: 'ℹ️ *INFORMATION — {emetteur}*\n\n{salut}{objet}\n{precisions}\n\n{signataire}' },
+  convocation: { l: 'Convocation (réunion, UP, formation)', t: '\uE050 *CONVOCATION — {emetteur}*\n\n{salut}Les directeurs et directrices sont convoqués à {objet} le *{date}* à *{heure}* à {lieu}.\n{precisions}\nPrésence obligatoire.\n\n{signataire}' },
+  visite: { l: 'Annonce de visite de classe', t: '\uE02A *VISITE PÉDAGOGIQUE — {emetteur}*\n\n{salut}{objet} est prévue le *{date}*{heure_a}.\n{precisions}\nMerci de préparer les documents pédagogiques (cahier journal, fiches, emploi du temps, registre d’appel).\n\n{signataire}' },
+  rappel: { l: 'Rappel de document à rendre', t: '\uE01A *RAPPEL — {emetteur}*\n\n{salut}{objet} est attendu au plus tard le *{date}*.\n{precisions}\n\n{signataire}' },
+  information: { l: 'Information générale', t: '\uE07B *INFORMATION — {emetteur}*\n\n{salut}{objet}\n{precisions}\n\n{signataire}' },
   libre: { l: 'Message libre', t: '{salut}{precisions}' }
 };
 
@@ -88,7 +88,7 @@ async function groupe(ctx) {
           if (e.target.value && !n) toast('Numéro non reconnu : 10 chiffres commençant par 01.', 'warn'); dessiner(); } }),
         x.brut && !x.num ? h('div', h('span', { class: 'badge corriger' }, 'numéro invalide')) : null),
       h('td', x.envoye ? h('span', { class: 'badge Validée' }, 'envoyée le ' + new Date(x.envoye).toLocaleDateString('fr-FR')) : '—'),
-      h('td', x.num && x.wa ? h('button', { class: 'btn sm primary', onclick: () => inviter(x) }, '💬 Inviter') : null))));
+      h('td', x.num && x.wa ? h('button', { class: 'btn sm primary', onclick: () => inviter(x) }, '\uE035 Inviter') : null))));
     if (!corps.children.length) corps.append(h('tr', h('td', { colspan: 6, style: { textAlign: 'center' } }, 'Aucune école dans votre périmètre.')));
   }
 
@@ -111,41 +111,41 @@ async function groupe(ctx) {
     stats,
     h('div', { class: 'card' }, h('h3', 'Créer le groupe en trois gestes'),
       h('ol', { style: { lineHeight: 1.55, paddingLeft: '20px' } },
-        h('li', h('b', 'Contacts : '), 'sur le téléphone qui administrera le groupe, touchez « 📇 Contacts pour WhatsApp », ouvrez le fichier et importez les contacts (ils s’appellent tous « ' + prefixe + ' … »).'),
+        h('li', h('b', 'Contacts : '), 'sur le téléphone qui administrera le groupe, touchez « \uE012 Contacts pour WhatsApp », ouvrez le fichier et importez les contacts (ils s’appellent tous « ' + prefixe + ' … »).'),
         h('li', h('b', 'Créer le groupe : '), 'WhatsApp → ⋮ → Nouveau groupe → tapez « ' + prefixe + ' » et cochez tout. WhatsApp ne propose que les directeurs qui ont un compte : les autres sont écartés d’eux-mêmes.'),
-        h('li', h('b', 'Lien d’invitation : '), 'dans le groupe → Infos → Inviter via un lien → Copier, collez-le ci-dessous et envoyez-le aux directeurs absents (💬), un toucher par directeur.')),
+        h('li', h('b', 'Lien d’invitation : '), 'dans le groupe → Infos → Inviter via un lien → Copier, collez-le ci-dessous et envoyez-le aux directeurs absents (\uE035), un toucher par directeur.')),
       h('p', { class: 'notes' }, 'WhatsApp n’autorise aucune application à créer un groupe ou à y ajouter quelqu’un à votre place. Les numéros restent sur cet appareil.'),
       h('div', { class: 'grid12' }, champ('Nom du groupe', inNom), champ('Lien d’invitation du groupe', inLien),
         h('label', { class: 'field', style: { gridColumn: '1 / -1' } }, h('span', 'Message d’invitation ({directeur}, {ecole}, {groupe}, {lien})'), inMsg))),
-    h('div', { class: 'card' }, h('h3', '📨 Messages prêts à l’emploi'),
+    h('div', { class: 'card' }, h('h3', '\uE04F Messages prêts à l’emploi'),
       h('div', { class: 'grid12' }, champ('Modèle', selModele), mChamp('objet', 'Objet (réunion, visite, document…)'), mChamp('date', 'Date', 'date'), mChamp('heure', 'Heure', 'time'), mChamp('lieu', 'Lieu'),
         h('label', { class: 'field', style: { gridColumn: '1 / -1' } }, h('span', 'Précisions'), prec)),
       apercu,
       h('p', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '8px' } },
-        h('button', { class: 'btn primary', onclick: () => ouvrir('https://wa.me/?text=' + encodeURIComponent(texteModele(null))) }, '👥 Envoyer au groupe'),
+        h('button', { class: 'btn primary', onclick: () => ouvrir('https://wa.me/?text=' + encodeURIComponent(texteModele(null))) }, '\uE01C Envoyer au groupe'),
         h('button', { class: 'btn', onclick: async () => {
           const cle = JSON.stringify(m); if (!g.serie || g.serie.cle !== cle) g.serie = { cle, faits: {} };
           const x = visibles().find(y => y.num && y.wa && !g.serie.faits[y.s.id]);
           if (!x) { toast('Message envoyé à tous les directeurs retenus.'); return; }
           ouvrir('https://wa.me/' + x.num + '?text=' + encodeURIComponent(texteModele(x))); g.serie.faits[x.s.id] = new Date().toISOString(); await sauver();
           toast('Ouvert pour ' + x.s.nom + ' — reste ' + visibles().filter(y => y.num && y.wa && !g.serie.faits[y.s.id]).length + ' directeur(s).');
-        } }, '👤 À chaque directeur — au suivant')),
+        } }, '\uE01D À chaque directeur — au suivant')),
       h('p', { class: 'notes' }, '« Envoyer au groupe » ouvre WhatsApp avec le message : choisissez le groupe. « À chaque directeur » ouvre une conversation personnalisée, l’un après l’autre.')),
     h('div', { class: 'tbl-tools', style: { display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center', margin: '8px 0' } }, selGrp,
       h('label', { class: 'chk' }, h('input', { type: 'checkbox', onchange: (e) => { nonInvites = e.target.checked; dessiner(); } }), ' seulement les non invités')),
     h('div', { class: 'tbl-wrap' }, h('table', h('thead', h('tr', ['WhatsApp', 'École', 'Directeur', 'Numéro', 'Invitation', ''].map(t => h('th', t)))), corps)));
 
   ctx.actions([
-    { label: '📇 Contacts pour WhatsApp (.vcf)', kind: 'primary', onClick: () => {
+    { label: '\uE012 Contacts pour WhatsApp (.vcf)', kind: 'primary', onClick: () => {
       const l = retenus(); if (!l.length) return toast('Aucun numéro valide : renseignez les numéros des directeurs.', 'warn');
       const e = (s) => String(s || '').replace(/([,;\\])/g, '\\$1');
       download(l.map(x => ['BEGIN:VCARD', 'VERSION:3.0', 'FN:' + e(prefixe + ' ' + x.s.nom + (x.nom ? ' — ' + x.nom : '')), 'N:' + e(x.s.nom) + ';' + e(prefixe) + ';;;',
         'ORG:' + e(emetteur), 'TITLE:' + e('Directeur — ' + x.s.nom), 'TEL;TYPE=CELL:+' + x.num, 'END:VCARD'].join('\r\n')).join('\r\n') + '\r\n', 'directeurs-whatsapp.vcf', 'text/vcard');
       toast(l.length + ' contact(s) prêts à importer dans le téléphone.');
     } },
-    { label: '▶️ Inviter le suivant', onClick: () => { const x = visibles().find(y => y.num && y.wa && !y.envoye); if (!x) return toast('Tous les directeurs retenus ont reçu l’invitation.'); inviter(x); } },
-    { label: '📋 Copier les numéros', onClick: async () => { const t = retenus().map(x => '+' + x.num).join('\n'); if (!t) return toast('Aucun numéro valide.', 'warn'); try { await navigator.clipboard.writeText(t); toast('Numéros copiés.'); } catch { download(t, 'numeros-directeurs.txt', 'text/plain'); } } },
-    { label: '📤 Partager le lien', onClick: () => { if (!g.lien) return toast('Collez d’abord le lien d’invitation.', 'warn'); const t = 'Rejoignez le groupe WhatsApp « ' + g.nom + ' » : ' + g.lien; if (navigator.share) navigator.share({ title: g.nom, text: t }).catch(() => {}); else ouvrir('https://wa.me/?text=' + encodeURIComponent(t)); } },
+    { label: '\uE039 Inviter le suivant', onClick: () => { const x = visibles().find(y => y.num && y.wa && !y.envoye); if (!x) return toast('Tous les directeurs retenus ont reçu l’invitation.'); inviter(x); } },
+    { label: '\uE00F Copier les numéros', onClick: async () => { const t = retenus().map(x => '+' + x.num).join('\n'); if (!t) return toast('Aucun numéro valide.', 'warn'); try { await navigator.clipboard.writeText(t); toast('Numéros copiés.'); } catch { download(t, 'numeros-directeurs.txt', 'text/plain'); } } },
+    { label: '\uE00C Partager le lien', onClick: () => { if (!g.lien) return toast('Collez d’abord le lien d’invitation.', 'warn'); const t = 'Rejoignez le groupe WhatsApp « ' + g.nom + ' » : ' + g.lien; if (navigator.share) navigator.share({ title: g.nom, text: t }).catch(() => {}); else ouvrir('https://wa.me/?text=' + encodeURIComponent(t)); } },
     { label: '↺ Remettre les envois à zéro', onClick: async () => { if (!confirm('Effacer le suivi des invitations envoyées ?')) return; Object.values(g.contacts).forEach(c => delete c.envoye); await sauver(); dessiner(); } },
   ]);
   apercu.textContent = texteModele(null);

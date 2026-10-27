@@ -45,9 +45,9 @@ async function synoptique(ctx) {
   draw();
   const title = () => `TABLEAU SYNOPTIQUE — ${FICHE_TYPES[st.kind].label} — ${st.annee}`;
   ctx.actions([
-    { label: '⬇ Excel', kind: 'primary', onClick: async () => download(await listToXlsx({ title: title(), subtitle: `Niveau : ${LEVELS[st.level][0]}`, columns: cols, rows, sheet: 'Synoptique' }), 'Tableau_synoptique.xlsx') },
-    { label: '⬇ PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: title(), subtitle: `Niveau : ${LEVELS[st.level][0]}`, columns: cols, rows, totals })), 'Tableau_synoptique.pdf') },
-    { label: '🖨 Imprimer', onClick: () => window.print() }]);
+    { label: '\uE009 Excel', kind: 'primary', onClick: async () => download(await listToXlsx({ title: title(), subtitle: `Niveau : ${LEVELS[st.level][0]}`, columns: cols, rows, sheet: 'Synoptique' }), 'Tableau_synoptique.xlsx') },
+    { label: '\uE009 PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: title(), subtitle: `Niveau : ${LEVELS[st.level][0]}`, columns: cols, rows, totals })), 'Tableau_synoptique.pdf') },
+    { label: '\uE008 Imprimer', onClick: () => window.print() }]);
 }
 
 /* ================= ACTIVITÉS ================= */
@@ -62,11 +62,11 @@ async function activites(ctx) {
   const reload = async () => t.setRows(await load()), sel = () => { const s = t.selected; if (!s) toast('Sélectionnez une activité.', 'warn'); return s; };
   async function add() { const v = await formDialog({ title: 'Nouvelle activité', fields: F, values: { date: today(), statut: 'Prévue', type: 'Visite de classe' } }); if (!v) return; await addActivity(u, v); reload(); }
   async function edit() { const s = sel(); if (!s) return; const v = await formDialog({ title: "Modifier l'activité", fields: F, values: s }); if (!v) return; await db.put('activities', v); reload(); }
-  ctx.actions([{ label: '➕ Ajouter', kind: 'primary', onClick: add }, { label: '✏️ Modifier', onClick: edit },
-    { label: '✔ Marquer réalisée', onClick: async () => { const s = sel(); if (!s) return; s.statut = 'Réalisée'; await db.put('activities', s); reload(); } },
-    { label: '🗑 Supprimer', onClick: async () => { const s = sel(); if (s && await confirmBox('Supprimer cette activité ?', 'Supprimer', true)) { await db.del('activities', s.id); reload(); } } },
-    { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: 'ACTIVITÉS PÉDAGOGIQUES', columns: COLS.map(c => ({ ...c, w: c.w })), rows: t.visible.map(r => ({ ...r, date: fmtDate(r.date) })) }), 'Activites.xlsx') },
-    { label: '⬇ PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: 'ACTIVITÉS PÉDAGOGIQUES', columns: COLS, rows: t.visible.map(r => ({ ...r, date: fmtDate(r.date) })) })), 'Activites.pdf') }]);
+  ctx.actions([{ label: '\uE001 Ajouter', kind: 'primary', onClick: add }, { label: '\uE006 Modifier', onClick: edit },
+    { label: '\uE003 Marquer réalisée', onClick: async () => { const s = sel(); if (!s) return; s.statut = 'Réalisée'; await db.put('activities', s); reload(); } },
+    { label: '\uE005 Supprimer', onClick: async () => { const s = sel(); if (s && await confirmBox('Supprimer cette activité ?', 'Supprimer', true)) { await db.del('activities', s.id); reload(); } } },
+    { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: 'ACTIVITÉS PÉDAGOGIQUES', columns: COLS.map(c => ({ ...c, w: c.w })), rows: t.visible.map(r => ({ ...r, date: fmtDate(r.date) })) }), 'Activites.xlsx') },
+    { label: '\uE009 PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: 'ACTIVITÉS PÉDAGOGIQUES', columns: COLS, rows: t.visible.map(r => ({ ...r, date: fmtDate(r.date) })) })), 'Activites.pdf') }]);
 }
 
 /* ================= THÈMES 2026-2027 ================= */
@@ -84,11 +84,11 @@ async function themes(ctx) {
     const t = dataTable({ columns: COLS, rows, pageSize: 100, onOpen: (r) => detail(r) }); holder.replaceChildren(t.el);
     const sel = () => { const s = t.selected; if (!s) toast('Sélectionnez un thème.', 'warn'); return s; };
     ctx.actions([
-      { label: '🔎 Axes de réflexion', onClick: () => { const s = sel(); s && detail(s); } },
-      { label: '📅 Programmer dans mes activités', kind: 'primary', onClick: async () => { const s = sel(); if (!s) return; let d = s.date; if (d === 'PM') { d = await promptBox('Date de l\'activité', 'Date', today(), 'date'); if (!d) return; } await addActivity(u, { date: d, type: LISTS[cur][1].startsWith('UP') ? 'Unité pédagogique' : LISTS[cur][1], theme: s.theme }); toast('Activité ajoutée à votre planning.'); } },
-      { label: '✔ Marquer réalisé / annuler', onClick: async () => { const s = sel(); if (!s) return; if (done.has(s.id)) { await db.del('themesDone', s.id); done.delete(s.id); } else { const r = { id: s.id, date: nowISO(), by: u.username }; await db.put('themesDone', r); done.set(s.id, r); } draw(); } },
-      { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: `PLANNING — ${LISTS[cur][0].toUpperCase()} — ${D.annee}`, subtitle: D.source, columns: [{ k: 'n', l: 'N°', w: 30 }, { k: 'theme', l: 'Thèmes', w: 300 }, { k: 'axes', l: 'Axes de réflexion / contenus', w: 300, xw: 70 }, { k: 'dateTxt', l: 'Date', w: 110 }, { k: 'obs', l: 'Observations', w: 90 }], rows: rows.map(r => ({ ...r, axes: r.axes.map(a => '- ' + a).join('\n') })) }), 'Planning_themes.xlsx') },
-      { label: '⬇ PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: `PLANNING — ${LISTS[cur][0].toUpperCase()} — ${D.annee}`, subtitle: D.source, columns: [{ k: 'n', l: 'N°', w: 24 }, { k: 'theme', l: 'Thèmes', w: 250 }, { k: 'axes', l: 'Axes de réflexion / contenus', w: 300 }, { k: 'dateTxt', l: 'Date', w: 100 }, { k: 'obs', l: 'Observations', w: 90 }], rows: rows.map(r => ({ ...r, axes: r.axes.map(a => '- ' + a).join('\n') })) })), 'Planning_themes.pdf') },
+      { label: '\uE02A Axes de réflexion', onClick: () => { const s = sel(); s && detail(s); } },
+      { label: '\uE017 Programmer dans mes activités', kind: 'primary', onClick: async () => { const s = sel(); if (!s) return; let d = s.date; if (d === 'PM') { d = await promptBox('Date de l\'activité', 'Date', today(), 'date'); if (!d) return; } await addActivity(u, { date: d, type: LISTS[cur][1].startsWith('UP') ? 'Unité pédagogique' : LISTS[cur][1], theme: s.theme }); toast('Activité ajoutée à votre planning.'); } },
+      { label: '\uE003 Marquer réalisé / annuler', onClick: async () => { const s = sel(); if (!s) return; if (done.has(s.id)) { await db.del('themesDone', s.id); done.delete(s.id); } else { const r = { id: s.id, date: nowISO(), by: u.username }; await db.put('themesDone', r); done.set(s.id, r); } draw(); } },
+      { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: `PLANNING — ${LISTS[cur][0].toUpperCase()} — ${D.annee}`, subtitle: D.source, columns: [{ k: 'n', l: 'N°', w: 30 }, { k: 'theme', l: 'Thèmes', w: 300 }, { k: 'axes', l: 'Axes de réflexion / contenus', w: 300, xw: 70 }, { k: 'dateTxt', l: 'Date', w: 110 }, { k: 'obs', l: 'Observations', w: 90 }], rows: rows.map(r => ({ ...r, axes: r.axes.map(a => '- ' + a).join('\n') })) }), 'Planning_themes.xlsx') },
+      { label: '\uE009 PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: `PLANNING — ${LISTS[cur][0].toUpperCase()} — ${D.annee}`, subtitle: D.source, columns: [{ k: 'n', l: 'N°', w: 24 }, { k: 'theme', l: 'Thèmes', w: 250 }, { k: 'axes', l: 'Axes de réflexion / contenus', w: 300 }, { k: 'dateTxt', l: 'Date', w: 100 }, { k: 'obs', l: 'Observations', w: 90 }], rows: rows.map(r => ({ ...r, axes: r.axes.map(a => '- ' + a).join('\n') })) })), 'Planning_themes.pdf') },
     ]);
   }
   function detail(r) { modal({ title: `${LISTS[cur][0]} — thème ${r.n}`, body: h('div', h('h3', r.theme), h('p', h('b', 'Date : '), r.dateTxt, r.obs ? ' — ' + r.obs : ''), r.axes.length ? h('div', h('b', 'Axes de réflexion indicatifs'), h('ul', r.axes.map(a => h('li', a)))) : h('p', { class: 'sub' }, 'Pas de contenu indicatif pour cette séance.')), actions: [{ label: 'Fermer', kind: 'primary' }] }); }
@@ -106,7 +106,7 @@ async function planification(ctx) {
   function open(p) {
     const txt = p.x;
     modal({ title: `${p.c} — page ${p.p}`, wide: true, body: h('div', h('p', { class: 'notes' }, 'Texte extrait du document ; la mise en tableau d\'origine est aplatie.'), h('div', { class: 'pre' }, txt)),
-      actions: [{ label: '📋 Copier', onClick: () => { navigator.clipboard && navigator.clipboard.writeText(txt).then(() => toast('Texte copié.')); return false; }, keepOpen: true }, { label: 'Fermer', kind: 'primary' }] });
+      actions: [{ label: '\uE00F Copier', onClick: () => { navigator.clipboard && navigator.clipboard.writeText(txt).then(() => toast('Texte copié.')); return false; }, keepOpen: true }, { label: 'Fermer', kind: 'primary' }] });
   }
   function draw() {
     tabs.replaceChildren(pill('', 'Toutes'), ...['CI', 'CP', 'CE1', 'CE2', 'CM1', 'CM2'].map(c => pill(c, c)));
@@ -125,20 +125,20 @@ async function reglement(ctx) {
   ctx.title('Règlement intérieur', 'Règlement intérieur des écoles primaires (révisé) — document officiel numérisé');
   const N = 8; let i = 1; const img = h('img', { class: 'reg-img', alt: '' }), lab = h('b');
   const go = (k) => { i = Math.min(N, Math.max(1, k)); img.src = `data/reglement/page-${i}.jpg`; img.alt = `Règlement intérieur, page ${i}`; lab.textContent = `Page ${i} / ${N}`; };
-  ctx.el.append(h('div', { class: 'tbl-tools no-print' }, h('button', { class: 'btn', onclick: () => go(i - 1) }, '◀'), lab, h('button', { class: 'btn', onclick: () => go(i + 1) }, '▶'), h('a', { class: 'btn', href: `data/reglement/page-1.jpg`, target: '_blank', rel: 'noopener', onclick: (e) => { e.currentTarget.href = img.src; } }, '🔍 Ouvrir en grand')), h('div', { style: { textAlign: 'center' } }, img));
-  go(1); ctx.actions([{ label: '🖨 Imprimer la page', onClick: () => window.print() }]);
+  ctx.el.append(h('div', { class: 'tbl-tools no-print' }, h('button', { class: 'btn', onclick: () => go(i - 1) }, '\uE038'), lab, h('button', { class: 'btn', onclick: () => go(i + 1) }, '\uE039'), h('a', { class: 'btn', href: `data/reglement/page-1.jpg`, target: '_blank', rel: 'noopener', onclick: (e) => { e.currentTarget.href = img.src; } }, '\uE02A Ouvrir en grand')), h('div', { style: { textAlign: 'center' } }, img));
+  go(1); ctx.actions([{ label: '\uE008 Imprimer la page', onClick: () => window.print() }]);
 }
 
 /* ================= DOCUMENTS OFFICIELS ================= */
 async function documents(ctx) {
   ctx.title('Documents officiels', 'Fiches, canevas, guides et textes du Ministère — consultables hors ligne');
   const all = await (await fetch('data/documents.json')).json(), D = all.documents;
-  const carte = (d) => h('div', { class: 'card' }, h('h3', (d.format === 'Excel' ? '📊 ' : '📄 ') + d.titre), h('p', d.description), h('p', { class: 'sub' }, `${d.cycle}${d.pages ? ` · ${d.pages} pages` : ''} · ${d.format || 'PDF'}`),
-    h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } }, d.format === 'Excel' ? null : h('a', { class: 'btn primary', href: d.fichier, target: '_blank', rel: 'noopener' }, '👁 Ouvrir'),
-      h('a', { class: 'btn' + (d.format === 'Excel' ? ' primary' : ''), href: d.fichier, download: d.fichier.split('/').pop() }, '⬇ Télécharger')));
+  const carte = (d) => h('div', { class: 'card' }, h('h3', (d.format === 'Excel' ? '\uE015 ' : '\uE00D ') + d.titre), h('p', d.description), h('p', { class: 'sub' }, `${d.cycle}${d.pages ? ` · ${d.pages} pages` : ''} · ${d.format || 'PDF'}`),
+    h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } }, d.format === 'Excel' ? null : h('a', { class: 'btn primary', href: d.fichier, target: '_blank', rel: 'noopener' }, '\uE043 Ouvrir'),
+      h('a', { class: 'btn' + (d.format === 'Excel' ? ' primary' : ''), href: d.fichier, download: d.fichier.split('/').pop() }, '\uE009 Télécharger')));
   ctx.el.append(
     h('h2', { class: 'sec-h' }, 'Textes officiels intégrés à l\'application'),
-    h('div', { class: 'doc-grille' }, (all.integres || []).map(d => h('button', { class: 'card doc-lien', onclick: () => ctx.go(d.route) }, h('h3', '📘 ' + d.titre), h('p', d.description)))),
+    h('div', { class: 'doc-grille' }, (all.integres || []).map(d => h('button', { class: 'card doc-lien', onclick: () => ctx.go(d.route) }, h('h3', '\uE030 ' + d.titre), h('p', d.description)))),
     ...[...new Set(D.map(d => d.groupe || 'Fiches et canevas'))].flatMap(g => [h('h2', { class: 'sec-h' }, g), ...D.filter(d => (d.groupe || 'Fiches et canevas') === g).map(carte)]),
     h('p', { class: 'notes' }, 'Pour ajouter un document : déposez le fichier dans le dossier « docs » du dépôt et ajoutez une entrée dans data/documents.json.'));
   ctx.status(`${D.length} fichier(s) · ${(all.integres || []).length} texte(s) intégré(s)`);
@@ -185,8 +185,8 @@ async function referentiel(ctx) {
     REF_TYPES[cur].fields.forEach(([k, l], i) => { ws.set(r, i, l, 'th'); ws.width(i, 28); }); download(await wb.toBlob(), `Modele_${cur}.xlsx`);
   }
   ctx.actions([
-    { label: '➕ Ajouter', kind: 'primary', show: canEditRef, onClick: add }, { label: '✏️ Modifier', show: canEditRef, onClick: edit }, { label: '🗑 Supprimer', show: canEditRef, onClick: del },
-    { label: '⬆ Importer Excel/CSV', show: canEditRef, onClick: imp }, { label: '📄 Modèle', show: canEditRef, onClick: tpl }, { label: '⚙ Générer les zones d\'une CS', kind: 'accent', show: canEditRef, onClick: genZones },
-    { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: 'RÉFÉRENTIEL — ' + REF_TYPES[cur].label.toUpperCase(), columns: REF_TYPES[cur].fields.map(([k, l]) => ({ k, l, w: 120 })), rows: tbl.visible }), `Referentiel_${cur}.xlsx`) }]);
+    { label: '\uE001 Ajouter', kind: 'primary', show: canEditRef, onClick: add }, { label: '\uE006 Modifier', show: canEditRef, onClick: edit }, { label: '\uE005 Supprimer', show: canEditRef, onClick: del },
+    { label: '\uE00A Importer Excel/CSV', show: canEditRef, onClick: imp }, { label: '\uE00D Modèle', show: canEditRef, onClick: tpl }, { label: '\uE051 Générer les zones d\'une CS', kind: 'accent', show: canEditRef, onClick: genZones },
+    { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: 'RÉFÉRENTIEL — ' + REF_TYPES[cur].label.toUpperCase(), columns: REF_TYPES[cur].fields.map(([k, l]) => ({ k, l, w: 120 })), rows: tbl.visible }), `Referentiel_${cur}.xlsx`) }]);
   await draw();
 }

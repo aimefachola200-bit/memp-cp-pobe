@@ -140,8 +140,8 @@ export async function blocSecteurs(u, { titre = 'Répartition public / privé', 
       mode === 'ecole' ? h('select', { class: 'search', style: { maxWidth: '230px' }, 'aria-label': 'Sous-totaux', onchange: (e) => { sous = e.target.value; try { localStorage.setItem('sect-sous', sous); } catch (er) { /* */ } dessiner(); } },
         [['zone', 'Sous-totaux par zone'], ['arr', 'Sous-totaux par arrondissement']].map(([v, l]) => h('option', { value: v, selected: v === sous }, l))) : null,
       annee ? null : h('select', { class: 'search', style: { maxWidth: '170px' }, 'aria-label': 'Année scolaire', onchange: async (e) => { an = e.target.value; chiffres = await chiffresEcoles(u, an, schools); dessiner(); } }, annees.map(a => h('option', { value: a, selected: a === an }, a))),
-      btn('⬇ PDF', async () => { const rows = dessiner(); download(new Blob([await listToPdf({ title: titre, subtitle: sousTitre(), columns: colsTable, rows: rows.map(r => ({ ...r, lib: r._s ? r.lib.toUpperCase() : r.lib })) })], { type: 'application/pdf' }), clean(titre + '_' + an) + '.pdf'); }),
-      btn('⬇ Excel', async () => { const rows = dessiner(); download(await listToXlsx({ title: titre, subtitle: sousTitre(), columns: colsTable, rows, sheet: 'Public-privé' }), clean(titre + '_' + an) + '.xlsx'); })].filter(Boolean));
+      btn('\uE009 PDF', async () => { const rows = dessiner(); download(new Blob([await listToPdf({ title: titre, subtitle: sousTitre(), columns: colsTable, rows: rows.map(r => ({ ...r, lib: r._s ? r.lib.toUpperCase() : r.lib })) })], { type: 'application/pdf' }), clean(titre + '_' + an) + '.pdf'); }),
+      btn('\uE009 Excel', async () => { const rows = dessiner(); download(await listToXlsx({ title: titre, subtitle: sousTitre(), columns: colsTable, rows, sheet: 'Public-privé' }), clean(titre + '_' + an) + '.xlsx'); })].filter(Boolean));
   }
   barre(); dessiner();
   card.append(h('h3', titre), outils, corps);

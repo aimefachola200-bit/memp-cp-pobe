@@ -3,6 +3,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8">
+<script src="js/icones.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Application CP — MEMP Bénin</title>
   <meta name="description" content="Application des Conseillers Pédagogiques — Ministère des Enseignements Maternel et Primaire de la République du Bénin. Fonctionne hors ligne.">
@@ -25,10 +26,12 @@
   <script src="js/choix.js" data-geo="data/referentiel_villages.json"></script>
   <script src="js/xlsx-ecrire.js"></script>
   <script src="js/uascep.js"></script>
+  <script src="js/pvs-modules.js"></script>
+  <script src="js/pvs.js"></script>
   <script type="module" src="js/main.js"></script>
 <!-- Installation de l'application (PC, Android, tablette, iPhone / iPad) -->
 <div id="installBandeau" hidden style="position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;max-width:520px;margin:0 auto;background:#0b5d3b;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.25);font:15px/1.4 system-ui,Segoe UI,Roboto,Arial,sans-serif;display:flex;gap:10px;align-items:center">
-  <span style="font-size:26px" aria-hidden="true">📲</span>
+  <span style="font-size:26px" aria-hidden="true"><svg class="ico ico-telephone" data-ico="telephone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span>
   <span id="installTexte" style="flex:1">Installer l'application sur cet appareil : elle s'ouvrira comme une application et fonctionnera sans Internet.</span>
   <button id="installOui" type="button" style="background:#fff;color:#0b5d3b;border:0;border-radius:10px;padding:9px 14px;font-weight:700;cursor:pointer">Installer</button>
   <button id="installNon" type="button" aria-label="Fermer" style="background:transparent;color:#fff;border:0;font-size:20px;cursor:pointer">✕</button>

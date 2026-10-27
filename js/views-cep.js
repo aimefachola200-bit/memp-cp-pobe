@@ -125,9 +125,9 @@ export async function render(id, ctx) {
   function draw() {
     LAST = st;
     toolbar.replaceChildren(
-      ...(u.role !== 'CP' ? [h('div', { class: 'seg' }, [['zone', '📍 Zone (par école)'], ['cs', '🏛 Circonscription (par zone)']].map(([k, l]) => h('button', { class: 'btn sm' + (st.level === k ? ' primary' : ''), onclick: () => { st.level = k; draw(); } }, l)))] : []),
+      ...(u.role !== 'CP' ? [h('div', { class: 'seg' }, [['zone', '\uE02C Zone (par école)'], ['cs', '\uE023 Circonscription (par zone)']].map(([k, l]) => h('button', { class: 'btn sm' + (st.level === k ? ' primary' : ''), onclick: () => { st.level = k; draw(); } }, l)))] : []),
       sel('annee', years.map(y => [y, 'Année ' + y]), '170px'), st.level === 'cs' ? sel('cs', csArr.map(c => [c.code, c.label])) : sel('zone', zoneArr.map(z => [z.code, z.label]), '300px'),
-      sel('statut', Object.entries(E.STATUT_FILTERS)), h('button', { class: 'btn sm', onclick: exporter }, '⬇ Excel'), h('button', { class: 'btn sm', onclick: () => window.print() }, '🖨 Imprimer'));
+      sel('statut', Object.entries(E.STATUT_FILTERS)), h('button', { class: 'btn sm', onclick: exporter }, '\uE009 Excel'), h('button', { class: 'btn sm', onclick: () => window.print() }, '\uE008 Imprimer'));
     const c = calcul();
     holder.replaceChildren(h('p', { class: 'sub' }, "Rubrique « Résultats au CEP » de la fiche de fin d'année (inscrits, ont composé, admis par sexe, dont enfants handicapés) ; à défaut, rapport de fin d'année du CM2. Taux de réussite = admis ÷ ont composé ; parité F/G = filles ÷ garçons ; écart type de la population."));
     for (const [s, lib, coul] of [['pub', 'Secteur public', 'var(--green-d)'], ['prv', 'Secteur privé (à part)', '#8e44ad']]) {

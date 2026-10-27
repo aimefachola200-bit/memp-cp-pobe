@@ -104,19 +104,19 @@ async function list(ctx) {
   const sel = () => { const s = t.selected; if (!s) toast('Sélectionnez un bilan.', 'warn'); return s; };
   const act = (fn) => async () => { const s = sel(); if (!s) return; try { if (await fn(s)) await refresh(); } catch (e) { toast(e.message, 'err'); } };
   ctx.actions([
-    { label: '➕ Nouveau bilan', kind: 'primary', show: u.role !== 'DDEMP', onClick: () => create(u, ctx) },
-    { label: '📂 Ouvrir', onClick: () => { const s = sel(); s && ctx.go('bilan/' + s.id); } },
-    { label: '⬆ Charger', onClick: async () => { const b = await loadFile(u); if (b) await refresh(); } },
-    { label: '⬇ PDF', onClick: act(s => exportB(u, s, 'pdf').then(() => false)) }, { label: '🖋 PDF signé', onClick: act(s => exportB(u, s, 'pdf-signe').then(() => false)) },
-    { label: '⬇ Excel', onClick: act(s => exportB(u, s, 'xlsx').then(() => false)) }, { label: '⬇ JSON', onClick: act(s => exportB(u, s, 'json').then(() => false)) },
-    { label: '♻ Réinitialiser', onClick: act(s => canEditB(u, s) ? resetB(u, s) : (toast('Réinitialisation non autorisée.', 'err'), false)) },
-    { label: '🗑 Supprimer', onClick: act(s => deleteB(u, s)) },
+    { label: '\uE001 Nouveau bilan', kind: 'primary', show: u.role !== 'DDEMP', onClick: () => create(u, ctx) },
+    { label: '\uE014 Ouvrir', onClick: () => { const s = sel(); s && ctx.go('bilan/' + s.id); } },
+    { label: '\uE00A Charger', onClick: async () => { const b = await loadFile(u); if (b) await refresh(); } },
+    { label: '\uE009 PDF', onClick: act(s => exportB(u, s, 'pdf').then(() => false)) }, { label: '\uE006 PDF signé', onClick: act(s => exportB(u, s, 'pdf-signe').then(() => false)) },
+    { label: '\uE009 Excel', onClick: act(s => exportB(u, s, 'xlsx').then(() => false)) }, { label: '\uE009 JSON', onClick: act(s => exportB(u, s, 'json').then(() => false)) },
+    { label: '\uE058 Réinitialiser', onClick: act(s => canEditB(u, s) ? resetB(u, s) : (toast('Réinitialisation non autorisée.', 'err'), false)) },
+    { label: '\uE005 Supprimer', onClick: act(s => deleteB(u, s)) },
   ]);
   await refresh();
 }
 
 /* ---------- éditeur ---------- */
-const TABS = [['entete', 'En-tête'], ['t1', '1. Réseau'], ['act', '2. Activités'], ['conc', '3. Concertations'], ['t4', '4. Couverture'], ['ev', '5. Évaluations'], ['ana', '6. Analyses'], ['prob', '7. Difficultés'], ['photos', '📷 Photos']];
+const TABS = [['entete', 'En-tête'], ['t1', '1. Réseau'], ['act', '2. Activités'], ['conc', '3. Concertations'], ['t4', '4. Couverture'], ['ev', '5. Évaluations'], ['ana', '6. Analyses'], ['prob', '7. Difficultés'], ['photos', '\uE03C Photos']];
 
 async function editor(ctx) {
   const u = ctx.user, b = await db.get('bilans', ctx.args[0]);
@@ -126,7 +126,7 @@ async function editor(ctx) {
   const state = h('span', { class: 'sub' }, 'Enregistré'), calcs = [], body = h('div'), tabsEl = h('div', { class: 'tabs' }), warn = h('div');
   async function save() { clearTimeout(timer); if (!dirty) return; dirty = false; await saveBilan(b); state.textContent = 'Enregistré à ' + new Date().toLocaleTimeString('fr-FR'); }
   const touch = () => { dirty = true; state.textContent = 'Modification…'; refreshCalcs(); clearTimeout(timer); timer = setTimeout(save, 700); };
-  function refreshCalcs() { for (const c of calcs) if (c.el.isConnected) c.el.textContent = fmtCell(cellValue(b, c.tid, c.row, c.col), c.spec); const w = checks(b); warn.replaceChildren(...(w.length ? [h('div', { class: 'hint' }, h('b', '⚠ Contrôles de cohérence : '), h('ul', w.slice(0, 8).map(x => h('li', x))))] : [])); }
+  function refreshCalcs() { for (const c of calcs) if (c.el.isConnected) c.el.textContent = fmtCell(cellValue(b, c.tid, c.row, c.col), c.spec); const w = checks(b); warn.replaceChildren(...(w.length ? [h('div', { class: 'hint' }, h('b', '\uE041 Contrôles de cohérence : '), h('ul', w.slice(0, 8).map(x => h('li', x))))] : [])); }
 
   function gridTable(tid) {
     const spec = TABLES[tid], L = layoutHead(spec.head), trs = Array.from({ length: L.headRows }, () => h('tr'));
@@ -148,8 +148,8 @@ async function editor(ctx) {
       h('td', editable ? h('button', { class: 'btn sm', title: 'Retirer', onclick: () => { b.lists[name].splice(i, 1); touch(); draw(); } }, '✕') : null))));
     draw();
     return h('div', { class: 'card' }, h('h3', titleTxt), hint ? h('p', { class: 'notes' }, hint) : null, h('div', { class: 'gridwrap' }, h('table', { class: 'g p' }, h('thead', h('tr', h('th', 'N°'), ...cols.map(c => h('th', c.l)), h('th', ''))), tb)),
-      editable ? h('p', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } }, h('button', { class: 'btn sm', onclick: () => { b.lists[name].push(newRow()); touch(); draw(); } }, '➕ Ajouter une ligne'),
-        name === 'problemes' ? h('button', { class: 'btn sm', onclick: () => { b.lists.problemes.sort((x, y) => (+y.ampleur || 0) - (+x.ampleur || 0)); touch(); draw(); } }, '🔢 Trier par ampleur') : null) : null);
+      editable ? h('p', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } }, h('button', { class: 'btn sm', onclick: () => { b.lists[name].push(newRow()); touch(); draw(); } }, '\uE001 Ajouter une ligne'),
+        name === 'problemes' ? h('button', { class: 'btn sm', onclick: () => { b.lists.problemes.sort((x, y) => (+y.ampleur || 0) - (+x.ampleur || 0)); touch(); draw(); } }, '\uE040 Trier par ampleur') : null) : null);
   }
   const area = (k, l, rows = 4) => h('label', { class: 'field c12' }, h('span', l), h('textarea', { rows, disabled: !editable, oninput: (e) => { b.textes[k] = e.target.value; touch(); } }, b.textes[k] || ''));
 
@@ -159,13 +159,13 @@ async function editor(ctx) {
       const ps = await photosOf(b.id);
       wrap.replaceChildren(...(ps.length ? ps.map(p => h('figure', { class: 'photo' }, h('img', { src: p.data, alt: p.legende || 'Photo' }), h('input', { type: 'text', placeholder: 'Légende (activité, lieu, date…)', value: p.legende || '', disabled: !editable, oninput: async (e) => { p.legende = e.target.value; await db.put('photos', p); } }),
         h('figcaption', `${new Date(p.date).toLocaleString('fr-FR')} · ${p.facing === 'user' ? 'caméra avant' : p.facing === 'environment' ? 'caméra arrière' : 'galerie'}`),
-        editable ? h('button', { class: 'btn sm danger', onclick: async () => { if (await confirmBox('Supprimer cette photo ?', 'Supprimer', true)) { await db.del('photos', p.id); draw(); } } }, '🗑 Supprimer') : null)) : [h('div', { class: 'empty' }, 'Aucune photo. Utilisez l\'appareil photo (caméra avant ou arrière) pour joindre des preuves : elles seront ajoutées en annexe du PDF.')]));
+        editable ? h('button', { class: 'btn sm danger', onclick: async () => { if (await confirmBox('Supprimer cette photo ?', 'Supprimer', true)) { await db.del('photos', p.id); draw(); } } }, '\uE005 Supprimer') : null)) : [h('div', { class: 'empty' }, 'Aucune photo. Utilisez l\'appareil photo (caméra avant ou arrière) pour joindre des preuves : elles seront ajoutées en annexe du PDF.')]));
     };
     const add = async (data, facing) => { await db.put('photos', { id: uid(), bilanId: b.id, data, facing, legende: '', date: nowISO() }); draw(); };
     draw();
     return h('div', { class: 'card' }, h('h3', 'Preuves photographiques'), editable ? h('p', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
-      h('button', { class: 'btn primary', onclick: () => openCamera({ onCapture: add, title: 'Appareil photo — avant / arrière' }) }, '📷 Ouvrir l\'appareil photo'),
-      h('button', { class: 'btn', onclick: async () => { for (const p of await pickPhoto()) await add(p.data, p.facing); } }, '🖼 Ajouter depuis la galerie')) : null, wrap);
+      h('button', { class: 'btn primary', onclick: () => openCamera({ onCapture: add, title: 'Appareil photo — avant / arrière' }) }, '\uE03C Ouvrir l\'appareil photo'),
+      h('button', { class: 'btn', onclick: async () => { for (const p of await pickPhoto()) await add(p.data, p.facing); } }, '\uE046 Ajouter depuis la galerie')) : null, wrap);
   }
 
   function show() {
@@ -176,11 +176,11 @@ async function editor(ctx) {
     const eva = b.periode === 'ANNUEL' ? ['ev1', 'ev2', 'ev3'] : ['ev' + b.periode.slice(1)];
     const views = {
       entete: () => [dis(h('div', { class: 'card' }, h('h3', 'En-tête du bilan'), h('div', { class: 'grid12' }, ef('departement', 'Direction départementale (département)'), ef('nomCs', 'Circonscription scolaire'), b.niveau === 'ZONE' ? ef('numZone', 'Zone pédagogique n°') : null, ef('dateVisite', 'Période / dates des activités'), ef('lieu', 'Fait à'), ef('dateBilan', 'Date du bilan', 'date'), ef('auteur', 'Nom et prénoms de l\'auteur'), ef('titreAuteur', 'Qualité de l\'auteur')))),
-        h('div', { class: 'card' }, h('h3', 'Aide'), h('p', 'Les cellules grisées se calculent seules. Les tableaux comportent une ligne par acteur (' + b.actors.map(a => a.l).join(', ') + ') et un total.'), h('p', b.periode === 'ANNUEL' ? 'Bilan annuel : utilisez « Σ Consolider » pour cumuler les trois trimestres.' : b.niveau === 'CS' ? 'Bilan CS : importez les bilans de zone reçus des CP (paquets), puis « Σ Consolider ».' : 'Utilisez « ✨ Pré-remplir » pour reprendre le nombre d\'écoles de votre zone.'))],
+        h('div', { class: 'card' }, h('h3', 'Aide'), h('p', 'Les cellules grisées se calculent seules. Les tableaux comportent une ligne par acteur (' + b.actors.map(a => a.l).join(', ') + ') et un total.'), h('p', b.periode === 'ANNUEL' ? 'Bilan annuel : utilisez « Σ Consolider » pour cumuler les trois trimestres.' : b.niveau === 'CS' ? 'Bilan CS : importez les bilans de zone reçus des CP (paquets), puis « Σ Consolider ».' : 'Utilisez « \uE03D Pré-remplir » pour reprendre le nombre d\'écoles de votre zone.'))],
       t1: () => [gridTable('t1')], act: () => ['t21', 't22', 't23', 't24', 't25'].map(gridTable),
       conc: () => [gridTable('t31'), listEditor('autres', [{ k: 'lieu', l: 'Lieu' }, { k: 'periode', l: 'Période' }, { k: 'designation', l: 'Désignation de l\'activité', area: true, w: '240px' }, { k: 'participants', l: 'Participants' }], () => ({ lieu: '', periode: '', designation: '', participants: '' }), '3.2 Autres activités menées', 'Réunions, ateliers, journées pédagogiques, accompagnements spécifiques, etc.')],
       t4: () => [gridTable('t4')], ev: () => eva.map(gridTable),
-      ana: () => [dis(h('div', { class: 'card' }, h('h3', '6. Analyses'), editable ? h('p', h('button', { class: 'btn', onclick: async () => { const d = draftAnalysis(b), keys = Object.keys(d).filter(k => d[k]); if (!keys.length) return toast("Renseignez d'abord les résultats de l'évaluation et les activités.", 'warn'); const filled = keys.filter(k => (b.textes[k] || '').trim()); if (filled.length && !(await confirmBox('Certaines analyses sont déjà rédigées. Les écraser par le brouillon automatique ?', 'Écraser'))) keys.forEach(k => { if (filled.includes(k)) delete d[k]; }); Object.assign(b.textes, d); touch(); show(); } }, '✨ Générer un brouillon d\'analyse (à relire)')) : null,
+      ana: () => [dis(h('div', { class: 'card' }, h('h3', '6. Analyses'), editable ? h('p', h('button', { class: 'btn', onclick: async () => { const d = draftAnalysis(b), keys = Object.keys(d).filter(k => d[k]); if (!keys.length) return toast("Renseignez d'abord les résultats de l'évaluation et les activités.", 'warn'); const filled = keys.filter(k => (b.textes[k] || '').trim()); if (filled.length && !(await confirmBox('Certaines analyses sont déjà rédigées. Les écraser par le brouillon automatique ?', 'Écraser'))) keys.forEach(k => { if (filled.includes(k)) delete d[k]; }); Object.assign(b.textes, d); touch(); show(); } }, '\uE03D Générer un brouillon d\'analyse (à relire)')) : null,
         h('div', { class: 'grid12' }, area('quant', '6.1 Analyse quantitative'), area('qual', '6.2 Analyse qualitative'), area('genre', '6.3 Performances selon le genre', 3), area('champs', '6.4 Performances selon les disciplines (Français, Mathématiques…)', 3), area('up', '6.5 Apport des unités pédagogiques (UP)', 3), area('conclusion', '6.6 Conclusion', 3))))],
       prob: () => [listEditor('problemes', [{ k: 'designation', l: 'Désignation du problème', area: true, w: '230px' }, { k: 'ampleur', l: 'Ampleur (%)', num: true, w: '70px' }, { k: 'obs', l: 'Observations / solutions envisagées', area: true, w: '260px' }], () => ({ designation: '', ampleur: '', obs: '' }), '7. Difficultés majeures rencontrées', 'Classez-les par ordre d\'importance (ampleur en % des écoles/classes concernées).'),
         dis(h('div', { class: 'card' }, h('h3', 'Commentaires et perspectives'), h('div', { class: 'grid12' }, area('commentaires', 'Commentaires'), area('perspectives', 'Perspectives et recommandations'))))],
@@ -191,18 +191,18 @@ async function editor(ctx) {
 
   const reload = () => ctx.reload();
   const actions = () => [
-    { label: '⬆ Charger', show: editable, onClick: async () => { await save(); const nb = await loadFile(u, { target: b }); if (nb) reload(); } },
-    { label: '⬇ PDF', onClick: async () => { await save(); exportB(u, b, 'pdf'); } }, { label: '🖋 PDF signé', show: mine(u, b), onClick: async () => { await save(); exportB(u, b, 'pdf-signe'); } },
-    { label: '⬇ Excel', onClick: async () => { await save(); exportB(u, b, 'xlsx'); } }, { label: '⬇ JSON', onClick: async () => { await save(); exportB(u, b, 'json'); } },
-    { label: '📷 Appareil photo', show: editable, onClick: () => { tab = 'photos'; show(); openCamera({ onCapture: async (data, facing) => { await db.put('photos', { id: uid(), bilanId: b.id, data, facing, legende: '', date: nowISO() }); if (tab === 'photos') show(); } }); } },
-    { label: '✨ Pré-remplir', show: editable && b.periode !== 'ANNUEL' && b.niveau === 'ZONE', onClick: async () => { const sc = (await scoped('schools', u)).filter(s => !b.codeZone || s.codeZone === b.codeZone); const a = b.actors[0].k; b.data[`t1.${a}.em_e`] = String(sc.filter(s => s.cycle === 'Maternelle').length); b.data[`t1.${a}.ep_e`] = String(sc.filter(s => s.cycle === 'Primaire').length); touch(); show(); toast(`${sc.length} école(s) reprise(s) depuis la base. Complétez les classes et effectifs.`); } },
+    { label: '\uE00A Charger', show: editable, onClick: async () => { await save(); const nb = await loadFile(u, { target: b }); if (nb) reload(); } },
+    { label: '\uE009 PDF', onClick: async () => { await save(); exportB(u, b, 'pdf'); } }, { label: '\uE006 PDF signé', show: mine(u, b), onClick: async () => { await save(); exportB(u, b, 'pdf-signe'); } },
+    { label: '\uE009 Excel', onClick: async () => { await save(); exportB(u, b, 'xlsx'); } }, { label: '\uE009 JSON', onClick: async () => { await save(); exportB(u, b, 'json'); } },
+    { label: '\uE03C Appareil photo', show: editable, onClick: () => { tab = 'photos'; show(); openCamera({ onCapture: async (data, facing) => { await db.put('photos', { id: uid(), bilanId: b.id, data, facing, legende: '', date: nowISO() }); if (tab === 'photos') show(); } }); } },
+    { label: '\uE03D Pré-remplir', show: editable && b.periode !== 'ANNUEL' && b.niveau === 'ZONE', onClick: async () => { const sc = (await scoped('schools', u)).filter(s => !b.codeZone || s.codeZone === b.codeZone); const a = b.actors[0].k; b.data[`t1.${a}.em_e`] = String(sc.filter(s => s.cycle === 'Maternelle').length); b.data[`t1.${a}.ep_e`] = String(sc.filter(s => s.cycle === 'Primaire').length); touch(); show(); toast(`${sc.length} école(s) reprise(s) depuis la base. Complétez les classes et effectifs.`); } },
     { label: 'Σ Consolider', show: editable && (b.periode === 'ANNUEL' || b.niveau === 'CS'), onClick: async () => { if (!(await confirmBox('Recalculer ce bilan à partir des ' + (b.periode === 'ANNUEL' ? 'trois trimestres' : 'bilans de zone') + ' disponibles ? Les valeurs saisies concernées seront remplacées.', 'Consolider'))) return; const n = await consolidateInto(u, b); if (!n) return toast('Aucun bilan source trouvé sur cet appareil.', 'warn'); dirty = true; await save(); toast(`${n} bilan(s) consolidé(s).`); reload(); } },
-    { label: '📤 Transmettre', kind: 'accent', show: canSend(u, b), onClick: async () => { await save(); if (await sendB(u, b)) reload(); } },
-    { label: '✅ Valider', kind: 'accent', show: canValidateB(u, b), onClick: async () => { const { promptBox } = await import('./util.js'); const c = await promptBox('Validation', 'Commentaire (facultatif)'); if (c === null) return; await changeStatut(u, b, 'bilans', 'Validée', 'Validation CCS', c); reload(); } },
-    { label: '↩ Correction', show: canValidateB(u, b), onClick: async () => { const { promptBox } = await import('./util.js'); const c = await promptBox('Demande de correction', 'Corrections attendues'); if (!c) return; await changeStatut(u, b, 'bilans', 'À corriger', 'Demande de correction', c); reload(); } },
-    { label: '🔓 Rouvrir', show: !editable && (u.role === 'ADMIN' || (b.niveau === 'CS' && u.role === 'CCS' && inScope(u, b))) && b.statut !== 'Brouillon', onClick: async () => { await changeStatut(u, b, 'bilans', 'Brouillon', 'Réouverture'); reload(); } },
-    { label: '♻ Réinitialiser', show: editable, onClick: async () => { if (await resetB(u, b)) reload(); } },
-    { label: '🗑 Supprimer', show: editable, onClick: async () => { if (await deleteB(u, b)) ctx.go('bilans'); } },
+    { label: '\uE00C Transmettre', kind: 'accent', show: canSend(u, b), onClick: async () => { await save(); if (await sendB(u, b)) reload(); } },
+    { label: '\uE004 Valider', kind: 'accent', show: canValidateB(u, b), onClick: async () => { const { promptBox } = await import('./util.js'); const c = await promptBox('Validation', 'Commentaire (facultatif)'); if (c === null) return; await changeStatut(u, b, 'bilans', 'Validée', 'Validation CCS', c); reload(); } },
+    { label: '\uE037 Correction', show: canValidateB(u, b), onClick: async () => { const { promptBox } = await import('./util.js'); const c = await promptBox('Demande de correction', 'Corrections attendues'); if (!c) return; await changeStatut(u, b, 'bilans', 'À corriger', 'Demande de correction', c); reload(); } },
+    { label: '\uE034 Rouvrir', show: !editable && (u.role === 'ADMIN' || (b.niveau === 'CS' && u.role === 'CCS' && inScope(u, b))) && b.statut !== 'Brouillon', onClick: async () => { await changeStatut(u, b, 'bilans', 'Brouillon', 'Réouverture'); reload(); } },
+    { label: '\uE058 Réinitialiser', show: editable, onClick: async () => { if (await resetB(u, b)) reload(); } },
+    { label: '\uE005 Supprimer', show: editable, onClick: async () => { if (await deleteB(u, b)) ctx.go('bilans'); } },
     { label: '← Liste', onClick: async () => { await save(); ctx.go('bilans'); } },
   ];
   ctx.actions(actions());

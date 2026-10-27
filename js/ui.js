@@ -48,9 +48,9 @@ export function dataTable({ columns, rows = [], getId = (r) => r.id, onOpen, onS
       wrap.appendChild(h('table', { class: 't fixe1' }, parts));
     }
     pager.replaceChildren(
-      h('button', { class: 'btn sm', disabled: page === 0, onclick: () => { page--; draw(); } }, '◀ Précédent'),
+      h('button', { class: 'btn sm', disabled: page === 0, onclick: () => { page--; draw(); } }, '\uE038 Précédent'),
       h('span', `Page ${page + 1} / ${pages}`),
-      h('button', { class: 'btn sm', disabled: page >= pages - 1, onclick: () => { page++; draw(); } }, 'Suivant ▶'));
+      h('button', { class: 'btn sm', disabled: page >= pages - 1, onclick: () => { page++; draw(); } }, 'Suivant \uE039'));
     pager.classList.toggle('hidden', pages <= 1);
   }
   draw();

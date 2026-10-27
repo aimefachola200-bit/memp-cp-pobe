@@ -81,8 +81,8 @@ async function planning(ctx) {
       fieldEl({ k: 'ecole', l: 'École concernée / lieu', t: 'text', list: dlId, w: 'half' }, c.ecole || '', (kk, v) => { c.ecole = v; }),
       fieldEl({ k: 'objet', l: 'Activité / objet (thème, classe visitée…)', t: 'text' }, c.objet || '', (kk, v) => { c.objet = v; }),
       fieldEl({ k: 'obs', l: 'Observations', t: 'text' }, c.obs || '', (kk, v) => { c.obs = v; }));
-    modal({ title: '🗓️ Activité du CP', body, actions: [
-      { label: '🗑 Vider', onClick: async () => { delete P.cellules[k]; await enregistrer(true); draw(); } },
+    modal({ title: '\uE017 Activité du CP', body, actions: [
+      { label: '\uE005 Vider', onClick: async () => { delete P.cellules[k]; await enregistrer(true); draw(); } },
       { label: 'Annuler' },
       { label: 'Enregistrer', kind: 'primary', onClick: async () => { if (c.type || c.ecole || c.objet || c.obs) P.cellules[k] = c; else delete P.cellules[k]; await enregistrer(true); draw(); } }] });
   }
@@ -139,21 +139,21 @@ async function planning(ctx) {
     if (u.role !== 'CP') choixCp.replaceChildren(cps.length ? h('label', { class: 'field', style: { maxWidth: '420px' } }, h('span', 'Conseiller pédagogique'),
       h('select', { class: 'input', onchange: async (e) => { if (modifie) await enregistrer(true); cp = cps.find(x => x.username === e.target.value) || cp; try { localStorage.setItem('planning-cp', cp.username); } catch { /* */ } await charger(); draw(); } },
         cps.map(x => h('option', { value: x.username, selected: x.username === cp.username }, `${x.prenoms || ''} ${x.nom || ''} (${x.username})${x.numZone ? ' — zone ' + x.numZone : ''}`)))) : h('p', { class: 'notes' }, 'Aucun compte CP : la planification ci-dessous est celle de votre compte.'));
-    tabs.replaceChildren(...[['mois', '📅 Mensuelle'], ['trim', '🗂️ Trimestrielle'], ['annee', '📆 Annuelle']].map(([k, l]) => h('button', { class: 'tab' + (k === vue ? ' on' : ''), onclick: () => { vue = k; db.setting('planning-vue', k); draw(); } }, l)));
+    tabs.replaceChildren(...[['mois', '\uE017 Mensuelle'], ['trim', '\uE011 Trimestrielle'], ['annee', '\uE017 Annuelle']].map(([k, l]) => h('button', { class: 'tab' + (k === vue ? ' on' : ''), onclick: () => { vue = k; db.setting('planning-vue', k); draw(); } }, l)));
     holder.replaceChildren(vue === 'mois' ? vueMois() : vue === 'trim' ? vueTrim() : vueAnnee());
     const n = Object.keys(P.cellules).length;
     ctx.status(`${enTete()} — ${n} activité(s) planifiée(s) sur l'année${P.maj ? ' · enregistrée le ' + new Date(P.maj).toLocaleString('fr-FR') : ''}`);
     ctx.actions([
-      { label: '⏱ Plages horaires', onClick: plages },
-      { label: '📥 Reprendre les activités pédagogiques', title: 'Inscrit dans les cases vides les activités déjà enregistrées dans « Activités pédagogiques »', onClick: reprendre },
-      { label: '⬇ PDF', kind: 'primary', onClick: () => exporter('pdf', false) }, { label: '⬇ Excel', onClick: () => exporter('xlsx', false) },
-      { label: '⬇ Vierge (PDF)', title: 'Grille vierge à remplir à la main', onClick: () => exporter('pdf', true) }, { label: '⬇ Vierge (Excel)', onClick: () => exporter('xlsx', true) },
-      { label: '🖨 Imprimer', onClick: () => window.print() },
-      { label: '♻ Réinitialiser', title: "Efface toute la planification de l'année de ce CP", onClick: async () => { if (!(await confirmBox(`Effacer toute la planification ${ANNEE} de ${enTete()} ?`, 'Effacer', true))) return; P = { plages: P.plages, cellules: {}, jours: {} }; await enregistrer(); await addLog(u, { action: 'Planification CP réinitialisée', target: cp.username }); draw(); } }]);
+      { label: '\uE01B Plages horaires', onClick: plages },
+      { label: '\uE00B Reprendre les activités pédagogiques', title: 'Inscrit dans les cases vides les activités déjà enregistrées dans « Activités pédagogiques »', onClick: reprendre },
+      { label: '\uE009 PDF', kind: 'primary', onClick: () => exporter('pdf', false) }, { label: '\uE009 Excel', onClick: () => exporter('xlsx', false) },
+      { label: '\uE009 Vierge (PDF)', title: 'Grille vierge à remplir à la main', onClick: () => exporter('pdf', true) }, { label: '\uE009 Vierge (Excel)', onClick: () => exporter('xlsx', true) },
+      { label: '\uE008 Imprimer', onClick: () => window.print() },
+      { label: '\uE058 Réinitialiser', title: "Efface toute la planification de l'année de ce CP", onClick: async () => { if (!(await confirmBox(`Effacer toute la planification ${ANNEE} de ${enTete()} ?`, 'Effacer', true))) return; P = { plages: P.plages, cellules: {}, jours: {} }; await enregistrer(); await addLog(u, { action: 'Planification CP réinitialisée', target: cp.username }); draw(); } }]);
   }
   function plages() {
     const ta = h('textarea', { class: 'input', rows: 6, 'aria-label': 'Plages horaires, une par ligne' }, P.plages.join('\n'));
-    modal({ title: '⏱ Plages horaires', body: h('div', h('p', { class: 'notes' }, 'Une plage par ligne (1 à 6), par exemple « 07h30 – 09h30 ». Les activités déjà inscrites restent dans la même colonne.'), ta),
+    modal({ title: '\uE01B Plages horaires', body: h('div', h('p', { class: 'notes' }, 'Une plage par ligne (1 à 6), par exemple « 07h30 – 09h30 ». Les activités déjà inscrites restent dans la même colonne.'), ta),
       actions: [{ label: 'Valeurs par défaut', onClick: () => { ta.value = PLAGES_DEFAUT.join('\n'); return false; } }, { label: 'Annuler' }, { label: 'Enregistrer', kind: 'primary', onClick: async () => {
         const l = ta.value.split('\n').map(x => x.trim()).filter(Boolean).slice(0, 6); if (!l.length) { toast('Indiquez au moins une plage.', 'warn'); return false; }
         P.plages = l; await enregistrer(); draw(); } }] });

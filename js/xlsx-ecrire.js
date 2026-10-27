@@ -36,7 +36,7 @@
     let o = 0; for (const p of tout) { out.set(p, o); o += p.length; }
     return out;
   }
-  const esc = (s) => String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const esc = (s) => String(s).replace(/[\uE000-\uE0FF]\s?/g, '').replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   const colonne = (n) => { let s = ''; n += 1; while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); } return s; };
   const brut = (c) => (c && typeof c === 'object' && !(c instanceof Date) && 'v' in c) ? c.v : c;
   const vide = (v) => v === null || v === undefined || v === '';

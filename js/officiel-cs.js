@@ -4,7 +4,7 @@
    et effectifs par cours ou section (G, F).
    · premier lancement et installations existantes : une seule fois par version du bloc, seules les cases VIDES sont remplies
      (une saisie de l'utilisateur n'est jamais écrasée) ;
-   · « ♻ Réinitialiser » : remet les valeurs officielles (une UP, les effectifs d'une école, une zone ou tout), après confirmation.
+   · « \uE058 Réinitialiser » : remet les valeurs officielles (une UP, les effectifs d'une école, une zone ou tout), après confirmation.
    Les UP sont rangées comme dans le tableau synoptique du CP (réglage « synocp-up:<code de zone> ») : les deux écrans
    montrent donc les mêmes RUP et co-RUP. Conception : Maître Aimé FACHE */
 import { db } from './db.js';

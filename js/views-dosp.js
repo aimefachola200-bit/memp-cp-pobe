@@ -97,15 +97,15 @@ async function espacedosp(ctx) {
   const zone = h('div'), barre = h('div');
   ctx.el.append(barre, zone);
   const dessiner = async () => {
-    barre.replaceChildren(tabs([['taches', '✅ Mes tâches'], ['agenda', '📅 Agenda'], ['notes', '📝 Bloc-notes'], ['docs', '📄 Mes documents'], ['raccourcis', '⚡ Raccourcis']], ONGLET_ESPACE, (k) => { ONGLET_ESPACE = k; dessiner(); }));
+    barre.replaceChildren(tabs([['taches', '\uE004 Mes tâches'], ['agenda', '\uE017 Agenda'], ['notes', '\uE00E Bloc-notes'], ['docs', '\uE00D Mes documents'], ['raccourcis', '\uE05A Raccourcis']], ONGLET_ESPACE, (k) => { ONGLET_ESPACE = k; dessiner(); }));
     zone.replaceChildren();
     if (ONGLET_ESPACE === 'taches') await ongletTaches(u, zone, dessiner);
     else if (ONGLET_ESPACE === 'agenda') await ongletAgenda(u, zone, dessiner);
     else if (ONGLET_ESPACE === 'notes') await ongletNotes(u, zone);
     else if (ONGLET_ESPACE === 'docs') await ongletDocs(u, zone);
     else zone.append(card('Raccourcis', h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '8px' } },
-      [['synodosp', '📋 Tableau synoptique de la DOSP'], ['envois', '📥 Réception des fiches'], ['fiches', '📝 Fiches de collecte'], ['prevision', '🔮 Prévisions'], ['besoins', '⚖️ Besoins et écarts'], ['suivieval', '📊 Suivi-évaluation'], ['capacites', '🎓 Renforcement des capacités'],
-        ['docsdosp', '📄 Documents officiels'], ['plandosp', '🎯 Plan d’action'], ['synoptique', '🗂️ Synthèse des fiches'], ['identite', '✍️ Ma signature et mes cachets']].map(([r, l]) => h('button', { class: 'btn', onclick: () => ctx.go(r) }, l)))));
+      [['synodosp', '\uE00F Tableau synoptique de la DOSP'], ['envois', '\uE00B Réception des fiches'], ['fiches', '\uE00E Fiches de collecte'], ['prevision', '\uE07A Prévisions'], ['besoins', '\uE03F Besoins et écarts'], ['suivieval', '\uE015 Suivi-évaluation'], ['capacites', '\uE020 Renforcement des capacités'],
+        ['docsdosp', '\uE00D Documents officiels'], ['plandosp', '\uE02E Plan d’action'], ['synoptique', '\uE011 Synthèse des fiches'], ['identite', '\uE029 Ma signature et mes cachets']].map(([r, l]) => h('button', { class: 'btn', onclick: () => ctx.go(r) }, l)))));
   };
   ctx.actions([{ label: '＋ Tâche', kind: 'primary', onClick: async () => { await editerTache(u, null); ONGLET_ESPACE = 'taches'; dessiner(); } }, { label: '＋ Rendez-vous', onClick: async () => { await editerAgenda(u, null); ONGLET_ESPACE = 'agenda'; dessiner(); } }]);
   await dessiner();
@@ -118,11 +118,11 @@ async function editerTache(u, t) {
 }
 async function ongletTaches(u, zone, raf) {
   const l = (await dospScoped(u, 'tache')).filter(t => t.by === u.username).sort((a, b) => (a.etat === 'Terminée') - (b.etat === 'Terminée') || String(a.echeance || '9').localeCompare(String(b.echeance || '9')));
-  const t = dataTable({ columns: [{ k: 'libelle', l: 'Tâche', w: 260 }, { k: 'echeance', l: 'Échéance' }, { k: 'priorite', l: 'Priorité' }, { k: 'etat', l: 'État' }, { k: 'retard', l: '', text: r => (r.etat !== 'Terminée' && r.echeance && r.echeance < today() ? '⚠ en retard' : '') }],
+  const t = dataTable({ columns: [{ k: 'libelle', l: 'Tâche', w: 260 }, { k: 'echeance', l: 'Échéance' }, { k: 'priorite', l: 'Priorité' }, { k: 'etat', l: 'État' }, { k: 'retard', l: '', text: r => (r.etat !== 'Terminée' && r.echeance && r.echeance < today() ? '\uE041 en retard' : '') }],
     rows: l, onOpen: async (r) => { await editerTache(u, r); raf(); }, empty: 'Aucune tâche. Ajoutez-en avec « ＋ Tâche ».' });
   zone.append(card('Mes tâches', t.el, h('div', { class: 'actionbar' },
-    h('button', { class: 'btn', onclick: async () => { const s = t.selected; if (!s) return toast('Touchez une tâche.', 'warn'); await db.put('dosp', { ...s, etat: 'Terminée', maj: nowISO() }); raf(); } }, '✔ Terminée'),
-    h('button', { class: 'btn', onclick: async () => { const s = t.selected; if (!s) return toast('Touchez une tâche.', 'warn'); if (await confirmBox('Supprimer cette tâche ?', 'Supprimer', true)) { await db.del('dosp', s.id); raf(); } } }, '🗑 Supprimer'))));
+    h('button', { class: 'btn', onclick: async () => { const s = t.selected; if (!s) return toast('Touchez une tâche.', 'warn'); await db.put('dosp', { ...s, etat: 'Terminée', maj: nowISO() }); raf(); } }, '\uE003 Terminée'),
+    h('button', { class: 'btn', onclick: async () => { const s = t.selected; if (!s) return toast('Touchez une tâche.', 'warn'); if (await confirmBox('Supprimer cette tâche ?', 'Supprimer', true)) { await db.del('dosp', s.id); raf(); } } }, '\uE005 Supprimer'))));
 }
 const AGENDA_F = [{ k: 'date', l: 'Date', t: 'date', req: true, w: 'third' }, { k: 'heure', l: 'Heure', t: 'text', w: 'third' }, { k: 'lieu', l: 'Lieu', t: 'text', w: 'third' }, { k: 'objet', l: 'Objet', t: 'text', req: true }, { k: 'participants', l: 'Participants', t: 'textarea' }];
 async function editerAgenda(u, e) {
@@ -187,7 +187,7 @@ async function envois(ctx) {
         rows: hist.filter(x => x.annee === st.annee).sort((a, b) => String(b.date).localeCompare(String(a.date))), empty: 'Aucun bordereau pour cette année.' }).el));
     ctx.status(`${L.length} école(s) — ${cpt('Validée')} fiche(s) validée(s)`);
     ctx.actions([
-      { label: '✉ Lettre de relance (PDF)', kind: 'primary', onClick: async () => {
+      { label: '\uE04F Lettre de relance (PDF)', kind: 'primary', onClick: async () => {
         const manq = L.filter(x => x.etat !== 'Validée' && x.etat !== 'Reçue (à valider)'); if (!manq.length) return toast('Toutes les fiches sont reçues.');
         const quoi = st.moment === 'RENTREE' ? 'le point de rentrée' : "le rapport de fin d'année";
         const numero = await numeroDoc(u, 'REL');
@@ -196,7 +196,7 @@ async function envois(ctx) {
             { table: { head: ['N°', 'École', 'Zone', 'Directeur/trice', 'Contact', 'État'], widths: [0.5, 3, 1, 2.4, 1.4, 1.4], rows: manq.map((x, i) => [String(i + 1), x.ecole, x.zone, x.directeur, x.contact, x.etat]) } }] }), clean('Relance_' + st.moment + '_' + st.annee) + '.pdf');
         await db.put('dosp', { id: uid(), kind: 'doc', type: 'relance', typeLib: 'Lettre de relance', numero, objet: `Relance ${quoi} ${st.annee}`, date: today(), ...base(u), auto: true });
       } },
-      { label: '📤 Bordereau d’envoi à la DDEMP (PDF)', onClick: async () => {
+      { label: '\uE00C Bordereau d’envoi à la DDEMP (PDF)', onClick: async () => {
         const ok = L.filter(x => x.etat === 'Validée'); if (!ok.length) return toast('Aucune fiche validée à acheminer.', 'warn');
         const v = await formDialog({ title: "Bordereau d'envoi", fields: [{ k: 'destinataire', l: 'Destinataire', t: 'text', req: true }, { k: 'obs', l: 'Observations', t: 'textarea' }], values: { destinataire: `Monsieur le Directeur Départemental des EMP${u.departement ? ' du ' + u.departement : ''}` } }); if (!v) return;
         const numero = await numeroDoc(u, 'BE');
@@ -206,7 +206,7 @@ async function envois(ctx) {
         await db.put('dosp', { id: uid(), kind: 'envoi', annee: st.annee, moment: st.moment, momentLib: st.moment === 'RENTREE' ? 'Points de rentrée' : "Rapports de fin d'année", numero, date: today(), destinataire: v.destinataire, nb: ok.length, fiches: ok.map(x => x.f.id), ...base(u) });
         await addLog(u, { action: 'Acheminement à la DDEMP', target: `${ok.length} fiche(s) ${st.annee}` }); toast('Bordereau émis et enregistré.'); envois(ctx);
       } },
-      { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: 'RÉCEPTION DES FICHES — ' + (st.moment === 'RENTREE' ? 'POINTS DE RENTRÉE' : "RAPPORTS DE FIN D'ANNÉE"), subtitle: st.annee, columns: [{ k: 'ecole', l: 'École' }, { k: 'zone', l: 'Zone' }, { k: 'cycle', l: 'Cycle' }, { k: 'secteur', l: 'Secteur' }, { k: 'directeur', l: 'Directeur' }, { k: 'contact', l: 'Contact' }, { k: 'etat', l: 'État' }, { k: 'maj', l: 'Mise à jour' }], rows: lignes() }), clean('Reception_fiches_' + st.annee) + '.xlsx') }]);
+      { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: 'RÉCEPTION DES FICHES — ' + (st.moment === 'RENTREE' ? 'POINTS DE RENTRÉE' : "RAPPORTS DE FIN D'ANNÉE"), subtitle: st.annee, columns: [{ k: 'ecole', l: 'École' }, { k: 'zone', l: 'Zone' }, { k: 'cycle', l: 'Cycle' }, { k: 'secteur', l: 'Secteur' }, { k: 'directeur', l: 'Directeur' }, { k: 'contact', l: 'Contact' }, { k: 'etat', l: 'État' }, { k: 'maj', l: 'Mise à jour' }], rows: lignes() }), clean('Reception_fiches_' + st.annee) + '.xlsx') }]);
   }
   dessiner();
 }
@@ -248,11 +248,11 @@ async function prevision(ctx) {
         rows: lignesPrev(L), totals: totauxPrev(L) }).el),
       h('p', { class: 'sub' }, `Méthode : CI ${suiv} = nouveaux inscrits du CI en ${st.annee} (effectif de rentrée moins les redoublants) + redoublants du CI ; cours suivants = promus du cours précédent + redoublants du cours. Classes nécessaires = effectif prévu de chaque cours ÷ ${st.norme}, arrondi au-dessus. Candidats au CEP = promus du CM1 + redoublants du CM2.`));
     ctx.status(`${L.length} école(s) prises en compte`);
-    ctx.actions([{ label: '⬇ Rapport de prévision (PDF signé)', kind: 'primary', onClick: async () => download(await docOfficiel(u, { titre: 'PRÉVISIONS DES EFFECTIFS ET DES MOYENS', sousTitre: `Année scolaire ${suiv} (base ${st.annee})`, orientation: 'landscape', numero: await numeroDoc(u, 'PREV'), label: 'Prévisions ' + suiv,
+    ctx.actions([{ label: '\uE009 Rapport de prévision (PDF signé)', kind: 'primary', onClick: async () => download(await docOfficiel(u, { titre: 'PRÉVISIONS DES EFFECTIFS ET DES MOYENS', sousTitre: `Année scolaire ${suiv} (base ${st.annee})`, orientation: 'landscape', numero: await numeroDoc(u, 'PREV'), label: 'Prévisions ' + suiv,
       blocs: [{ text: `Élèves prévus : ${TP} (${TA} en ${st.annee}). Classes nécessaires : ${CL} (${CLA} ouvertes). Enseignants nécessaires : ${CL} (${EN} en poste). Candidats au CEP : ${tot(x => x.p.cep)}. Norme : ${st.norme} élèves par classe.` },
         { table: { head: ['École', ...CLASSES, 'Total', 'Effectif ' + st.annee, 'Classes néc.', 'Classes ouv.', 'Ens.', 'Manque', 'CEP'], widths: [3, ...CLASSES.map(() => 0.8), 1, 1.1, 1, 1, 0.8, 0.9, 0.8], size: 7,
           rows: [...lignesPrev(L), totauxPrev(L)].map(r => [r.ecole, ...CLASSES.map(c => String(r[c])), String(r.tot), String(r.act), String(r.cl), String(r.clo), String(r.ens), String(r.manque), String(r.cep)]) } }] }), clean('Previsions_' + suiv) + '.pdf') },
-    { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: 'PRÉVISIONS ' + suiv, subtitle: 'Base ' + st.annee, columns: [{ k: 'ecole', l: 'École' }, ...CLASSES.map(c => ({ k: c, l: c, num: true })), { k: 'tot', l: 'Total', num: true }, { k: 'cl', l: 'Classes nécessaires', num: true }, { k: 'ens', l: 'Enseignants', num: true }, { k: 'manque', l: 'Manque', num: true }, { k: 'cep', l: 'CEP', num: true }], rows: [...lignesPrev(L), totauxPrev(L)] }), clean('Previsions_' + suiv) + '.xlsx') }]);
+    { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: 'PRÉVISIONS ' + suiv, subtitle: 'Base ' + st.annee, columns: [{ k: 'ecole', l: 'École' }, ...CLASSES.map(c => ({ k: c, l: c, num: true })), { k: 'tot', l: 'Total', num: true }, { k: 'cl', l: 'Classes nécessaires', num: true }, { k: 'ens', l: 'Enseignants', num: true }, { k: 'manque', l: 'Manque', num: true }, { k: 'cep', l: 'CEP', num: true }], rows: [...lignesPrev(L), totauxPrev(L)] }), clean('Previsions_' + suiv) + '.xlsx') }]);
   }
   const lignesPrev = (L) => L.map(x => ({ id: x.s.id, ecole: x.s.nom, ...x.p.prev, tot: x.p.totPrev, act: x.p.totAct, cl: x.p.classes, clo: x.p.classesAct, ens: x.p.ens, manque: Math.max(0, x.p.classes - x.p.ens), cep: x.p.cep }));
   const totauxPrev = (L) => { const r = { ecole: 'TOTAL' }; for (const k of [...CLASSES, 'tot', 'act', 'cl', 'clo', 'ens', 'manque', 'cep']) r[k] = lignesPrev(L).reduce((a, x) => a + (x[k] || 0), 0); return r; };
@@ -290,9 +290,9 @@ async function besoins(ctx) {
       courbe('Ratios par ' + libGroupe(u).toLowerCase(), groupes, [{ nom: 'Élèves / maître', color: PALETTE[2], values: groupes.map(g => { const e = parG(g, 'ens'); return e ? Math.round(parG(g, 'eleves') / e * 10) / 10 : 0; }) }, { nom: 'Élèves / salle', color: PALETTE[4], values: groupes.map(g => { const e = parG(g, 'salles'); return e ? Math.round(parG(g, 'eleves') / e * 10) / 10 : 0; }) }], st.annee),
       card('Moyens et besoins par école', dataTable({ columns: [{ k: 'ecole', l: 'École', w: 200 }, { k: 'zone', l: 'Zone' }, { k: 'eleves', l: 'Élèves', num: true }, { k: 'classes', l: 'Classes', num: true }, { k: 'ens', l: 'Enseignants', num: true }, { k: 'mEns', l: 'Manque ens.', num: true }, { k: 'salles', l: 'Salles', num: true }, { k: 'mSal', l: 'Manque salles', num: true }, { k: 'places', l: 'Places assises', num: true }, { k: 'mPl', l: 'Places manquantes', num: true }, { k: 'epm', l: 'Élèves / maître', num: true }],
         rows: lignesB(L), totals: totB(L) }).el));
-    ctx.actions([{ label: '⬇ État des besoins (PDF signé)', kind: 'primary', onClick: async () => download(await docOfficiel(u, { titre: 'ÉTAT DES BESOINS EN ENSEIGNANTS, SALLES ET MOBILIER', sousTitre: 'Année scolaire ' + st.annee, orientation: 'landscape', numero: await numeroDoc(u, 'BES'), label: 'État des besoins ' + st.annee,
+    ctx.actions([{ label: '\uE009 État des besoins (PDF signé)', kind: 'primary', onClick: async () => download(await docOfficiel(u, { titre: 'ÉTAT DES BESOINS EN ENSEIGNANTS, SALLES ET MOBILIER', sousTitre: 'Année scolaire ' + st.annee, orientation: 'landscape', numero: await numeroDoc(u, 'BES'), label: 'État des besoins ' + st.annee,
       blocs: [{ table: { head: ['École', 'Zone', 'Élèves', 'Classes', 'Ens.', 'Manque ens.', 'Salles', 'Manque salles', 'Places', 'Places manq.', 'Élèves/maître'], widths: [3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], rows: [...lignesB(L), totB(L)].map(r => [r.ecole, r.zone || '', ...['eleves', 'classes', 'ens', 'mEns', 'salles', 'mSal', 'places', 'mPl', 'epm'].map(k => String(r[k]))]) } }] }), clean('Besoins_' + st.annee) + '.pdf') },
-    { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: 'BESOINS ET ÉCARTS', subtitle: st.annee, columns: [{ k: 'ecole', l: 'École' }, { k: 'zone', l: 'Zone' }, ...['eleves', 'classes', 'ens', 'mEns', 'salles', 'mSal', 'places', 'mPl'].map(k => ({ k, l: k, num: true }))], rows: [...lignesB(L), totB(L)] }), clean('Besoins_' + st.annee) + '.xlsx') }]);
+    { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: 'BESOINS ET ÉCARTS', subtitle: st.annee, columns: [{ k: 'ecole', l: 'École' }, { k: 'zone', l: 'Zone' }, ...['eleves', 'classes', 'ens', 'mEns', 'salles', 'mSal', 'places', 'mPl'].map(k => ({ k, l: k, num: true }))], rows: [...lignesB(L), totB(L)] }), clean('Besoins_' + st.annee) + '.xlsx') }]);
   }
   const lignesB = (L) => L.map(x => ({ id: x.s.id, ecole: x.s.nom, zone: x.s.numZone ? 'Zone ' + x.s.numZone : '', ...x.m, f: undefined, epm: x.m.ens ? fr(x.m.eleves / x.m.ens) : '—' }));
   const totB = (L) => { const r = { ecole: 'TOTAL', zone: '' }; for (const k of ['eleves', 'classes', 'ens', 'mEns', 'salles', 'mSal', 'places', 'mPl']) r[k] = L.reduce((a, x) => a + x.m[k], 0); r.epm = r.ens ? fr(r.eleves / r.ens) : '—'; return r; };
@@ -335,7 +335,7 @@ async function suivieval(ctx) {
       courbe('Effectifs par sexe et réussite au CEP', groupes, [{ nom: 'Garçons', color: PALETTE[0], values: I.map(x => x.G) }, { nom: 'Filles', color: PALETTE[1], values: I.map(x => x.F) }], st.annee),
       card('Indicateurs par ' + libGroupe(u).toLowerCase(), dataTable({ columns: [{ k: 'g', l: libGroupe(u), w: 180 }, { k: 'ecoles', l: 'Écoles', num: true }, { k: 'T', l: 'Élèves', num: true }, { k: 'pariteT', l: 'Parité F/G' }, { k: 'epmT', l: 'Élèves/maître' }, { k: 'epcT', l: 'Élèves/classe' }, { k: 'promoT', l: 'Promotion' }, { k: 'redoubT', l: 'Redoublement' }, { k: 'abandT', l: 'Abandon' }, { k: 'cepT', l: 'Réussite CEP' }, { k: 'remontee', l: 'Fiches reçues (R / F)' }],
         rows: [...I, { g: 'TOTAL', ...tot }].map(x => ({ id: x.g, ...x, pariteT: fr(x.parite, 2), epmT: fr(x.epm), epcT: fr(x.epc), promoT: pc(x.promo), redoubT: pc(x.redoub), abandT: pc(x.aband), cepT: pc(x.cep), remontee: `${x.recuesR} / ${x.recuesF} sur ${x.ecoles}` })) }).el));
-    ctx.actions([{ label: '⬇ Rapport de suivi-évaluation (PDF signé)', kind: 'primary', onClick: async () => download(await docOfficiel(u, { titre: 'RAPPORT DE SUIVI-ÉVALUATION', sousTitre: 'Année scolaire ' + st.annee, orientation: 'landscape', numero: await numeroDoc(u, 'SE'), label: 'Suivi-évaluation ' + st.annee,
+    ctx.actions([{ label: '\uE009 Rapport de suivi-évaluation (PDF signé)', kind: 'primary', onClick: async () => download(await docOfficiel(u, { titre: 'RAPPORT DE SUIVI-ÉVALUATION', sousTitre: 'Année scolaire ' + st.annee, orientation: 'landscape', numero: await numeroDoc(u, 'SE'), label: 'Suivi-évaluation ' + st.annee,
       blocs: [{ heading: '1. Synthèse', text: `Élèves du primaire : ${tot.T} (${tot.G} garçons, ${tot.F} filles ; indice de parité ${fr(tot.parite, 2)}). Enseignants : ${tot.ens} dont ${tot.ensF} femmes ; ${fr(tot.epm)} élèves par maître, ${fr(tot.epc)} élèves par classe, ${fr(tot.eps)} élèves par salle. Rendement : promotion ${pc(tot.promo)}, redoublement ${pc(tot.redoub)}, abandon ${pc(tot.aband)}. Réussite au CEP : ${pc(tot.cep)}. Fiches reçues : ${tot.recuesR}/${tot.ecoles} points de rentrée et ${tot.recuesF}/${tot.ecoles} rapports de fin d'année.` },
         { heading: '2. Indicateurs par ' + libGroupe(u).toLowerCase(), table: { head: [libGroupe(u), 'Écoles', 'Élèves', 'Parité', 'Él./maître', 'Él./classe', 'Promotion', 'Redoublement', 'Abandon', 'CEP'], widths: [2.2, 0.8, 1, 0.9, 1, 1, 1, 1.1, 1, 0.9],
           rows: [...I, { g: 'TOTAL', ...tot }].map(x => [x.g, String(x.ecoles), String(x.T), fr(x.parite, 2), fr(x.epm), fr(x.epc), pc(x.promo), pc(x.redoub), pc(x.aband), pc(x.cep)]) } }] }), clean('Suivi_evaluation_' + st.annee) + '.pdf') }]);
@@ -368,12 +368,12 @@ async function capacites(ctx) {
     await db.put('dosp', { ...(rec || { id: uid(), kind: 'formation', ...base(u) }), ...reste, participants: lireParticipants(participantsTxt), maj: nowISO() }); toast('Session enregistrée.'); ctx.reload();
   }
   async function modifier() { const s = sel(); if (s) enregistrer(s); }
-  ctx.actions([{ label: '＋ Session', kind: 'primary', onClick: () => enregistrer(null) }, { label: '✏️ Modifier', onClick: modifier },
-    { label: '🖨 Liste de présence', onClick: async () => { const s = sel(); if (!s) return; const P = s.participants || [];
+  ctx.actions([{ label: '＋ Session', kind: 'primary', onClick: () => enregistrer(null) }, { label: '\uE006 Modifier', onClick: modifier },
+    { label: '\uE008 Liste de présence', onClick: async () => { const s = sel(); if (!s) return; const P = s.participants || [];
       const rows = P.map((p, i) => [String(i + 1), p.nom, p.fonction, p.structure, p.sexe, '']); while (rows.length < Math.max(20, P.length)) rows.push([String(rows.length + 1), '', '', '', '', '']);
       download(await docOfficiel(u, { titre: 'LISTE DE PRÉSENCE', sousTitre: `${s.theme} — ${new Date(s.date).toLocaleDateString('fr-FR')}${s.lieu ? ' — ' + s.lieu : ''}`, numero: await numeroDoc(u, 'LP'), label: 'Liste de présence ' + s.theme,
         blocs: [{ table: { head: ['N°', 'Nom et prénoms', 'Fonction', 'École / structure', 'Sexe', 'Émargement'], widths: [0.5, 3, 1.6, 2.2, 0.6, 1.8], rows, size: 8 } }] }), clean('Liste_presence_' + s.theme) + '.pdf'); } },
-    { label: '🎓 Attestations', onClick: async () => { const s = sel(); if (!s) return; if (!(s.participants || []).length) return toast('Aucun participant dans cette session.', 'warn');
+    { label: '\uE020 Attestations', onClick: async () => { const s = sel(); if (!s) return; if (!(s.participants || []).length) return toast('Aucun participant dans cette session.', 'warn');
       const idn = (await getIdentity()) || {}; const pdf = await newPdf({ title: 'Attestations — ' + s.theme, footer: 'Attestation de participation' });
       for (const [i, p] of s.participants.entries()) {
         if (i) pdf.addPage();
@@ -387,13 +387,13 @@ async function capacites(ctx) {
         await pdf.authBlock({ role: idn.titre || "Le Chef de la Division de l'Organisation Scolaire et de la Prévision", nom: `${idn.prenoms || ''} ${idn.nom || u.nom || ''}`.trim(), signature: idn.signature && dataUrlToBytes(idn.signature), cachet: idn.nom ? dataUrlToBytes(await makeCachet(idn)) : null, qrText: `MEMP-BJ|ATT|${s.id.slice(0, 8)}|${i + 1}|${p.nom}`, lines: [`Attestation n° ${String(i + 1).padStart(3, '0')} — session « ${s.theme} »`] });
       }
       download(pdfBlob(await pdf.finish()), clean('Attestations_' + s.theme) + '.pdf'); } },
-    { label: '📄 Rapport de la session', onClick: async () => { const s = sel(); if (!s) return; const P = s.participants || [];
+    { label: '\uE00D Rapport de la session', onClick: async () => { const s = sel(); if (!s) return; const P = s.participants || [];
       download(await docOfficiel(u, { titre: 'RAPPORT DE SESSION DE RENFORCEMENT DES CAPACITÉS', sousTitre: s.theme, numero: await numeroDoc(u, 'RF'), label: 'Rapport de formation ' + s.theme,
         blocs: [{ heading: '1. Organisation', text: `Date : ${new Date(s.date).toLocaleDateString('fr-FR')}${s.dateFin ? ' au ' + new Date(s.dateFin).toLocaleDateString('fr-FR') : ''} · Lieu : ${s.lieu || '—'} · Public : ${s.public || '—'} · Formateurs : ${s.formateurs || '—'}` },
           { heading: '2. Objectifs', text: s.objectifs || '—' }, { heading: '3. Participation', text: `${P.length} participant(s) dont ${P.filter(p => p.sexe === 'F').length} femme(s).` },
           { table: { head: ['N°', 'Nom et prénoms', 'Fonction', 'École / structure', 'Sexe'], widths: [0.5, 3, 1.8, 2.4, 0.6], rows: P.map((p, i) => [String(i + 1), p.nom, p.fonction, p.structure, p.sexe]) } },
           { heading: '4. Résultats et recommandations', text: s.resultats || '—' }] }), clean('Rapport_formation_' + s.theme) + '.pdf'); } },
-    { label: '🗑 Supprimer', onClick: async () => { const s = sel(); if (s && await confirmBox('Supprimer cette session ?', 'Supprimer', true)) { await db.del('dosp', s.id); ctx.reload(); } } }]);
+    { label: '\uE005 Supprimer', onClick: async () => { const s = sel(); if (s && await confirmBox('Supprimer cette session ?', 'Supprimer', true)) { await db.del('dosp', s.id); ctx.reload(); } } }]);
 }
 
 /* =====================================================================
@@ -417,8 +417,8 @@ async function plandosp(ctx) {
   const t = dataTable({ columns: [{ k: 'n', l: 'N°', text: r => 'L' + (l.indexOf(r) + 1) }, { k: 'libelle', l: "Ligne d'action", w: 320 }, { k: 'indicateur', l: 'Indicateur' }, { k: 'echeance', l: 'Échéance' }, { k: 'etat', l: 'État' }, { k: 'tx', l: 'Taux', text: r => eff(r) + ' %' }], rows: l, onOpen: () => edit() });
   ctx.el.append(card("Plan d'action " + an, t.el));
   async function edit(rec = t.selected) { if (rec === undefined) return; const v = await formDialog({ title: rec ? "Modifier la ligne d'action" : "Nouvelle ligne d'action", fields: F, values: rec || { etat: 'Prévue', taux: 0 } }); if (!v) return; await db.put('dosp', { ...(rec || { id: uid(), kind: 'ligne', annee: an, ...base(u) }), ...v, taux: Math.max(0, Math.min(100, n0(v.taux))) }); ctx.reload(); }
-  ctx.actions([{ label: '＋ Ligne d’action', kind: 'primary', onClick: () => edit(null) }, { label: '✏️ Modifier', onClick: () => (t.selected ? edit(t.selected) : toast('Touchez une ligne.', 'warn')) },
-    { label: '⬇ Plan d’action (PDF signé)', onClick: async () => download(await docOfficiel(u, { titre: "PLAN D'ACTION DE LA DIVISION DE L'ORGANISATION SCOLAIRE ET DE LA PRÉVISION", sousTitre: 'Année scolaire ' + an, orientation: 'landscape', numero: await numeroDoc(u, 'PA'), label: "Plan d'action DOSP " + an,
+  ctx.actions([{ label: '＋ Ligne d’action', kind: 'primary', onClick: () => edit(null) }, { label: '\uE006 Modifier', onClick: () => (t.selected ? edit(t.selected) : toast('Touchez une ligne.', 'warn')) },
+    { label: '\uE009 Plan d’action (PDF signé)', onClick: async () => download(await docOfficiel(u, { titre: "PLAN D'ACTION DE LA DIVISION DE L'ORGANISATION SCOLAIRE ET DE LA PRÉVISION", sousTitre: 'Année scolaire ' + an, orientation: 'landscape', numero: await numeroDoc(u, 'PA'), label: "Plan d'action DOSP " + an,
       blocs: [{ heading: 'Attributions (AOF, article 13)', text: ATTRIBUTIONS_DOSP }, { heading: "Lignes d'action — taux de réalisation : " + pc(moy), table: { head: ['N°', "Ligne d'action", 'Indicateur', 'Cible', 'Échéance', 'Responsable', 'État', 'Taux', 'Observations'], widths: [0.5, 4, 1.6, 1, 1, 1.4, 0.9, 0.7, 2], rows: l.map((x, i) => ['L' + (i + 1), x.libelle, x.indicateur || '', x.cible || '', x.echeance || '', x.responsable || '', x.etat || '', eff(x) + ' %', x.obs || '']) } }] }), clean('Plan_action_DOSP_' + an) + '.pdf') }]);
 }
 
@@ -464,6 +464,6 @@ async function docsdosp(ctx) {
     await db.put('dosp', d); await telechargerDoc(u, d); ctx.reload();
   }
   ctx.actions([...Object.entries(TYPES_DOC).map(([k, T]) => ({ label: '＋ ' + T.lib, onClick: () => rediger(k) })),
-    { label: '✏️ Modifier', onClick: () => (t.selected ? rediger(t.selected.type, t.selected) : toast('Touchez un document.', 'warn')) },
-    { label: '🗑 Supprimer', onClick: async () => { const s = t.selected; if (s && await confirmBox('Supprimer ce document ?', 'Supprimer', true)) { await db.del('dosp', s.id); ctx.reload(); } } }]);
+    { label: '\uE006 Modifier', onClick: () => (t.selected ? rediger(t.selected.type, t.selected) : toast('Touchez un document.', 'warn')) },
+    { label: '\uE005 Supprimer', onClick: async () => { const s = t.selected; if (s && await confirmBox('Supprimer ce document ?', 'Supprimer', true)) { await db.del('dosp', s.id); ctx.reload(); } } }]);
 }

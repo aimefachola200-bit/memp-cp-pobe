@@ -1,6 +1,6 @@
 /* République du Bénin — MEMP — Zones pédagogiques et unités pédagogiques de la circonscription
    Zone → unités pédagogiques (RUP, co-RUP, écoles) → écoles (personnel par statut, effectifs G/F/T).
-   ✏️ Modifier · 🗑 Supprimer · ➕ Ajouter · ♻ Réinitialiser (valeurs du fichier de la CS : une UP, les effectifs d'une école,
+   \uE006 Modifier · \uE005 Supprimer · \uE001 Ajouter · \uE058 Réinitialiser (valeurs du fichier de la CS : une UP, les effectifs d'une école,
    une zone ou tout) · rubriques « Écoles en attente d'UP » et « Écoles ne fonctionnant plus » · Excel, PDF, impression.
    Zone d'appartenance (codeZone) et zone de l'UP (codeZoneUp, zone des activités pédagogiques) sont distinctes : une école d'une
    zone peut suivre les activités d'une UP d'une autre zone. Les UP sont celles du tableau synoptique du CP.
@@ -112,7 +112,7 @@ async function zonesUp(ctx) {
     const x = UPS[code][i], o = O && O.ups.find(y => memeUp(x, y));
     if (!o) return toast("Cette UP n'est pas dans le document de la CS : rien à réinitialiser.", 'warn');
     const libre = o.ajoutee || !o.ecoleIds.length;   // UP ajoutée par la CS sans écoles (Agbarou) : les écoles rattachées à la main restent
-    if (!(await confirmBox(`Remettre l'UP « ${x.up} » comme dans le document de la CS (nom, RUP, co-RUP${libre ? ' ; les écoles que vous y avez rattachées restent' : ', écoles : ' + o.ecoleIds.length}) ?`, '♻ Réinitialiser'))) return;
+    if (!(await confirmBox(`Remettre l'UP « ${x.up} » comme dans le document de la CS (nom, RUP, co-RUP${libre ? ' ; les écoles que vous y avez rattachées restent' : ', écoles : ' + o.ecoleIds.length}) ?`, '\uE058 Réinitialiser'))) return;
     await appliquer({ force: true, quoi: ['ups'], upIds: [o.id], user: u });
     if (libre) { await addLog(u, { action: 'Réinitialisation UP', target: o.up }); await charger(); await resync(code); toast('UP réinitialisée.'); return draw(); }
     const maj = schools.filter(s => o.ecoleIds.includes(s.id)).map(s => avecUp(s, o.codeZone, o.up));
@@ -148,18 +148,18 @@ async function zonesUp(ctx) {
   async function reinitEcole(s) {
     const o = O && O.ecoles[s.id]; if (!o) return toast("Cette école n'est pas dans le fichier de la CS.", 'warn');
     const e = o.effectifs ? Object.entries(o.effectifs).reduce((a, [k, v]) => a + v, 0) : 0;
-    if (!(await confirmBox(`Remettre « ${s.nom} » comme dans le fichier de la CS : ${zoneNom(o.codeZone)}, UP ${o.up || '—'}, personnel ${o.personnelFichier ? o.personnelFichier.total : '—'}, effectifs ${annee} : ${e || '—'} élèves ? Les autres renseignements de l'école ne changent pas.`, '♻ Réinitialiser'))) return;
+    if (!(await confirmBox(`Remettre « ${s.nom} » comme dans le fichier de la CS : ${zoneNom(o.codeZone)}, UP ${o.up || '—'}, personnel ${o.personnelFichier ? o.personnelFichier.total : '—'}, effectifs ${annee} : ${e || '—'} élèves ? Les autres renseignements de l'école ne changent pas.`, '\uE058 Réinitialiser'))) return;
     await appliquer({ force: true, quoi: ['ecoles', 'effectifs'], schoolIds: [s.id], user: u });
     await addLog(u, { action: 'Réinitialisation école (données de la CS)', target: s.nom });
     await charger(); for (const c of [...new Set([zoneUp(s), o.codeZoneUp, o.codeZone].filter(Boolean))]) if (UPS[c]) await resync(c); toast('École réinitialisée.'); draw();
   }
   async function fermer(s) {
-    if (!(await confirmBox(`« ${s.nom} » ne fonctionne plus ? L'école reste enregistrée mais sort des listes, de la génération des fiches, des effectifs, des tableaux synoptiques et des totaux par zone et par UP. Elle pourra être remise en activité.`, '⛔ Ne fonctionne plus', true))) return;
+    if (!(await confirmBox(`« ${s.nom} » ne fonctionne plus ? L'école reste enregistrée mais sort des listes, de la génération des fiches, des effectifs, des tableaux synoptiques et des totaux par zone et par UP. Elle pourra être remise en activité.`, '\uE036 Ne fonctionne plus', true))) return;
     await db.put('schools', { ...s, rubrique: 'ne_fonctionne_plus' }); await addLog(u, { action: 'École ne fonctionnant plus', target: s.nom });
     await charger(); if (s.up && UPS[zoneUp(s)]) await resync(zoneUp(s)); toast('École classée « ne fonctionnant plus ».'); draw();
   }
   async function rouvrir(s) {
-    if (!(await confirmBox(`Remettre « ${s.nom} » en activité ? Elle revient dans les listes, les fiches et les totaux${s.up ? '' : ' (dans « Écoles en attente d\'UP » tant qu\'elle n\'a pas d\'UP)'}.`, '✅ Remettre en activité'))) return;
+    if (!(await confirmBox(`Remettre « ${s.nom} » en activité ? Elle revient dans les listes, les fiches et les totaux${s.up ? '' : ' (dans « Écoles en attente d\'UP » tant qu\'elle n\'a pas d\'UP)'}.`, '\uE004 Remettre en activité'))) return;
     await db.put('schools', { ...s, rubrique: s.up ? '' : 'en_attente_up' }); await addLog(u, { action: 'École remise en activité', target: s.nom });
     await charger(); if (s.up && UPS[zoneUp(s)]) await resync(zoneUp(s)); toast('École remise en activité.'); draw();
   }
@@ -177,7 +177,7 @@ async function zonesUp(ctx) {
     for (const [k, l] of [['ups', 'Unités pédagogiques (noms, RUP, co-RUP)'], ['ecoles', 'Zone, UP, année de création, classes autorisées et personnel des écoles'], ['effectifs', `Effectifs des apprenants ${O.annee} (fiches non transmises)`]])
       corps.append(h('label', { class: 'field check' }, h('input', { type: 'checkbox', checked: true, onchange: (e) => { choix[k] = e.target.checked; } }), h('span', l)));
     corps.append(h('p', { class: 'notes' }, 'Les UP et écoles ajoutées à la main sont gardées, ainsi que les écoles rattachées à une UP que le fichier de la CS ne fixe pas (ex. Agbarou). Les rubriques (en attente d’UP, ne fonctionnant plus) reprennent celles du fichier. Les fiches d’effectifs transmises ou validées ne sont pas modifiées.'));
-    modal({ title: '♻ Réinitialiser', body: corps, actions: [{ label: 'Annuler' }, { label: '♻ Réinitialiser', kind: 'danger', onClick: async () => {
+    modal({ title: '\uE058 Réinitialiser', body: corps, actions: [{ label: 'Annuler' }, { label: '\uE058 Réinitialiser', kind: 'danger', onClick: async () => {
       const quoi = ['zones', ...Object.keys(choix).filter(k => choix[k])];
       const r = await appliquer({ force: true, quoi, codeZone: code, user: u });
       await addLog(u, { action: 'Réinitialisation (données de la CS)', target: code ? zoneNom(code) : 'circonscription', comment: JSON.stringify(r) });
@@ -196,9 +196,9 @@ async function zonesUp(ctx) {
         const membres = ec.filter(s => ecoleDansUp(s, x)), t = totaux(membres);
         return h('tr', h('td', { class: 'num' }, String(x.numero || '')), h('td', x.cycle === 'Maternelle' ? 'EM' : x.cycle ? 'EP' : ''), h('td', { class: 'zu-nom' }, h('b', x.up || '—')), h('td', { class: 'zu-nom' }, x.arrondissement || ''),
           h('td', { class: 'zu-pers' }, x.rup || h('span', { class: 'badge' }, 'à renseigner'), x.rup_tel ? h('small', ' · ' + x.rup_tel) : null), h('td', { class: 'zu-pers' }, x.corup || '—', x.corup_tel ? h('small', ' · ' + x.corup_tel) : null),
-          h('td', { class: 'zu-liste' }, h('b', String(membres.length) + (membres.length ? ' : ' : '')), ...membres.flatMap((s, k) => [k ? ', ' : '', s.codeZone && s.codeZone !== code ? h('span', { class: 'zu-autre', title: `École de la ${zoneNom(s.codeZone)} : activités avec cette UP` }, s.nom + ' ↗') : s.nom])),
+          h('td', { class: 'zu-liste' }, h('b', String(membres.length) + (membres.length ? ' : ' : '')), ...membres.flatMap((s, k) => [k ? ', ' : '', s.codeZone && s.codeZone !== code ? h('span', { class: 'zu-autre', title: `École de la ${zoneNom(s.codeZone)} : activités avec cette UP` }, s.nom + ' \uE03B') : s.nom])),
           h('td', { class: 'num' }, String(t.G)), h('td', { class: 'num' }, String(t.F)), h('td', { class: 'num' }, h('b', String(t.T))),
-          ed ? h('td', { class: 'no-print', style: { whiteSpace: 'nowrap' } }, btn('✏️', 'Modifier', () => editerUp(code, i)), btn('🗑', 'Supprimer', () => supprimerUp(code, i)), O && x.officielle ? btn('♻', 'Réinitialiser (document de la CS)', () => reinitUp(code, i)) : null) : null);
+          ed ? h('td', { class: 'no-print', style: { whiteSpace: 'nowrap' } }, btn('\uE006', 'Modifier', () => editerUp(code, i)), btn('\uE005', 'Supprimer', () => supprimerUp(code, i)), O && x.officielle ? btn('\uE058', 'Réinitialiser (document de la CS)', () => reinitUp(code, i)) : null) : null);
       }) : h('tr', h('td', { colspan: 11, class: 'empty' }, 'Aucune unité pédagogique dans cette zone.')))));
   }
   function tableEcoles(list, avecZone = false, ferme = false) {
@@ -211,12 +211,12 @@ async function zonesUp(ctx) {
           h('td', { class: 'zu-nom' }, s.up || (ferme ? '—' : h('span', { class: 'badge corriger' }, "en attente d'UP")), autreZone(s) ? h('div', { class: 'zu-autre' }, `activités avec l'UP ${s.up} (${zoneNom(zoneUp(s))})`) : null), h('td', { class: 'num' }, String(s.anneeCreation || '')), h('td', { class: 'num' }, String(s.classesAutorisees ?? '')),
           ...STATUTS.map(k => h('td', { class: 'num' }, p ? String(p[k] ?? 0) : '')), h('td', { class: 'num', title: p ? (p.src === 'agents' ? 'agents enregistrés' : 'fichier de la CS') : '' }, p ? h('b', String(p.total ?? '')) : ''),
           h('td', { class: 'num' }, e ? String(e.G) : ''), h('td', { class: 'num' }, e ? String(e.F) : ''), h('td', { class: 'num' }, e ? h('b', String(e.T)) : h('span', { class: 'badge' }, '—')),
-          ed && ferme ? h('td', { class: 'no-print', style: { whiteSpace: 'nowrap' } }, btn('✅ Remettre en activité', 'Remettre en activité', () => rouvrir(s), 'sm')) :
-          ed ? h('td', { class: 'no-print', style: { whiteSpace: 'nowrap' } }, btn('✏️', 'Modifier (zone, UP, personnel)', () => editerEcole(s)),
-            btn('👧', 'Fiche des effectifs', () => ctx.go(e ? 'effectif/' + encodeURIComponent(e.rec.id) : 'effectifs')),
-            O && O.ecoles[s.id] ? btn('♻', 'Réinitialiser (fichier de la CS)', () => reinitEcole(s)) : null,
-            e ? btn('🗑', 'Supprimer la fiche d’effectifs', () => viderEffectifs(s)) : null,
-            btn('⛔', 'Ne fonctionne plus', () => fermer(s))) : null);
+          ed && ferme ? h('td', { class: 'no-print', style: { whiteSpace: 'nowrap' } }, btn('\uE004 Remettre en activité', 'Remettre en activité', () => rouvrir(s), 'sm')) :
+          ed ? h('td', { class: 'no-print', style: { whiteSpace: 'nowrap' } }, btn('\uE006', 'Modifier (zone, UP, personnel)', () => editerEcole(s)),
+            btn('\uE01F', 'Fiche des effectifs', () => ctx.go(e ? 'effectif/' + encodeURIComponent(e.rec.id) : 'effectifs')),
+            O && O.ecoles[s.id] ? btn('\uE058', 'Réinitialiser (fichier de la CS)', () => reinitEcole(s)) : null,
+            e ? btn('\uE005', 'Supprimer la fiche d’effectifs', () => viderEffectifs(s)) : null,
+            btn('\uE036', 'Ne fonctionne plus', () => fermer(s))) : null);
       }) : h('tr', h('td', { colspan: 17, class: 'empty' }, 'Aucune école.')))));
   }
   function cartes(t, nbUp) {
@@ -225,9 +225,9 @@ async function zonesUp(ctx) {
   }
   function draw() {
     ctx.title('Zones pédagogiques et unités pédagogiques', `${u.nomCs ? 'Circonscription scolaire de ' + u.nomCs : 'Circonscription'} — RUP, co-RUP, écoles, personnel et effectifs ${annee}`);
-    const onglets = [...(u.role === 'CP' ? [] : [['tout', '🗺️ Toute la CS']]), ...zones.map(z => [z.code, zoneNom(z.code)]), ...(u.role === 'CP' ? [] : [['attente', `📌 ${RUBRIQUES.en_attente_up} (${enAttente().length})`], ['fermees', `⛔ ${RUBRIQUES.ne_fonctionne_plus} (${fermees.length})`]])];
+    const onglets = [...(u.role === 'CP' ? [] : [['tout', '\uE048 Toute la CS']]), ...zones.map(z => [z.code, zoneNom(z.code)]), ...(u.role === 'CP' ? [] : [['attente', `\uE02D ${RUBRIQUES.en_attente_up} (${enAttente().length})`], ['fermees', `\uE036 ${RUBRIQUES.ne_fonctionne_plus} (${fermees.length})`]])];
     zbar.replaceChildren(...onglets.map(([k, l]) => h('button', { class: 'tab' + (k === zone ? ' on' : ''), onclick: () => { zone = k; db.setting('zonesup-zone', k); draw(); } }, l)));
-    const src = O ? h('p', { class: 'notes' }, `Données de départ : ${O.source}. Effectifs : ${O.noteEffectifs}. « ♻ » remet ces valeurs ; vos modifications sont gardées tant que vous ne réinitialisez pas.`) : null;
+    const src = O ? h('p', { class: 'notes' }, `Données de départ : ${O.source}. Effectifs : ${O.noteEffectifs}. « \uE058 » remet ces valeurs ; vos modifications sont gardées tant que vous ne réinitialisez pas.`) : null;
     if (zone === 'tout') {
       const lignes = zones.map(z => { const l = ecolesZone(z.code), t = totaux(l); return { z, t, nbUp: (UPS[z.code] || []).length }; });
       const T = totaux(schools);
@@ -241,18 +241,18 @@ async function zonesUp(ctx) {
     } else if (zone === 'attente') {
       const l = enAttente();
       holder.replaceChildren(h('div', { class: 'card' }, h('h3', `${RUBRIQUES.en_attente_up} (${l.length})`),
-        h('p', { class: 'notes' }, (O?.rubriques?.en_attente_up?.aide || '') + ' Elles restent ici jusqu’à ce qu’une UP leur soit donnée : ✏️ pour choisir leur zone et leur UP.'), tableEcoles(l, true)), src);
+        h('p', { class: 'notes' }, (O?.rubriques?.en_attente_up?.aide || '') + ' Elles restent ici jusqu’à ce qu’une UP leur soit donnée : \uE006 pour choisir leur zone et leur UP.'), tableEcoles(l, true)), src);
     } else if (zone === 'fermees') {
       holder.replaceChildren(h('div', { class: 'card' }, h('h3', `${RUBRIQUES.ne_fonctionne_plus} (${fermees.length})`),
-        h('p', { class: 'notes' }, (O?.rubriques?.ne_fonctionne_plus?.aide || 'Écoles qui existent mais ne fonctionnent plus.') + ' Elles ne figurent ni dans les listes, ni dans la génération des fiches, ni dans les effectifs et les totaux. « ✅ Remettre en activité » les y fait revenir ; « ⛔ » sur la ligne d’une école la classe ici.'),
+        h('p', { class: 'notes' }, (O?.rubriques?.ne_fonctionne_plus?.aide || 'Écoles qui existent mais ne fonctionnent plus.') + ' Elles ne figurent ni dans les listes, ni dans la génération des fiches, ni dans les effectifs et les totaux. « \uE004 Remettre en activité » les y fait revenir ; « \uE036 » sur la ligne d’une école la classe ici.'),
         tableEcoles(fermees, true, true)), src);
     } else {
       const l = ecolesZone(zone), t = totaux(l);
       holder.replaceChildren(cartes(t, (UPS[zone] || []).length),
         h('div', { class: 'card' }, h('div', { class: 'tbl-tools' }, h('h3', { style: { margin: 0, flex: 1 } }, `Unités pédagogiques — ${zoneNom(zone)}`),
-          peut(zone) ? btn('➕ Ajouter une UP', 'Ajouter une unité pédagogique', () => editerUp(zone, null), '') : null,
-          peut(zone) && O ? btn('♻ Réinitialiser la zone', 'Réinitialiser la zone (fichiers de la CS)', () => toutReinitialiser(zone), '') : null), tableUps(zone)),
-        h('div', { class: 'card' }, h('h3', `Écoles de la zone — zone d’appartenance (${l.length})`), h('p', { class: 'notes' }, '↗ dans la liste des UP : école d’une autre zone qui suit les activités de cette UP.'), tableEcoles(l)), src);
+          peut(zone) ? btn('\uE001 Ajouter une UP', 'Ajouter une unité pédagogique', () => editerUp(zone, null), '') : null,
+          peut(zone) && O ? btn('\uE058 Réinitialiser la zone', 'Réinitialiser la zone (fichiers de la CS)', () => toutReinitialiser(zone), '') : null), tableUps(zone)),
+        h('div', { class: 'card' }, h('h3', `Écoles de la zone — zone d’appartenance (${l.length})`), h('p', { class: 'notes' }, '\uE03B dans la liste des UP : école d’une autre zone qui suit les activités de cette UP.'), tableEcoles(l)), src);
     }
     ctx.status(`${schools.length} écoles en activité · ${zones.reduce((a, z) => a + (UPS[z.code] || []).length, 0)} UP · ${enAttente().length} en attente d'UP · ${fermees.length} ne fonctionnant plus`);
   }
@@ -269,9 +269,9 @@ async function zonesUp(ctx) {
 
   await charger(); draw();
   ctx.actions([
-    { label: '⬇ Excel (UP)', onClick: async () => download(await listToXlsx({ title: titreExp(), columns: COLS_UP.map(c => ({ ...c, xw: c.k === 'ecoles' ? 70 : 22 })), rows: lignesUp(), sheet: 'UP' }), 'Unites_pedagogiques.xlsx') },
-    { label: '⬇ Excel (écoles)', onClick: async () => download(await listToXlsx({ title: titreExp(), columns: COLS_EC.map(c => ({ ...c, xw: c.k === 'nom' ? 36 : c.num ? 9 : 18 })), rows: lignesExport(), sheet: 'Écoles' }), 'Ecoles_zones_UP.xlsx') },
-    { label: '⬇ PDF', onClick: async () => download(await listToPdf({ title: titreExp(), columns: COLS_EC, rows: lignesExport(), orientation: 'landscape' }), 'Ecoles_zones_UP.pdf') },
-    { label: '🖨 Imprimer', onClick: () => window.print() },
-    { label: '♻ Tout réinitialiser', kind: 'danger', show: !!O && ROLES_EDIT.includes(u.role), onClick: () => toutReinitialiser(null) }]);
+    { label: '\uE009 Excel (UP)', onClick: async () => download(await listToXlsx({ title: titreExp(), columns: COLS_UP.map(c => ({ ...c, xw: c.k === 'ecoles' ? 70 : 22 })), rows: lignesUp(), sheet: 'UP' }), 'Unites_pedagogiques.xlsx') },
+    { label: '\uE009 Excel (écoles)', onClick: async () => download(await listToXlsx({ title: titreExp(), columns: COLS_EC.map(c => ({ ...c, xw: c.k === 'nom' ? 36 : c.num ? 9 : 18 })), rows: lignesExport(), sheet: 'Écoles' }), 'Ecoles_zones_UP.xlsx') },
+    { label: '\uE009 PDF', onClick: async () => download(await listToPdf({ title: titreExp(), columns: COLS_EC, rows: lignesExport(), orientation: 'landscape' }), 'Ecoles_zones_UP.pdf') },
+    { label: '\uE008 Imprimer', onClick: () => window.print() },
+    { label: '\uE058 Tout réinitialiser', kind: 'danger', show: !!O && ROLES_EDIT.includes(u.role), onClick: () => toutReinitialiser(null) }]);
 }

@@ -122,9 +122,9 @@ export async function render(id, ctx) {
       const head = h('thead', h('tr', h('th', 'N°'), b.cols.map(c => h('th', { style: { minWidth: (c.larg ? c.larg * 7 : (c.c === 'nom' ? 180 : 70)) + 'px' } }, c.l)), editable ? h('th', '') : null));
       const body = h('tbody', Array.from({ length: n }, (_, k) => k + 1).map(i => h('tr', h('td', { class: 'n' }, String(i).padStart(2, '0')),
         b.cols.map(c => h('td', saisie({ ...c, k: `pers.${i}.${c.c}`, lib: `Ligne ${i} – ${c.l}` }, { court: true }))),
-        editable ? h('td', h('button', { class: 'icon-btn', title: 'Retirer la ligne', onclick: () => retirer(i, n) }, '🗑')) : null)));
+        editable ? h('td', h('button', { class: 'icon-btn', title: 'Retirer la ligne', onclick: () => retirer(i, n) }, '\uE005')) : null)));
       box.replaceChildren(...[...listes, h('div', { class: 'gridwrap' }, h('table', { class: 'g p' }, head, body)),
-        editable ? h('p', h('button', { class: 'btn sm', onclick: () => { if (n >= D.pers_max) return toast(`${D.pers_max} lignes au plus.`, 'warn'); over.pers_n = String(n + 1); touch(); draw(); } }, '➕ Ajouter une ligne'),
+        editable ? h('p', h('button', { class: 'btn sm', onclick: () => { if (n >= D.pers_max) return toast(`${D.pers_max} lignes au plus.`, 'warn'); over.pers_n = String(n + 1); touch(); draw(); } }, '\uE001 Ajouter une ligne'),
           ' ', h('span', { class: 'muted' }, `${n} ligne(s) — ${b.min} au minimum sur le modèle (${b.min} lignes par page du PDF).`)) : null,
         h('p', { class: 'notes' }, 'Pré-rempli à partir du menu « Personnel enseignant » (directeur en première ligne). Cours tenus : CI, CP, CE1, CE2, CM1, CM2 séparés par des virgules.')].filter(Boolean));
     };
@@ -147,8 +147,8 @@ export async function render(id, ctx) {
   }
   function controlesEl() {
     const l = controles(D, doc, fin);
-    return h('div', l.length ? l.map(([niv, m]) => h('div', { class: 'hint', style: { margin: '6px 0', borderLeftColor: niv === 'danger' ? 'var(--err)' : 'var(--warn)' } }, niv === 'danger' ? '⛔ ' : '⚠️ ', m))
-      : h('p', '✅ Aucune incohérence détectée.'));
+    return h('div', l.length ? l.map(([niv, m]) => h('div', { class: 'hint', style: { margin: '6px 0', borderLeftColor: niv === 'danger' ? 'var(--err)' : 'var(--warn)' } }, niv === 'danger' ? '\uE036 ' : '\uE041 ', m))
+      : h('p', '\uE004 Aucune incohérence détectée.'));
   }
   const historyEl = () => h('div', (fiche.history || []).slice().reverse().map(x => h('div', { class: 'result', style: { cursor: 'default' } }, h('b', x.action), ' ', h('small', `${fmtDateTime(x.date)} · ${x.by || ''}${x.role ? ' (' + x.role + ')' : ''}`), x.comment ? h('div', x.comment) : null, x.from ? h('small', `${x.from} → ${x.to}`) : null)));
   const SECTIONS = [...D.schemas[doc].map(s => ({ titre: s.titre, el: () => sectionEl(s) })), { titre: 'Contrôles de cohérence', el: controlesEl }, { titre: 'Historique', el: historyEl }];
@@ -158,7 +158,7 @@ export async function render(id, ctx) {
     [...navEl.children].forEach((b, k) => b.classList.toggle('on', k === i));
     content.replaceChildren(h('h3', { class: 'sec-title' }, s.titre), h('div', { class: 'sec-body' }, s.el()),
       h('div', { style: { display: 'flex', gap: '8px', justifyContent: 'space-between', margin: '10px 0' }, class: 'no-print' },
-        h('button', { class: 'btn', disabled: i === 0, onclick: () => show(i - 1) }, '◀ Précédent'), h('button', { class: 'btn primary', disabled: i >= SECTIONS.length - 1, onclick: () => show(i + 1) }, 'Suivant ▶')));
+        h('button', { class: 'btn', disabled: i === 0, onclick: () => show(i - 1) }, '\uE038 Précédent'), h('button', { class: 'btn primary', disabled: i >= SECTIONS.length - 1, onclick: () => show(i + 1) }, 'Suivant \uE039')));
     window.scrollTo({ top: 0 });
   }
   SECTIONS.forEach((s, i) => navEl.appendChild(h('button', { onclick: () => show(i) }, s.titre)));
@@ -182,15 +182,15 @@ export async function render(id, ctx) {
     over = {}; touch(); await save(); show(cur); toast('Fiche réinitialisée.');
   }
   ctx.actions([
-    { label: '◀ Liste', onClick: back }, { label: '💾 Enregistrer', kind: 'primary', show: editable, onClick: async () => { await save(true); toast('Fiche enregistrée.'); } },
-    { label: '⬇ PDF', onClick: async () => { await save(); await exportFiche(fiche, 'pdf'); } }, { label: '📄 PDF vierge', onClick: async () => { await exportFiche(fiche, 'pdf', { vierge: true }); } },
-    { label: '🖋 PDF signé', onClick: async () => { await save(); await exportFiche(fiche, 'pdf', { signed: true }); } },
-    { label: '⬇ Excel', onClick: async () => { await save(); await exportFiche(fiche, 'xlsx'); } }, { label: '⬆ Importer Excel', show: editable, onClick: importer },
+    { label: '\uE038 Liste', onClick: back }, { label: '\uE007 Enregistrer', kind: 'primary', show: editable, onClick: async () => { await save(true); toast('Fiche enregistrée.'); } },
+    { label: '\uE009 PDF', onClick: async () => { await save(); await exportFiche(fiche, 'pdf'); } }, { label: '\uE00D PDF vierge', onClick: async () => { await exportFiche(fiche, 'pdf', { vierge: true }); } },
+    { label: '\uE006 PDF signé', onClick: async () => { await save(); await exportFiche(fiche, 'pdf', { signed: true }); } },
+    { label: '\uE009 Excel', onClick: async () => { await save(); await exportFiche(fiche, 'xlsx'); } }, { label: '\uE00A Importer Excel', show: editable, onClick: importer },
     { label: '↺ Réinitialiser', show: editable, onClick: reinit },
-    { label: '📤 Transmettre au CCS', show: canTransmit(u, fiche), kind: 'accent', onClick: doAct(f => transmit(u, f)) },
-    { label: '✅ Valider', show: canValidate(u, fiche), kind: 'accent', onClick: doAct(f => validate(u, f)) },
-    { label: '↩ Demander correction', show: canValidate(u, fiche), onClick: doAct(f => requestCorrection(u, f)) },
-    { label: '🔓 Déverrouiller', show: u.role === 'ADMIN' && ['Transmise', 'Validée'].includes(fiche.statut), onClick: doAct(f => unlock(u, f)) },
+    { label: '\uE00C Transmettre au CCS', show: canTransmit(u, fiche), kind: 'accent', onClick: doAct(f => transmit(u, f)) },
+    { label: '\uE004 Valider', show: canValidate(u, fiche), kind: 'accent', onClick: doAct(f => validate(u, f)) },
+    { label: '\uE037 Demander correction', show: canValidate(u, fiche), onClick: doAct(f => requestCorrection(u, f)) },
+    { label: '\uE034 Déverrouiller', show: u.role === 'ADMIN' && ['Transmise', 'Validée'].includes(fiche.statut), onClick: doAct(f => unlock(u, f)) },
   ]);
   ctx.status(editable ? 'Enregistrement automatique activé.' : 'Lecture seule.');
   const onHide = () => { if (document.visibilityState === 'hidden') save(); };

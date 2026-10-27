@@ -60,15 +60,15 @@ async function liste(ctx) {
       const typ = R.typeEcole(s), rec = recs.get(R.recId(s.id, typ, annee)), n = rec ? Object.keys(rec.valeurs || {}).length : 0;
       return h('tr', h('td', h('strong', s.nom), h('div', { class: 'muted' }, [s.numZone ? 'Zone ' + s.numZone : '', s.directeur].filter(Boolean).join(' · '))), h('td', typ === 'primaire' ? 'EP' : 'EM'), h('td', s.secteur || ''),
         h('td', rec ? h('span', { class: 'badge Validée' }, `${n} valeur(s) saisie(s)`) : h('span', { class: 'muted' }, 'calculée seulement'), rec && rec.maj ? h('div', { class: 'muted' }, new Date(rec.maj).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })) : null),
-        h('td', { style: { whiteSpace: 'nowrap' } }, h('button', { class: 'btn sm primary', onclick: () => ctx.go(`recfiche/${s.id}/${typ}/${annee}`) }, '✏️ Remplir'), ' ',
-          h('button', { class: 'btn sm', onclick: () => telechargerPdf(s, typ, annee, false).catch(e => toast(e.message, 'err')) }, '📄 PDF rempli')));
+        h('td', { style: { whiteSpace: 'nowrap' } }, h('button', { class: 'btn sm primary', onclick: () => ctx.go(`recfiche/${s.id}/${typ}/${annee}`) }, '\uE006 Remplir'), ' ',
+          h('button', { class: 'btn sm', onclick: () => telechargerPdf(s, typ, annee, false).catch(e => toast(e.message, 'err')) }, '\uE00D PDF rempli')));
     }
     holder.replaceChildren(schools.length ? h('div', { class: 'gridwrap' }, h('table', { class: 'g' }, h('thead', h('tr', h('th', 'École'), h('th', 'Type'), h('th', 'Secteur'), h('th', 'Fiche ' + annee), h('th', ''))), h('tbody', lignes)))
       : h('p', { class: 'muted' }, 'Aucune école dans votre périmètre : ajoutez d\'abord les écoles (menu « Écoles »).'));
     ctx.status(`${schools.length} école(s) — année ${annee}`);
   }
-  ctx.actions([{ label: '📄 PDF vierge EP', onClick: () => telechargerPdf(null, 'primaire', annee, true).catch(e => toast(e.message, 'err')) },
-    { label: '📄 PDF vierge EM', onClick: () => telechargerPdf(null, 'maternelle', annee, true).catch(e => toast(e.message, 'err')) }]);
+  ctx.actions([{ label: '\uE00D PDF vierge EP', onClick: () => telechargerPdf(null, 'primaire', annee, true).catch(e => toast(e.message, 'err')) },
+    { label: '\uE00D PDF vierge EM', onClick: () => telechargerPdf(null, 'maternelle', annee, true).catch(e => toast(e.message, 'err')) }]);
   await dessiner();
 }
 
@@ -161,7 +161,7 @@ async function fiche(ctx) {
     }));
     return [t.titre ? h('p', { class: 'rc-sous' }, t.titre) : null,
       h('div', { class: 'rc-tw' }, h('table', { class: 'rc-t', 'data-table': t.k }, h('thead', ent.map(l => h('tr', l))), tbody)),
-      t.dyn && ecrit ? h('button', { type: 'button', class: 'btn sm', onclick: () => ajouterLigne(t.k) }, '➕ Ajouter une ligne') : null];
+      t.dyn && ecrit ? h('button', { type: 'button', class: 'btn sm', onclick: () => ajouterLigne(t.k) }, '\uE001 Ajouter une ligne') : null];
   }
   function items(liste) {
     return liste.map(it => {
@@ -266,7 +266,7 @@ async function fiche(ctx) {
     const f = await pickFile('.xlsx'); if (!f) return;
     try {
       const sheets = await readXlsx(await readAsBuffer(f)), ws = sheets.find(x => norm(x.name).startsWith('donnees'));
-      if (!ws) return toast('Feuille « Données (import) » introuvable : utilisez un fichier exporté par l\'application (📊 Excel).', 'err', 7000);
+      if (!ws) return toast('Feuille « Données (import) » introuvable : utilisez un fichier exporté par l\'application (\uE015 Excel).', 'err', 7000);
       const brut = {}; let entete = false;
       for (const row of ws.rows) { if (!row || !String(row[0] ?? '').trim()) continue; if (!entete) { entete = norm(row[0]) === 'cle'; continue; } brut[String(row[0]).trim()] = row[1] ?? ''; }
       const { propres, erreurs, inconnues } = R.validerSaisies(schema, brut);
@@ -277,17 +277,17 @@ async function fiche(ctx) {
     } catch (e) { console.error(e); toast('Fichier Excel illisible : ' + e.message, 'err'); }
   }
   ctx.actions([
-    { label: '◀ Liste', onClick: () => ctx.go('recensement') },
-    { label: '💾 Sauvegarder', kind: 'primary', show: ecrit, onClick: () => sauver(false) },
-    { label: '📂 Charger', onClick: async () => { cx = await R.contexte(s, typ, annee); dessiner(); toast('Dernière version enregistrée rechargée.'); } },
-    { label: '♻ Réinitialiser', show: ecrit, onClick: async () => {
+    { label: '\uE038 Liste', onClick: () => ctx.go('recensement') },
+    { label: '\uE007 Sauvegarder', kind: 'primary', show: ecrit, onClick: () => sauver(false) },
+    { label: '\uE014 Charger', onClick: async () => { cx = await R.contexte(s, typ, annee); dessiner(); toast('Dernière version enregistrée rechargée.'); } },
+    { label: '\uE058 Réinitialiser', show: ecrit, onClick: async () => {
       if (!(await confirmBox('Vider le formulaire et revenir aux valeurs calculées ? (rien n\'est supprimé tant que vous ne sauvegardez pas)', 'Réinitialiser'))) return;
       form.querySelectorAll('input,select').forEach(e => { if (e.type === 'checkbox') { const m = e.closest('[data-multi]'); e.checked = m ? JSON.parse(m.dataset.auto || '[]').includes(e.value) : e.dataset.auto === '1'; } else { e.value = ''; e.classList.remove('rc-saisi'); } }); recalculer();
     } },
-    { label: '📄 PDF rempli', onClick: async () => { if (ecrit && Object.keys(collecter()).length && !(await sauver(true))) return; telechargerPdf(s, typ, annee, false).catch(e => toast(e.message, 'err')); } },
-    { label: '📄 PDF vierge', onClick: () => telechargerPdf(s, typ, annee, true).catch(e => toast(e.message, 'err')) },
-    { label: '📊 Excel', onClick: () => exporterExcel().catch(e => toast(e.message, 'err')) },
-    { label: '⬆ Importer Excel', show: ecrit, onClick: importerExcel },
+    { label: '\uE00D PDF rempli', onClick: async () => { if (ecrit && Object.keys(collecter()).length && !(await sauver(true))) return; telechargerPdf(s, typ, annee, false).catch(e => toast(e.message, 'err')); } },
+    { label: '\uE00D PDF vierge', onClick: () => telechargerPdf(s, typ, annee, true).catch(e => toast(e.message, 'err')) },
+    { label: '\uE015 Excel', onClick: () => exporterExcel().catch(e => toast(e.message, 'err')) },
+    { label: '\uE00A Importer Excel', show: ecrit, onClick: importerExcel },
   ]);
   dessiner();
 }

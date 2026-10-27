@@ -27,25 +27,25 @@ async function accueil(ctx) {
   const nextDate = next[0]?.date, nextOnes = next.filter(t => t.date === nextDate);
   const upcoming = acts.filter(a => a.date >= today() && a.statut !== 'Réalisée').sort((a, b) => a.date.localeCompare(b.date)).slice(0, 5);
   const stat = (n, l, c = '', go) => h('div', { class: 'stat ' + c, style: { cursor: go ? 'pointer' : null }, onclick: go ? () => ctx.go(go) : null }, h('b', n), h('span', l));
-  const installBtn = h('button', { class: 'btn accent hidden', onclick: async () => { const p = window.__installPrompt; if (!p) return; p.prompt(); await p.userChoice; } }, '⬇ Installer l\'application sur cet appareil');
+  const installBtn = h('button', { class: 'btn accent hidden', onclick: async () => { const p = window.__installPrompt; if (!p) return; p.prompt(); await p.userChoice; } }, '\uE009 Installer l\'application sur cet appareil');
   const showInstall = () => installBtn.classList.toggle('hidden', !window.__installPrompt);
   document.addEventListener('installable', showInstall); showInstall();
   // Tuiles d'accès rapide (comme le tableau de bord de SCOLARIS / GESCOL)
   const dosp = VARIANT.profil === 'dosp' || u.role === 'DOSP';
   const T = dosp
-    ? [['🗂️', 'Mon espace DOSP', 'Travail du jour', 'espacedosp'], ['📋', 'Tableau synoptique', 'Chiffres consolidés', 'synodosp'], ['📥', 'Fiches reçues', 'Réception et acheminement', 'envois'],
-       ['📊', 'Suivi-évaluation', 'Indicateurs de la CS', 'suivieval'], ['⚖️', 'Besoins et écarts', 'Enseignants, salles, places', 'besoins'], ['🎓', 'Candidats au CEP', 'Par sexe, public / privé', 'cep'],
-       ['📄', 'Documents officiels', 'Calendrier, planifications…', 'documents']]
-    : [['🧑‍🏫', 'Mon espace CP', 'Zone et écoles', 'espace'], ['✍️', 'Saisie manuelle', 'Fiches, personnel, directeurs', 'saisie'], ['🗂️', 'Fiches de recensement', 'EP, EM — modèle GESCOL', 'recensement'],
-       ['📝', 'Fiches de collecte', 'Rentrée, fin d’année', 'fiches'], ['📋', 'Tableau synoptique', 'Chiffres de la zone', 'synocp'], ['🎓', 'Candidats au CEP', 'Par sexe, public / privé', 'cep'],
-       ['📄', 'Documents officiels', 'Calendrier, planifications…', 'documents']];
+    ? [['\uE011', 'Mon espace DOSP', 'Travail du jour', 'espacedosp'], ['\uE00F', 'Tableau synoptique', 'Chiffres consolidés', 'synodosp'], ['\uE00B', 'Fiches reçues', 'Réception et acheminement', 'envois'],
+       ['\uE015', 'Suivi-évaluation', 'Indicateurs de la CS', 'suivieval'], ['\uE03F', 'Besoins et écarts', 'Enseignants, salles, places', 'besoins'], ['\uE020', 'Candidats au CEP', 'Par sexe, public / privé', 'cep'],
+       ['\uE00D', 'Documents officiels', 'Calendrier, planifications…', 'documents']]
+    : [['\uE01E', 'Mon espace CP', 'Zone et écoles', 'espace'], ['\uE029', 'Saisie manuelle', 'Fiches, personnel, directeurs', 'saisie'], ['\uE011', 'Fiches de recensement', 'EP, EM — modèle GESCOL', 'recensement'],
+       ['\uE00E', 'Fiches de collecte', 'Rentrée, fin d’année', 'fiches'], ['\uE00F', 'Tableau synoptique', 'Chiffres de la zone', 'synocp'], ['\uE020', 'Candidats au CEP', 'Par sexe, public / privé', 'cep'],
+       ['\uE00D', 'Documents officiels', 'Calendrier, planifications…', 'documents']];
   const tuiles = h('div', { class: 'tuiles' }, T.map(([ic, t, d, r]) => h('button', { class: 'tuile', type: 'button', onclick: () => ctx.go(r) }, h('span', { class: 'tuile-ic' }, ic), h('b', t), h('small', d))));
   ctx.el.append(
     tuiles,
     h('div', { class: 'cards' }, stat(schools.length, 'écoles dans votre périmètre', '', 'ecoles'), stat(fiches.length, 'fiches de collecte', '', 'fiches'),
       stat(by('Brouillon') + by('À corriger'), 'à compléter / corriger', 'y', 'fiches'), stat(by('Transmise'), 'en attente de validation CCS', 'y', 'fiches'), stat(by('Validée'), 'fiches validées', '', 'fiches')),
-    nextOnes.length ? h('div', { class: 'card' }, h('h3', '🎯 Prochaine unité pédagogique'), h('p', h('b', fmtDate(nextDate))), ...nextOnes.map(t => h('p', `${t.niv} — ${t.theme}`)), h('button', { class: 'btn sm', onclick: () => ctx.go('themes') }, 'Voir le planning')) : null,
-    h('div', { class: 'card' }, h('h3', '📅 Activités à venir'), upcoming.length ? h('ul', upcoming.map(a => h('li', `${fmtDate(a.date)} — ${a.type} : ${a.theme || a.lieu || ''}`))) : h('p', { class: 'sub' }, 'Aucune activité programmée.'), h('button', { class: 'btn sm', onclick: () => ctx.go('activites') }, 'Gérer les activités')),
+    nextOnes.length ? h('div', { class: 'card' }, h('h3', '\uE02E Prochaine unité pédagogique'), h('p', h('b', fmtDate(nextDate))), ...nextOnes.map(t => h('p', `${t.niv} — ${t.theme}`)), h('button', { class: 'btn sm', onclick: () => ctx.go('themes') }, 'Voir le planning')) : null,
+    h('div', { class: 'card' }, h('h3', '\uE017 Activités à venir'), upcoming.length ? h('ul', upcoming.map(a => h('li', `${fmtDate(a.date)} — ${a.type} : ${a.theme || a.lieu || ''}`))) : h('p', { class: 'sub' }, 'Aucune activité programmée.'), h('button', { class: 'btn sm', onclick: () => ctx.go('activites') }, 'Gérer les activités')),
     h('div', { class: 'card' }, h('h3', 'Circuit de collecte'), h('ol', h('li', 'Le CP enregistre les écoles de sa zone puis génère les fiches de l\'année.'), h('li', 'Les fiches sont remplies (calculs automatiques), puis transmises au CCS.'), h('li', 'Le CCS valide ou demande une correction ; le CP corrige et retransmet.'), h('li', 'Les fiches validées alimentent le tableau synoptique et peuvent être signées (signature, cachet, QR).'))),
     installBtn);
   ctx.status('Prêt — données stockées sur cet appareil (hors ligne).');
@@ -195,10 +195,10 @@ async function ecoles(ctx) {
   const exportRows = async () => (await load());
   const exCols = COLS.filter(c => c.k !== 'nbf');
   ctx.actions([
-    { label: '➕ Ajouter', kind: 'primary', onClick: add }, { label: '✏️ Modifier', onClick: edit }, { label: '🗑 Supprimer', onClick: del },
-    { label: '🧭 Affecter une zone', show: u.role !== 'CP', onClick: affecterZone }, { label: '📝 Générer les fiches', kind: 'accent', onClick: genFiches }, { label: '⬆ Importer Excel/CSV', onClick: importXlsx }, { label: '📄 Modèle d\'import', onClick: template },
-    { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: 'LISTE DES ÉCOLES', subtitle: `Édité le ${new Date().toLocaleDateString('fr-FR')}`, columns: exCols, rows: t.visible }), 'Ecoles.xlsx') },
-    { label: '⬇ PDF', onClick: async () => download(new Blob([await listToPdf({ title: 'LISTE DES ÉCOLES', columns: exCols, rows: t.visible })], { type: 'application/pdf' }), 'Ecoles.pdf') },
+    { label: '\uE001 Ajouter', kind: 'primary', onClick: add }, { label: '\uE006 Modifier', onClick: edit }, { label: '\uE005 Supprimer', onClick: del },
+    { label: '\uE042 Affecter une zone', show: u.role !== 'CP', onClick: affecterZone }, { label: '\uE00E Générer les fiches', kind: 'accent', onClick: genFiches }, { label: '\uE00A Importer Excel/CSV', onClick: importXlsx }, { label: '\uE00D Modèle d\'import', onClick: template },
+    { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: 'LISTE DES ÉCOLES', subtitle: `Édité le ${new Date().toLocaleDateString('fr-FR')}`, columns: exCols, rows: t.visible }), 'Ecoles.xlsx') },
+    { label: '\uE009 PDF', onClick: async () => download(new Blob([await listToPdf({ title: 'LISTE DES ÉCOLES', columns: exCols, rows: t.visible })], { type: 'application/pdf' }), 'Ecoles.pdf') },
   ]);
   ctx.status(`${t.rows.length} école(s)`);
 }
@@ -240,15 +240,15 @@ async function fiches(ctx) {
   const open = (r) => { const s = r || sel(); if (s) ctx.go('fiche/' + s.id); };
   const act = (fn) => async () => { const s = sel(); if (!s) return; try { if (await fn(s)) await refresh(); } catch (e) { console.error(e); toast(e.message, 'err'); } };
   ctx.actions([
-    { label: '📂 Ouvrir', kind: 'primary', onClick: () => open() }, { label: '✍️ Saisie manuelle (sans Excel)', onClick: async () => { await db.setting('saisie-onglet', 'fiches'); ctx.go('saisie'); } },
-    { label: '📤 Transmettre au CCS', show: u.role !== 'CCS' && u.role !== 'DDEMP', onClick: act(s => transmit(u, s)) },
-    { label: '✅ Valider', show: u.role !== 'CP' && u.role !== 'DDEMP', kind: 'accent', onClick: act(s => validate(u, s)) },
-    { label: '↩ Demander correction', show: u.role !== 'CP' && u.role !== 'DDEMP', onClick: act(s => requestCorrection(u, s)) },
-    { label: '🔓 Déverrouiller', show: u.role === 'ADMIN', onClick: act(s => unlock(u, s)) },
-    { label: '⬇ PDF', onClick: act(s => exportFiche(s, 'pdf').then(() => false)) },
-    { label: '🖋 PDF signé', onClick: act(s => exportFiche(s, 'pdf', { signed: true }).then(() => false)) },
-    { label: '⬇ Excel', onClick: act(s => exportFiche(s, 'xlsx').then(() => false)) },
-    { label: '🗑 Supprimer', show: u.role !== 'CCS' && u.role !== 'DDEMP', onClick: act(async s => { if (!canEdit(u, s)) { toast('Suppression non autorisée (fiche transmise ou validée).', 'err'); return false; } if (!(await confirmBox('Supprimer cette fiche ?', 'Supprimer', true))) return false; await db.del('fiches', s.id); await addLog(u, { action: 'Suppression fiche', target: s.schoolNom + ' ' + s.annee }); return true; }) },
+    { label: '\uE014 Ouvrir', kind: 'primary', onClick: () => open() }, { label: '\uE029 Saisie manuelle (sans Excel)', onClick: async () => { await db.setting('saisie-onglet', 'fiches'); ctx.go('saisie'); } },
+    { label: '\uE00C Transmettre au CCS', show: u.role !== 'CCS' && u.role !== 'DDEMP', onClick: act(s => transmit(u, s)) },
+    { label: '\uE004 Valider', show: u.role !== 'CP' && u.role !== 'DDEMP', kind: 'accent', onClick: act(s => validate(u, s)) },
+    { label: '\uE037 Demander correction', show: u.role !== 'CP' && u.role !== 'DDEMP', onClick: act(s => requestCorrection(u, s)) },
+    { label: '\uE034 Déverrouiller', show: u.role === 'ADMIN', onClick: act(s => unlock(u, s)) },
+    { label: '\uE009 PDF', onClick: act(s => exportFiche(s, 'pdf').then(() => false)) },
+    { label: '\uE006 PDF signé', onClick: act(s => exportFiche(s, 'pdf', { signed: true }).then(() => false)) },
+    { label: '\uE009 Excel', onClick: act(s => exportFiche(s, 'xlsx').then(() => false)) },
+    { label: '\uE005 Supprimer', show: u.role !== 'CCS' && u.role !== 'DDEMP', onClick: act(async s => { if (!canEdit(u, s)) { toast('Suppression non autorisée (fiche transmise ou validée).', 'err'); return false; } if (!(await confirmBox('Supprimer cette fiche ?', 'Supprimer', true))) return false; await db.del('fiches', s.id); await addLog(u, { action: 'Suppression fiche', target: s.schoolNom + ' ' + s.annee }); return true; }) },
   ]);
   await refresh();
 }

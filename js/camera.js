@@ -76,10 +76,10 @@ export function openCamera({ onCapture, title = 'Appareil photo' } = {}) {
   };
   const m = modal({ title, wide: true, onClose: stop, body: h('div', { class: 'cam' }, h('div', { class: 'cam-stage' }, video), info,
     h('div', { class: 'cam-bar' },
-      h('button', { class: 'btn', onclick: flip, title: 'Basculer caméra avant / arrière' }, '🔄 Avant ⇄ Arrière'),
-      h('button', { class: 'btn primary cam-snap', onclick: snap }, '📸 Prendre la photo'),
-      h('button', { class: 'btn', onclick: async () => { for (const p of await pickPhoto(facing === 'user' ? 'user' : 'environment')) { count++; await onCapture(p.data, p.facing); } } }, '📱 Photo native'),
-      h('button', { class: 'btn', onclick: async () => { for (const p of await pickPhoto()) { count++; shots.append(h('img', { src: p.data, alt: '' })); await onCapture(p.data, 'galerie'); } } }, '🖼 Galerie')), shots),
+      h('button', { class: 'btn', onclick: flip, title: 'Basculer caméra avant / arrière' }, '\uE058 Avant ⇄ Arrière'),
+      h('button', { class: 'btn primary cam-snap', onclick: snap }, '\uE03C Prendre la photo'),
+      h('button', { class: 'btn', onclick: async () => { for (const p of await pickPhoto(facing === 'user' ? 'user' : 'environment')) { count++; await onCapture(p.data, p.facing); } } }, '\uE045 Photo native'),
+      h('button', { class: 'btn', onclick: async () => { for (const p of await pickPhoto()) { count++; shots.append(h('img', { src: p.data, alt: '' })); await onCapture(p.data, 'galerie'); } } }, '\uE046 Galerie')), shots),
     actions: [{ label: 'Terminer', kind: 'primary' }] });
   start(); return m;
 }

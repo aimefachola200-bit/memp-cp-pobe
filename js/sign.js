@@ -28,7 +28,7 @@ export async function registerSigned({ ficheId, store = 'fiches', hash, user, la
 function loadImg(src) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = src; }); }
 
 /** Cachet numérique rectangulaire (PNG dataURL) */
-/* ---------- Cachet rond (même dessin que SCOLARIS / GESCOL : texte en arc ★ texte en arc ★, texte central) ---------- */
+/* ---------- Cachet rond (même dessin que SCOLARIS / GESCOL : texte en arc \uE05D texte en arc \uE05D, texte central) ---------- */
 export const COULEURS_CACHET = { bleu: '#1E3A8A', rouge: '#B91C1C' };
 export function cachetParDefaut(idn) {
   const cs = (idn.nomCs || '').toUpperCase(), ccs = /circonscription/i.test(idn.titre || ''), dd = /d[ée]partement/i.test(idn.titre || '');

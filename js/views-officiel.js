@@ -54,12 +54,12 @@ async function emploi(ctx) {
     }
     draw2();
     ctx.actions([
-      { label: '💾 Enregistrer', kind: 'primary', show: peutModifierTextes(u), onClick: async () => { await db.setting('edt:' + cur, edt); modifie = false; toast('Emploi du temps enregistré.'); draw(); } },
-      { label: '➕ Ajouter une ligne', show: peutModifierTextes(u), onClick: () => { edt.lignes.push(Object.fromEntries([['horaire', ''], ...J.map(([j]) => [j, ''])])); modifie = true; draw2(); } },
+      { label: '\uE007 Enregistrer', kind: 'primary', show: peutModifierTextes(u), onClick: async () => { await db.setting('edt:' + cur, edt); modifie = false; toast('Emploi du temps enregistré.'); draw(); } },
+      { label: '\uE001 Ajouter une ligne', show: peutModifierTextes(u), onClick: () => { edt.lignes.push(Object.fromEntries([['horaire', ''], ...J.map(([j]) => [j, ''])])); modifie = true; draw2(); } },
       { label: '↺ Rétablir la version officielle', show: peutModifierTextes(u), onClick: async () => { if (!(await confirmBox('Remplacer cet emploi du temps par la version officielle du MEMP ?', 'Rétablir', true))) return; await db.setting('edt:' + cur, null); toast('Version officielle rétablie.'); draw(); } },
-      { label: '⬇ PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: `EMPLOI DU TEMPS OFFICIEL — ${edt.libelle.toUpperCase()}`, subtitle: edt.source, columns: [{ k: 'horaire', l: 'Horaire', w: 70 }, ...J.map(([j, l]) => ({ k: j, l, w: 140 }))], rows: edt.lignes })), `Emploi_du_temps_${cur}.pdf`) },
-      { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: `EMPLOI DU TEMPS OFFICIEL — ${edt.libelle.toUpperCase()}`, subtitle: edt.source, columns: [{ k: 'horaire', l: 'Horaire', w: 90 }, ...J.map(([j, l]) => ({ k: j, l, xw: 34 }))], rows: edt.lignes, sheet: edt.libelle }), `Emploi_du_temps_${cur}.xlsx`) },
-      { label: '🖨 Imprimer', onClick: () => window.print() }]);
+      { label: '\uE009 PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: `EMPLOI DU TEMPS OFFICIEL — ${edt.libelle.toUpperCase()}`, subtitle: edt.source, columns: [{ k: 'horaire', l: 'Horaire', w: 70 }, ...J.map(([j, l]) => ({ k: j, l, w: 140 }))], rows: edt.lignes })), `Emploi_du_temps_${cur}.pdf`) },
+      { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: `EMPLOI DU TEMPS OFFICIEL — ${edt.libelle.toUpperCase()}`, subtitle: edt.source, columns: [{ k: 'horaire', l: 'Horaire', w: 90 }, ...J.map(([j, l]) => ({ k: j, l, xw: 34 }))], rows: edt.lignes, sheet: edt.libelle }), `Emploi_du_temps_${cur}.xlsx`) },
+      { label: '\uE008 Imprimer', onClick: () => window.print() }]);
     ctx.status(`${edt.lignes.length} plage(s) horaire(s)`);
   }
   await draw();
@@ -85,9 +85,9 @@ async function calendrier(ctx) {
   draw();
   ctx.actions([
     ...(annees.length > 1 ? annees.map(a => ({ label: a, onClick: () => { an = a; draw(); } })) : []),
-    { label: '⬇ PDF', kind: 'primary', onClick: async () => download(pdfBlob(await listToPdf({ title: `CALENDRIER SCOLAIRE OFFICIEL ${an}`, subtitle: O.calendrier[an].arrete, columns: COLS, rows: lignes() })), `Calendrier_scolaire_${an}.pdf`) },
-    { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: `CALENDRIER SCOLAIRE OFFICIEL ${an}`, subtitle: O.calendrier[an].arrete, columns: COLS, rows: lignes(), sheet: an }), `Calendrier_scolaire_${an}.xlsx`) },
-    { label: '🖨 Imprimer', onClick: () => window.print() }]);
+    { label: '\uE009 PDF', kind: 'primary', onClick: async () => download(pdfBlob(await listToPdf({ title: `CALENDRIER SCOLAIRE OFFICIEL ${an}`, subtitle: O.calendrier[an].arrete, columns: COLS, rows: lignes() })), `Calendrier_scolaire_${an}.pdf`) },
+    { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: `CALENDRIER SCOLAIRE OFFICIEL ${an}`, subtitle: O.calendrier[an].arrete, columns: COLS, rows: lignes(), sheet: an }), `Calendrier_scolaire_${an}.xlsx`) },
+    { label: '\uE008 Imprimer', onClick: () => window.print() }]);
 }
 
 /* ================= RÈGLEMENT INTÉRIEUR ================= */
@@ -135,12 +135,12 @@ async function reglement(ctx) {
   }
   draw();
   ctx.actions([
-    { label: '➕ Ajouter', kind: 'primary', show: edit, onClick: ajouter }, { label: '✏️ Modifier', show: edit, onClick: modifier }, { label: '🗑 Supprimer', show: edit, onClick: supprimer },
+    { label: '\uE001 Ajouter', kind: 'primary', show: edit, onClick: ajouter }, { label: '\uE006 Modifier', show: edit, onClick: modifier }, { label: '\uE005 Supprimer', show: edit, onClick: supprimer },
     { label: '▲', title: 'Monter', show: edit, onClick: () => deplacer(-1) }, { label: '▼', title: 'Descendre', show: edit, onClick: () => deplacer(1) },
     { label: '↺ Rétablir le texte officiel', show: edit, onClick: async () => { if (!(await confirmBox('Remplacer le règlement par le texte officiel ? Vos modifications seront perdues.', 'Rétablir', true))) return; await db.setting('reglement', null); liste = officielListe(); sel = null; draw(); toast('Texte officiel rétabli.'); } },
-    { label: '⬇ PDF', onClick: pdf },
-    { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: 'RÈGLEMENT INTÉRIEUR DES ÉCOLES PRIMAIRES (RÉVISÉ)', subtitle: O.reglement_source, columns: [{ k: 'typeLib', l: 'Type', w: 70 }, { k: 'numero', l: 'N°', w: 40 }, { k: 'titre', l: 'Intitulé', xw: 30 }, { k: 'texte', l: 'Texte', xw: 100 }], rows: liste.map(r => ({ ...r, typeLib: TYPES_R[r.type] })), sheet: 'Règlement' }), 'Reglement_interieur.xlsx') },
-    { label: '🖨 Imprimer', onClick: () => window.print() }]);
+    { label: '\uE009 PDF', onClick: pdf },
+    { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: 'RÈGLEMENT INTÉRIEUR DES ÉCOLES PRIMAIRES (RÉVISÉ)', subtitle: O.reglement_source, columns: [{ k: 'typeLib', l: 'Type', w: 70 }, { k: 'numero', l: 'N°', w: 40 }, { k: 'titre', l: 'Intitulé', xw: 30 }, { k: 'texte', l: 'Texte', xw: 100 }], rows: liste.map(r => ({ ...r, typeLib: TYPES_R[r.type] })), sheet: 'Règlement' }), 'Reglement_interieur.xlsx') },
+    { label: '\uE008 Imprimer', onClick: () => window.print() }]);
 }
 
 /* ================= PERSONNEL ENSEIGNANT (même module que SCOLARIS / GESCOL) ================= */
@@ -216,7 +216,7 @@ async function personnel(ctx, vueInitiale) {
     all = (await personnelDuPerimetre(u)).map(enrichir);
     const gs = [...new Set(all.map(cle))].sort(ordreGroupe);
     if (onglet !== 'tout' && !gs.includes(onglet)) onglet = 'tout';
-    vues.replaceChildren(...[['liste', '👥 Liste du personnel'], ['cours', '🧮 Par section / cours'], ['carriere', '📈 Gestion de carrière'], ['retraite', '🎓 Départs à la retraite'], ['stats', '📊 Effectifs']].map(([k, l]) => h('button', { class: 'tab' + (k === vue ? ' on' : ''), onclick: () => { vue = k; t = null; draw(); } }, l)));
+    vues.replaceChildren(...[['liste', '\uE01C Liste du personnel'], ['cours', '\uE040 Par section / cours'], ['carriere', '\uE016 Gestion de carrière'], ['retraite', '\uE020 Départs à la retraite'], ['stats', '\uE015 Effectifs']].map(([k, l]) => h('button', { class: 'tab' + (k === vue ? ' on' : ''), onclick: () => { vue = k; t = null; draw(); } }, l)));
     if (u.role !== 'CP') modes.replaceChildren(...[['arr', 'Par arrondissement'], ['zone', 'Par zone pédagogique']].map(([k, l]) => h('button', { class: 'tab' + (k === mode ? ' on' : ''), onclick: () => { mode = k; onglet = 'tout'; db.setting('groupe-mode', k); draw(); } }, l)));
     const ong = [['tout', mode === 'arr' ? 'Tous les arrondissements' : 'Toutes les zones'], ...gs.map(g => [g, libG(g)])];
     tabs.replaceChildren(...ong.map(([k, l]) => h('button', { class: 'tab' + (k === onglet ? ' on' : ''), onclick: () => { onglet = k; db.setting('personnel-onglet', k); draw(); } }, `${l} (${k === 'tout' ? all.length : all.filter(p => cle(p) === k).length})`)));
@@ -235,7 +235,7 @@ async function personnel(ctx, vueInitiale) {
     { k: 'indice_paye', l: 'Indice payé', num: true }, { k: 'indice_reel', l: 'Indice réel', num: true }, { k: 'ancG', l: 'Anc. générale' }, { k: 'ancD', l: 'Anc. département' }, { k: 'ancC', l: 'Anc. commune' }, { k: 'ancE', l: 'Anc. école' },
     { k: 'naissTxt', l: 'Naissance' }, { k: 'retTxt', l: 'Retraite probable', w: 110 }, { k: 'aptitude', l: 'Aptitude' }, { k: 'dossier', l: 'Dossier' }];
   const ligneCarriere = (p) => ({ ...p, nomComplet: `${(p.nom || '').toUpperCase()} ${p.prenoms || ''}`.trim(), ancG: p.ancTxt.generale || '—', ancD: p.ancTxt.departement || '—', ancC: p.ancTxt.commune || '—', ancE: p.ancTxt.ecole || '—',
-    retTxt: p.retraiteTxt ? p.retraiteTxt + (p.retraiteAtteinte ? ' (atteint)' : p.alerteRetraite ? ' ⚠' : '') : '—', aptitude: p.visite_aptitude ? `${p.visite_aptitude}${p.visite_aptitude_note ? ' (' + p.visite_aptitude_note + '/20)' : ''}` : '—',
+    retTxt: p.retraiteTxt ? p.retraiteTxt + (p.retraiteAtteinte ? ' (atteint)' : p.alerteRetraite ? ' \uE041' : '') : '—', aptitude: p.visite_aptitude ? `${p.visite_aptitude}${p.visite_aptitude_note ? ' (' + p.visite_aptitude_note + '/20)' : ''}` : '—',
     dossier: p.incomplet ? 'incomplet' : 'complet' });
   function drawCarriere(rows) {
     t = null;
@@ -248,9 +248,9 @@ async function personnel(ctx, vueInitiale) {
       tc.el);
     t = tc;
     ctx.status(`${L.length} agent(s) — ${L.filter(p => p.incomplet).length} dossier(s) incomplet(s)`);
-    ctx.actions([{ label: '📇 Fiche de carrière', kind: 'primary', onClick: ficheCarriere }, { label: '🖨 Fiche de carrière (PDF signé)', onClick: fichePdf }, { label: '✏️ Modifier', onClick: modifier },
-      { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: 'GESTION DE CARRIÈRE — ' + titre(), subtitle: sousTitre(), columns: COLS_C, rows: L, sheet: 'Carrière' }), 'Gestion_carriere.xlsx') },
-      { label: '⬇ Liste PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: 'GESTION DE CARRIÈRE DES ENSEIGNANTS', subtitle: sousTitre(), columns: COLS_C.map(c => ({ ...c, w: c.w || 70 })), rows: L })), 'Gestion_carriere.pdf') }]);
+    ctx.actions([{ label: '\uE012 Fiche de carrière', kind: 'primary', onClick: ficheCarriere }, { label: '\uE008 Fiche de carrière (PDF signé)', onClick: fichePdf }, { label: '\uE006 Modifier', onClick: modifier },
+      { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: 'GESTION DE CARRIÈRE — ' + titre(), subtitle: sousTitre(), columns: COLS_C, rows: L, sheet: 'Carrière' }), 'Gestion_carriere.xlsx') },
+      { label: '\uE009 Liste PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: 'GESTION DE CARRIÈRE DES ENSEIGNANTS', subtitle: sousTitre(), columns: COLS_C.map(c => ({ ...c, w: c.w || 70 })), rows: L })), 'Gestion_carriere.pdf') }]);
   }
   async function fichePdf() {
     const s = t && t.selected; if (!s) return toast("Touchez d'abord un agent.", 'warn');
@@ -294,8 +294,8 @@ async function personnel(ctx, vueInitiale) {
     ctx.status(`${prochains.length} départ(s) d'ici ${horizon} an(s) · ${depasses.length} déjà atteint(s)`);
     const titreR = `DÉPARTS À LA RETRAITE — HORIZON ${horizon} AN${horizon > 1 ? 'S' : ''}`;
     ctx.actions([
-      { label: '⬇ PDF', kind: 'primary', onClick: async () => download(pdfBlob(await listToPdf({ title: titreR, subtitle: sousTitre(), columns: COLS_R, rows: [...prochains, ...depasses.map(p => ({ ...p, restantTxt: 'atteint' }))] })), 'Departs_retraite.pdf') },
-      { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: titreR, subtitle: sousTitre(), columns: COLS_R, rows: [...prochains, ...depasses.map(p => ({ ...p, restantTxt: 'atteint' }))], sheet: 'Retraite' }), 'Departs_retraite.xlsx') }]);
+      { label: '\uE009 PDF', kind: 'primary', onClick: async () => download(pdfBlob(await listToPdf({ title: titreR, subtitle: sousTitre(), columns: COLS_R, rows: [...prochains, ...depasses.map(p => ({ ...p, restantTxt: 'atteint' }))] })), 'Departs_retraite.pdf') },
+      { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: titreR, subtitle: sousTitre(), columns: COLS_R, rows: [...prochains, ...depasses.map(p => ({ ...p, restantTxt: 'atteint' }))], sheet: 'Retraite' }), 'Departs_retraite.xlsx') }]);
   }
   /* ---------- effectifs ---------- */
   function drawStats(rows) {
@@ -306,8 +306,8 @@ async function personnel(ctx, vueInitiale) {
     const COLS_S = [{ k: 'ecole', l: 'École / poste', w: 200 }, { k: 'zone', l: 'Zone / arrondissement', w: 110 }, { k: 't', l: 'Total', num: true }, { k: 'f', l: 'dont F', num: true }, { k: 'dir', l: 'Directeurs', num: true }, { k: 'fe', l: 'FE', num: true }, { k: 'acdpe', l: 'ACDPE', num: true }, { k: 'ame', l: 'ACDPCTD (AME)', num: true }, { k: 'ret', l: 'Retraite ≤ 2 ans', num: true }];
     const tb = dataTable({ columns: COLS_S, rows: lignes, getId: r => r.ecole, totals: tot, pageSize: 300 }); rc(holder, tb.el);
     ctx.status(`${lignes.length} école(s) / poste(s) — ${tot.t} agent(s)`);
-    ctx.actions([{ label: '⬇ PDF', kind: 'primary', onClick: async () => download(pdfBlob(await listToPdf({ title: 'EFFECTIFS DU PERSONNEL PAR ÉCOLE', subtitle: sousTitre(), columns: COLS_S, rows: lignes, totals: tot })), 'Effectifs_personnel.pdf') },
-      { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: 'EFFECTIFS DU PERSONNEL PAR ÉCOLE', subtitle: sousTitre(), columns: COLS_S, rows: [...lignes, tot], sheet: 'Effectifs' }), 'Effectifs_personnel.xlsx') }]);
+    ctx.actions([{ label: '\uE009 PDF', kind: 'primary', onClick: async () => download(pdfBlob(await listToPdf({ title: 'EFFECTIFS DU PERSONNEL PAR ÉCOLE', subtitle: sousTitre(), columns: COLS_S, rows: lignes, totals: tot })), 'Effectifs_personnel.pdf') },
+      { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: 'EFFECTIFS DU PERSONNEL PAR ÉCOLE', subtitle: sousTitre(), columns: COLS_S, rows: [...lignes, tot], sheet: 'Effectifs' }), 'Effectifs_personnel.xlsx') }]);
   }
   /* ---------- zone à attribuer ---------- */
   async function attribuerZone() {
@@ -323,7 +323,7 @@ async function personnel(ctx, vueInitiale) {
       fieldEl({ k: 'zone', l: 'Zone pédagogique', t: 'select', options: zonesRef.map(z => ({ v: z.code, l: z.nom || 'Zone ' + z.numero })) }, zc, (k, v) => { zc = v; }),
       h('label', { class: 'chk', style: { margin: '6px 0' } }, h('input', { type: 'checkbox', checked: true, onchange: (e) => { ecoleAussi = e.target.checked; } }), " Donner aussi cette zone à l'école de l'agent quand elle n'en a pas"),
       h('div', { class: 'tbl-tools' }, h('button', { class: 'btn sm', onclick: () => { sansZone.forEach(p => choix.add(p.id)); liste.querySelectorAll('input').forEach(i => { i.checked = true; }); } }, 'Tout cocher')), liste);
-    modal({ title: `📍 Attribuer une zone (${sansZone.length} agent(s) sans zone)`, body, wide: true, actions: [{ label: 'Annuler' }, { label: 'Attribuer', kind: 'primary', onClick: async () => {
+    modal({ title: `\uE02C Attribuer une zone (${sansZone.length} agent(s) sans zone)`, body, wide: true, actions: [{ label: 'Annuler' }, { label: 'Attribuer', kind: 'primary', onClick: async () => {
       if (!choix.size) { toast('Cochez au moins un agent.', 'warn'); return false; }
       const z = zonesRef.find(x => x.code === zc), num = String(z.numero || zc.split('-ZP').pop().replace(/^0/, ''));
       const ecs = new Map(schools.map(x => [x.id, x])), ecolesMaj = new Map();
@@ -377,7 +377,7 @@ async function personnel(ctx, vueInitiale) {
     ctx.status(`${L.length} agent(s) — ${L.filter(p => !p.rubriques.includes('AUTRE')).length} avec une section ou un cours, ${L.filter(p => p.rubriques.includes('AUTRE')).length} sans classe ou autre fonction`);
     const titreC = `PERSONNEL PAR SECTION ET PAR COURS — ${onglet === 'tout' ? 'TOUTES LES ZONES' : libG(onglet).toUpperCase()}`;
     ctx.actions([
-      { label: '⬇ Excel', kind: 'primary', onClick: async () => {
+      { label: '\uE009 Excel', kind: 'primary', onClick: async () => {
         const wb = new XlsxBook(), ws = wb.sheet('Synthèse'); let r = ws.banner(await bannerBytes(), 820);
         ws.set(r, 0, titreC, 'title'); r++; ws.set(r, 0, sousTitre(), 'note'); r += 2;
         const cols = [...groupes, ...(groupes.length > 1 ? [null] : [])];
@@ -397,7 +397,7 @@ async function personnel(ctx, vueInitiale) {
         w2.freeze(h2 + 1, 0);
         download(await wb.toBlob(), 'Personnel_par_section_et_cours.xlsx');
       } },
-      { label: '⬇ PDF', onClick: async () => {
+      { label: '\uE009 PDF', onClick: async () => {
         const pdf = await newPdf({ title: titreC, footer: 'Personnel par section et par cours', orientation: 'landscape' });
         pdf.titleBox([titreC, sousTitre()].filter(Boolean), { size: 11 });
         const cols = [...groupes, ...(groupes.length > 1 ? [null] : [])];
@@ -411,8 +411,8 @@ async function personnel(ctx, vueInitiale) {
         }
         download(pdfBlob(await pdf.finish()), 'Personnel_par_section_et_cours.pdf');
       } },
-      { label: '📍 Attribuer une zone', onClick: attribuerZone, show: u.role !== 'CP' },
-      { label: '🖨 Imprimer', onClick: () => window.print() }]);
+      { label: '\uE02C Attribuer une zone', onClick: attribuerZone, show: u.role !== 'CP' },
+      { label: '\uE008 Imprimer', onClick: () => window.print() }]);
   }
   const sousTitre = () => [u.nomCs ? 'Circonscription scolaire de ' + u.nomCs : '', onglet === 'tout' ? '' : libG(onglet)].filter(Boolean).join(' — ');
   const schoolOptions = () => schools.slice().sort((a, b) => a.nom.localeCompare(b.nom, 'fr')).map(s => ({ v: s.id, l: `${s.nom} (${s.codeZone ? libZone(s.codeZone) : s.arrondissement || 'sans zone'})` }));
@@ -473,7 +473,7 @@ async function personnel(ctx, vueInitiale) {
         L('Diplôme académique', [s.diplome_academique, s.diplome_academique_annee].filter(Boolean).join(' — ')), L('CEAP', s.ceap ? `${s.ceap}${s.ceap_annee ? ' (' + s.ceap_annee + ')' : ''}` : ''), L('CAP', s.cap ? `${s.cap}${s.cap_annee ? ' (' + s.cap_annee + ')' : ''}` : ''),
         L("Visite d'aptitude", s.visite_aptitude ? `${s.visite_aptitude}${s.visite_aptitude_note ? ' — note ' + s.visite_aptitude_note + '/20' : ''}` : ''), L('Visites CP / CCS', s.visites_cp || s.visites_ccs ? `${s.visites_cp || 0} / ${s.visites_ccs || 0}` : ''),
         L("Participation à l'UP", s.participation_up ? s.participation_up + ' %' : ''), L("Note d'évaluation", s.note_evaluation ? s.note_evaluation + '/20' : ''), L('Téléphone', s.telephone), L('Observations', s.obs)))),
-      actions: [{ label: '✏️ Modifier', onClick: () => setTimeout(modifier, 50) }, { label: 'Fermer', kind: 'primary' }] });
+      actions: [{ label: '\uE006 Modifier', onClick: () => setTimeout(modifier, 50) }, { label: 'Fermer', kind: 'primary' }] });
   }
   async function modeleEducMaster() {
     const C = [['matricule', 'Matricule'], ['npi', 'NPI'], ['nom', 'Nom'], ['prenoms', 'Prénoms'], ['sexe', 'Sexe'], ['dn', 'Date de naissance'], ['ln', 'Lieu de naissance'], ['statut', 'Statut'], ['qualite', 'Qualité'],
@@ -528,12 +528,12 @@ async function personnel(ctx, vueInitiale) {
   const pourExport = (rows) => rows.map(p => ({ ...p, psTxt: fmtIso(p.date_prise_service), depTxt: fmtIso(p.date_service_dep), ecoleTxt: fmtIso(p.date_service_ecole), ancDep: p.ancTxt.departement, manque: p.manquants.join(', ') }));
   function actionsListe() {
     ctx.actions([
-      { label: '➕ Ajouter', kind: 'primary', onClick: ajouter }, { label: '✍️ Saisie par école (tableau)', onClick: async () => { await db.setting('saisie-onglet', 'personnel'); ctx.go('saisie'); } }, { label: '✏️ Modifier', onClick: modifier }, { label: '🗑 Supprimer', onClick: supprimer }, { label: '📇 Fiche de carrière', onClick: ficheCarriere },
-      { label: '📍 Attribuer une zone', title: 'Agents sans zone (Personnel de la CS) : choisir leur zone', onClick: attribuerZone, show: u.role !== 'CP' },
-      { label: '⬆ Importer Excel', title: 'Fichier du personnel (cahier de contrôle DDEMP, fichiers FE / ACDPE, ou fiche au format EducMaster) : complète matricules, dates, téléphones…', onClick: importer },
-      { label: '📄 Fiche d’importation (EducMaster)', title: 'Modèle Excel à remplir ou à coller depuis EducMaster, puis à importer', onClick: modeleEducMaster },
-      { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: titre(), subtitle: sousTitre(), columns: COLS_X, rows: pourExport(t.visible), sheet: 'Personnel' }), 'Personnel.xlsx') },
-      { label: '⬇ PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: titre(), subtitle: sousTitre(), columns: COLS.filter(c => !['corps', 'dossier', 'telephone', 'arrondissement'].includes(c.k)).map(c => ({ ...c, render: undefined })), rows: t.visible })), 'Personnel.pdf') }]);
+      { label: '\uE001 Ajouter', kind: 'primary', onClick: ajouter }, { label: '\uE029 Saisie par école (tableau)', onClick: async () => { await db.setting('saisie-onglet', 'personnel'); ctx.go('saisie'); } }, { label: '\uE006 Modifier', onClick: modifier }, { label: '\uE005 Supprimer', onClick: supprimer }, { label: '\uE012 Fiche de carrière', onClick: ficheCarriere },
+      { label: '\uE02C Attribuer une zone', title: 'Agents sans zone (Personnel de la CS) : choisir leur zone', onClick: attribuerZone, show: u.role !== 'CP' },
+      { label: '\uE00A Importer Excel', title: 'Fichier du personnel (cahier de contrôle DDEMP, fichiers FE / ACDPE, ou fiche au format EducMaster) : complète matricules, dates, téléphones…', onClick: importer },
+      { label: '\uE00D Fiche d’importation (EducMaster)', title: 'Modèle Excel à remplir ou à coller depuis EducMaster, puis à importer', onClick: modeleEducMaster },
+      { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: titre(), subtitle: sousTitre(), columns: COLS_X, rows: pourExport(t.visible), sheet: 'Personnel' }), 'Personnel.xlsx') },
+      { label: '\uE009 PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: titre(), subtitle: sousTitre(), columns: COLS.filter(c => !['corps', 'dossier', 'telephone', 'arrondissement'].includes(c.k)).map(c => ({ ...c, render: undefined })), rows: t.visible })), 'Personnel.pdf') }]);
   }
   await draw();
 }
@@ -569,11 +569,11 @@ async function planif(ctx) {
   const titreP = () => `PLANIFICATION ANNUELLE — ${NIVEAUX_PLAN.find(x => x[0] === niv)[1].toUpperCase()}`;
   const colsExport = () => cols().map(([k, l, g]) => ({ k, l: g && !em() ? `${g} — ${l}` : l, w: k === 'trimestre' ? 40 : k === 'mois' ? 60 : 90 }));
   ctx.actions([
-    { label: '💾 Enregistrer', kind: 'primary', onClick: async () => { await db.setting('planif:' + niv, lignes); modifie = false; toast('Planification enregistrée.'); draw(); } },
+    { label: '\uE007 Enregistrer', kind: 'primary', onClick: async () => { await db.setting('planif:' + niv, lignes); modifie = false; toast('Planification enregistrée.'); draw(); } },
     { label: '↺ Rétablir', title: 'Version de référence (primaire) ou grille vierge (maternelle)', onClick: async () => { if (!(await confirmBox('Revenir à la version de départ ? Vos modifications de ce niveau seront perdues.', 'Rétablir', true))) return; await db.setting('planif:' + niv, null); draw(); } },
-    { label: '⬇ PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: titreP(), subtitle: em() ? 'Domaines d\'activités de la maternelle' : P.source, columns: colsExport(), rows: lignes.map(l => ({ ...l, trimestre: 'T' + l.trimestre })) })), `Planification_${niv}.pdf`) },
-    { label: '⬇ Excel', onClick: async () => download(await listToXlsx({ title: titreP(), subtitle: em() ? 'Domaines d\'activités de la maternelle' : P.source, columns: colsExport().map(c => ({ ...c, xw: c.k === 'mois' || c.k === 'trimestre' ? 12 : 26 })), rows: lignes, sheet: niv }), `Planification_${niv}.xlsx`) },
-    { label: '🖨 Imprimer', onClick: () => window.print() }]);
+    { label: '\uE009 PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: titreP(), subtitle: em() ? 'Domaines d\'activités de la maternelle' : P.source, columns: colsExport(), rows: lignes.map(l => ({ ...l, trimestre: 'T' + l.trimestre })) })), `Planification_${niv}.pdf`) },
+    { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: titreP(), subtitle: em() ? 'Domaines d\'activités de la maternelle' : P.source, columns: colsExport().map(c => ({ ...c, xw: c.k === 'mois' || c.k === 'trimestre' ? 12 : 26 })), rows: lignes, sheet: niv }), `Planification_${niv}.xlsx`) },
+    { label: '\uE008 Imprimer', onClick: () => window.print() }]);
 }
 
 /* ================= ESPACE DU CP DE ZONE ================= */
@@ -596,7 +596,7 @@ async function espace(ctx) {
     rc(holder, 
       u.role !== 'CP' ? h('div', { class: 'tabs no-print' }, zonesRef.map(x => h('button', { class: 'tab' + (x.code === zone ? ' on' : ''), onclick: () => { zone = x.code; db.setting('espace-zone', zone); draw(); } }, `${x.nom || 'Zone ' + x.numero} (${schools.filter(s => s.codeZone === x.code).length})`))) : null,
       !zonesRef.length ? h('div', { class: 'card' }, h('p', 'Aucune zone pédagogique : créez-les dans Référentiel national → Zones pédagogiques.')) : null,
-      h('div', { class: 'card espace-tete' }, h('h3', `🧑‍🏫 ${nomZone()}`), h('p', cps.length ? 'Conseiller(s) pédagogique(s) : ' + cps.map(c => `${c.prenoms || ''} ${c.nom || ''} (${c.username})`.trim()).join(', ') : 'Aucun compte CP rattaché à cette zone.'),
+      h('div', { class: 'card espace-tete' }, h('h3', `\uE01E ${nomZone()}`), h('p', cps.length ? 'Conseiller(s) pédagogique(s) : ' + cps.map(c => `${c.prenoms || ''} ${c.nom || ''} (${c.username})`.trim()).join(', ') : 'Aucun compte CP rattaché à cette zone.'),
         !ec.length ? h('p', { class: 'notes' }, "Aucune école n'est encore rattachée à cette zone. Le CCS l'indique dans Écoles → « Affecter une zone » (ou Modifier → N° zone pédagogique) : l'école et son personnel arrivent alors ici.") : null),
       h('h2', { class: 'sec-h' }, 'Mes écoles et mon personnel'),
       h('div', { class: 'cards' }, st(ec.length, `écoles (${n(ec, s => s.cycle === 'Maternelle')} EM · ${n(ec, s => s.cycle !== 'Maternelle')} EP)`, '', 'ecoles'), st(n(ec, s => (s.secteur || '').startsWith('Priv')), 'écoles privées', '', 'ecoles'),
@@ -605,15 +605,15 @@ async function espace(ctx) {
       h('h2', { class: 'sec-h' }, 'Mes fiches, activités et bilans'),
       h('div', { class: 'cards' }, st(fi.length, 'fiches de collecte', '', 'fiches'), st(n(fi, f => f.statut === 'Brouillon' || f.statut === 'À corriger'), 'à compléter / corriger', 'y', 'fiches'), st(n(fi, f => f.statut === 'Transmise'), 'transmises au CCS', '', 'fiches'), st(n(fi, f => f.statut === 'Validée'), 'validées', '', 'fiches'),
         st(n(ac, a => a.statut === 'Réalisée'), 'activités réalisées', '', 'activites'), st(proch.length, 'activités à venir', '', 'activites'), st(bi.length, 'bilans trimestriels / annuels', '', 'bilans')),
-      h('div', { class: 'card' }, h('h3', '📅 Mes prochaines activités'), proch.length ? h('ul', proch.map(a => h('li', `${fmtDate(a.date)} — ${a.type}${a.theme ? ' : ' + a.theme : ''}${a.lieu ? ' (' + a.lieu + ')' : ''}`))) : h('p', { class: 'sub' }, 'Aucune activité programmée.')),
-      ret.length ? h('div', { class: 'card' }, h('h3', '🎓 Départs à la retraite proches'), h('ul', ret.slice(0, 8).map(p => h('li', `${p.nom} ${p.prenoms || ''} — ${p.ecole} — ${p.retraiteAtteinte ? 'âge atteint (' + p.retraiteTxt + ')' : p.retraiteTxt}`)))) : null,
+      h('div', { class: 'card' }, h('h3', '\uE017 Mes prochaines activités'), proch.length ? h('ul', proch.map(a => h('li', `${fmtDate(a.date)} — ${a.type}${a.theme ? ' : ' + a.theme : ''}${a.lieu ? ' (' + a.lieu + ')' : ''}`))) : h('p', { class: 'sub' }, 'Aucune activité programmée.')),
+      ret.length ? h('div', { class: 'card' }, h('h3', '\uE020 Départs à la retraite proches'), h('ul', ret.slice(0, 8).map(p => h('li', `${p.nom} ${p.prenoms || ''} — ${p.ecole} — ${p.retraiteAtteinte ? 'âge atteint (' + p.retraiteTxt + ')' : p.retraiteTxt}`)))) : null,
       ec.length ? ecolesDeLaZone(ec, pe) : null,
       h('h2', { class: 'sec-h' }, 'Mes outils'),
-      h('div', { class: 'espace-liens' }, lien('ecoles', '🏫 Écoles'), lien('personnel', '👩‍🏫 Personnel'), lien('fiches', '📝 Fiches de collecte'), lien('activites', '📅 Activités'), lien('planningcp', '🗓️ Planification des activités'), lien('bilans', '📈 Bilans'),
-        lien('themes', '🎯 Thèmes UP'), lien('planif', '🗓️ Planification EM et EP'), lien('planification', '📚 Planification CI → CM2'), lien('emploi', '🕘 Emplois du temps'), lien('calendrier', '📆 Calendrier'), lien('reglement', '⚖️ Règlement'), lien('documents', '📄 Documents officiels')));
+      h('div', { class: 'espace-liens' }, lien('ecoles', '\uE022 Écoles'), lien('personnel', '\uE01E Personnel'), lien('fiches', '\uE00E Fiches de collecte'), lien('activites', '\uE017 Activités'), lien('planningcp', '\uE017 Planification des activités'), lien('bilans', '\uE016 Bilans'),
+        lien('themes', '\uE02E Thèmes UP'), lien('planif', '\uE017 Planification EM et EP'), lien('planification', '\uE031 Planification CI → CM2'), lien('emploi', '\uE018 Emplois du temps'), lien('calendrier', '\uE017 Calendrier'), lien('reglement', '\uE03F Règlement'), lien('documents', '\uE00D Documents officiels')));
     ctx.status(`${nomZone()} — ${ec.length} école(s), ${pe.length} agent(s), ${fi.length} fiche(s)`);
-    ctx.actions([{ label: '⬇ Écoles de la zone (PDF)', kind: 'primary', onClick: () => exporterEcoles('pdf', ec, pe) }, { label: '⬇ Écoles de la zone (Excel)', onClick: () => exporterEcoles('xlsx', ec, pe) },
-      { label: '🖨 Imprimer', onClick: () => window.print() }]);
+    ctx.actions([{ label: '\uE009 Écoles de la zone (PDF)', kind: 'primary', onClick: () => exporterEcoles('pdf', ec, pe) }, { label: '\uE009 Écoles de la zone (Excel)', onClick: () => exporterEcoles('xlsx', ec, pe) },
+      { label: '\uE008 Imprimer', onClick: () => window.print() }]);
   }
   /* ---------- écoles de la zone : publiques à part, privées (laïques et confessionnelles) à part ---------- */
   const directeurDe = (s, pe) => pe.find(p => p.schoolId === s.id && /^Directeur/.test(p.fonction || ''));
@@ -638,8 +638,8 @@ async function espace(ctx) {
     const table = ([titre, L]) => h('div', { class: 'card' }, h('h3', { class: 'fixe' }, `${titre} — ${L.length} école(s) (${L.filter(x => x.cycle === 'EP').length} EP · ${L.filter(x => x.cycle === 'EM').length} EM)`),
       L.length ? h('div', { class: 'tbl-wrap' }, h('table', { class: 't fixe1 ez' }, h('thead', h('tr', ...COLS_EZ.map(([, l]) => h('th', l)), peutModifier ? h('th', { class: 'no-print' }, '') : null)),
         h('tbody', L.map(r => h('tr', ...COLS_EZ.map(([k]) => h('td', { class: k === 'n' ? 'num' : '' }, k === 'nom' ? [r.nom, ' ', h('small', { class: 'sub' }, r.cycle)] : (r[k] || (['village', 'directeur', 'contact'].includes(k) ? h('span', { class: 'badge Brouillon' }, 'à renseigner') : '')))),
-          peutModifier ? h('td', { class: 'no-print' }, h('button', { class: 'btn sm', title: 'Renseigner directeur, contact, village', onclick: () => modifierEcole(r.id) }, '✏️')) : null))))) : h('p', { class: 'sub' }, 'Aucune école.'));
-    return h('div', h('h2', { class: 'sec-h' }, `🏫 Écoles de la zone (${ec.length})`), ...G.map(table),
+          peutModifier ? h('td', { class: 'no-print' }, h('button', { class: 'btn sm', title: 'Renseigner directeur, contact, village', onclick: () => modifierEcole(r.id) }, '\uE006')) : null))))) : h('p', { class: 'sub' }, 'Aucune école.'));
+    return h('div', h('h2', { class: 'sec-h' }, `\uE022 Écoles de la zone (${ec.length})`), ...G.map(table),
       h('p', { class: 'notes' }, `Total de la zone : ${ec.length} école(s) — ${G[0][1].length} publique(s), ${G[1][1].length} privée(s). Les écoles « ne fonctionnant plus » ne sont pas comptées. Le directeur et le contact viennent de la fiche de l'école, à défaut de la liste du personnel.`));
   }
   async function exporterEcoles(fmt, ec, pe) {
@@ -683,7 +683,7 @@ async function synocp(ctx) {
   const z = () => zonesRef.find(x => x.code === zone), nomZone = () => z() ? (z().nom || 'Zone ' + z().numero) : (zone ? 'Zone ' + zone.split('-ZP').pop() : '—');
   const peut = u.role !== 'CP' || u.codeZone === zone;
   const zbar = h('div', { class: 'tabs no-print' }), tabs = h('div', { class: 'tabs no-print' }), holder = h('div'); ctx.el.append(zbar, tabs, holder);
-  const ONG = [['identite', '🪪 Identité'], ['ecoles', '🏫 Écoles et directeurs'], ['up', '👥 Unités pédagogiques'], ['personnel', '👩‍🏫 Personnel'], ['textes', '📘 EDT, planification, règlement']];
+  const ONG = [['identite', '\uE02B Identité'], ['ecoles', '\uE022 Écoles et directeurs'], ['up', '\uE01C Unités pédagogiques'], ['personnel', '\uE01E Personnel'], ['textes', '\uE030 EDT, planification, règlement']];
   let data = {}, ups = [], ecoles = [], perso = [];
   async function charger() {
     const idn = (await db.setting('cpIdentity')) || {};
@@ -719,13 +719,13 @@ async function synocp(ctx) {
       const ligne = (x, i) => h('tr', COLS_UP.map(([k]) => h('td', h('textarea', { class: 'edt-cell', readOnly: !peut, oninput: (e) => { x[k] = e.target.value; ajuster(e.target); } }, x[k] || ''))),
         peut ? h('td', { class: 'no-print' }, h('button', { class: 'btn sm', 'aria-label': 'Supprimer la ligne', onclick: () => { ups.splice(i, 1); draw(); } }, '✕')) : null);
       rc(holder, h('div', { class: 'tbl-wrap' }, h('table', { class: 't edt' }, h('thead', h('tr', COLS_UP.map(([, l]) => h('th', l)), peut ? h('th', { class: 'no-print' }, '') : null)), h('tbody', ups.map(ligne)))),
-        peut ? h('button', { class: 'btn no-print', style: { marginTop: '8px' }, onclick: () => { ups.push({}); draw(); } }, '➕ Ajouter une UP') : null,
+        peut ? h('button', { class: 'btn no-print', style: { marginTop: '8px' }, onclick: () => { ups.push({}); draw(); } }, '\uE001 Ajouter une UP') : null,
         h('p', { class: 'notes' }, 'RUP : responsable d\'unité pédagogique ; Co-RUP : son adjoint. Indiquez dans « Écoles membres » les écoles rattachées à chaque UP.'));
       requestAnimationFrame(() => holder.querySelectorAll('.edt-cell').forEach(ajuster));
     } else if (onglet === 'personnel') {
       const t = dataTable({ columns: COLS_PS, rows: perso.map(lignePs).sort((a, b) => (a.ecole || '').localeCompare(b.ecole || '', 'fr') || (a.fonction || '').localeCompare(b.fonction || '', 'fr')), pageSize: 300, empty: 'Aucun agent dans cette zone.' }); rc(holder, t.el);
     } else {
-      rc(holder, h('div', { class: 'doc-grille' }, [['emploi', '🕘 Emplois du temps officiels', 'Maternelle, CI-CP, CE1-CE2, CM1-CM2'], ['planif', '🗓️ Planification annuelle', 'Maternelle (petits, grands) et CI → CM2'], ['reglement', '⚖️ Règlement intérieur', 'Texte officiel révisé'], ['calendrier', '🗓️ Calendrier scolaire', '2026-2027'], ['documents', '📄 Documents officiels', 'Fiches, canevas et guides']]
+      rc(holder, h('div', { class: 'doc-grille' }, [['emploi', '\uE018 Emplois du temps officiels', 'Maternelle, CI-CP, CE1-CE2, CM1-CM2'], ['planif', '\uE017 Planification annuelle', 'Maternelle (petits, grands) et CI → CM2'], ['reglement', '\uE03F Règlement intérieur', 'Texte officiel révisé'], ['calendrier', '\uE017 Calendrier scolaire', '2026-2027'], ['documents', '\uE00D Documents officiels', 'Fiches, canevas et guides']]
         .map(([r, t, d]) => h('button', { class: 'card doc-lien', onclick: () => ctx.go(r) }, h('h3', t), h('p', d)))));
     }
     ctx.status(`${nomZone()} — ${ecoles.length} école(s), ${ups.length} UP, ${perso.length} agent(s)`);
@@ -757,13 +757,13 @@ async function synocp(ctx) {
   }
   await charger(); await draw();
   ctx.actions([
-    { label: '💾 Enregistrer', kind: 'primary', show: peut, onClick: async () => { await sauver(); toast('Tableau synoptique enregistré.'); } },
-    { label: '⬇ PDF complet', onClick: pdfComplet },
-    { label: '⬇ Excel (onglet)', onClick: async () => {
+    { label: '\uE007 Enregistrer', kind: 'primary', show: peut, onClick: async () => { await sauver(); toast('Tableau synoptique enregistré.'); } },
+    { label: '\uE009 PDF complet', onClick: pdfComplet },
+    { label: '\uE009 Excel (onglet)', onClick: async () => {
       if (onglet === 'ecoles') return download(await listToXlsx({ title: `ÉCOLES ET DIRECTEURS — ${nomZone().toUpperCase()}`, columns: COLS_EC, rows: ecoles.map(s => ({ ...s, dir: s.directeur })), sheet: 'Écoles' }), 'Synoptique_ecoles.xlsx');
       if (onglet === 'up') return download(await listToXlsx({ title: `UNITÉS PÉDAGOGIQUES — ${nomZone().toUpperCase()}`, columns: COLS_UP.map(([k, l]) => ({ k, l, xw: 24 })), rows: ups, sheet: 'UP' }), 'Synoptique_UP.xlsx');
       if (onglet === 'personnel') return download(await listToXlsx({ title: `PERSONNEL — ${nomZone().toUpperCase()}`, columns: COLS_PS, rows: perso.map(lignePs), sheet: 'Personnel' }), 'Synoptique_personnel.xlsx');
       return download(await listToXlsx({ title: `IDENTITÉ — ${nomZone().toUpperCase()}`, columns: [{ k: 'l', l: 'Rubrique', xw: 40 }, { k: 'v', l: 'Renseignement', xw: 60 }], rows: RUB_ID.map(([k, l]) => ({ l, v: data[k] || '' })), sheet: 'Identité' }), 'Synoptique_identite.xlsx');
     } },
-    { label: '🖨 Imprimer', onClick: () => window.print() }]);
+    { label: '\uE008 Imprimer', onClick: () => window.print() }]);
 }

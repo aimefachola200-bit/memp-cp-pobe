@@ -80,7 +80,7 @@ async function overview(ctx) {
   const recMap = () => new Map(records.filter(r => r.annee === st.annee).map(r => [r.schoolId, r]));
 
   const sel = (k, opts, w = '230px') => h('select', { class: 'search', style: { maxWidth: w }, onchange: (e) => { st[k] = e.target.value; draw(); } }, opts.map(([v, l]) => h('option', { value: v, selected: st[k] === v }, l)));
-  const levels = [['ecole', '🏫 École'], ['zone', '📍 Zone'], ...(u.role !== 'CP' ? [['cs', '🏛 Circonscription']] : [])];
+  const levels = [['ecole', '\uE022 École'], ['zone', '\uE02C Zone'], ...(u.role !== 'CP' ? [['cs', '\uE023 Circonscription']] : [])];
   const seg = h('div', { class: 'seg' }, levels.map(([k, l]) => h('button', { class: 'btn sm' + (st.level === k ? ' primary' : ''), onclick: () => { st.level = k; draw(); } }, l)));
   const toolbar = h('div', { class: 'tbl-tools no-print' });
   const holder = h('div');
@@ -206,12 +206,12 @@ async function overview(ctx) {
   function setActions() {
     const isSchool = st.level === 'ecole';
     ctx.actions([
-      { label: '📂 Ouvrir la fiche', kind: 'primary', show: isSchool, onClick: () => { const r = table.selected; if (!r) return toast('Sélectionnez une école dans la liste.', 'warn'); openSchool(r.school); } },
-      { label: '⚙ Créer les fiches de la zone', show: isSchool && canWrite, onClick: initZone },
-      { label: '⬇ Excel', onClick: exportExcel }, { label: '⬇ PDF', onClick: exportPdf },
-      { label: '📥 Importer Excel', show: canWrite, onClick: importExcel },
-      { label: '🗎 Modèle de saisie Excel', show: isSchool && canWrite, onClick: templateExcel },
-      { label: '🖨 Imprimer', onClick: () => window.print() },
+      { label: '\uE014 Ouvrir la fiche', kind: 'primary', show: isSchool, onClick: () => { const r = table.selected; if (!r) return toast('Sélectionnez une école dans la liste.', 'warn'); openSchool(r.school); } },
+      { label: '\uE051 Créer les fiches de la zone', show: isSchool && canWrite, onClick: initZone },
+      { label: '\uE009 Excel', onClick: exportExcel }, { label: '\uE009 PDF', onClick: exportPdf },
+      { label: '\uE00B Importer Excel', show: canWrite, onClick: importExcel },
+      { label: '\uE00D Modèle de saisie Excel', show: isSchool && canWrite, onClick: templateExcel },
+      { label: '\uE008 Imprimer', onClick: () => window.print() },
     ]);
   }
   draw();
@@ -307,7 +307,7 @@ async function editor(ctx) {
     globalEls.comp.textContent = E.completion(S, v) + ' %';
     statsBox.replaceChildren(statsEl(S, v, rec.schoolNom));
     const iss = E.validate(S, v), errs = iss.filter(i => i.lvl === 'err');
-    issuesBox.replaceChildren(h('h4', {}, errs.length ? `⚠ ${errs.length} erreur(s) de cohérence` : (iss.length ? `${iss.length} point(s) à vérifier` : '✔ Aucune incohérence détectée')),
+    issuesBox.replaceChildren(h('h4', {}, errs.length ? `\uE041 ${errs.length} erreur(s) de cohérence` : (iss.length ? `${iss.length} point(s) à vérifier` : '\uE003 Aucune incohérence détectée')),
       iss.length ? h('ul', {}, iss.slice(0, 40).map(i => h('li', { style: { color: i.lvl === 'err' ? 'var(--err)' : 'var(--warn)' } }, i.msg))) : null);
     return iss;
   };
@@ -377,16 +377,16 @@ async function editor(ctx) {
 
   ctx.actions([
     { label: '← Liste', onClick: async () => { await save(); ctx.go('effectifs'); } },
-    { label: '💾 Enregistrer', kind: 'primary', show: editable, onClick: async () => { await save(); toast('Fiche enregistrée.'); } },
+    { label: '\uE007 Enregistrer', kind: 'primary', show: editable, onClick: async () => { await save(); toast('Fiche enregistrée.'); } },
     { label: '↻ Reprendre des fiches de collecte', show: editable, onClick: prefillAgain },
-    { label: '⬇ PDF', onClick: async () => { await save(); download(pdfBlob(await X.schoolPdf(rec)), base + '.pdf'); } },
-    { label: '⬇ Excel', onClick: async () => { await save(); download(await X.schoolXlsx(rec), base + '.xlsx'); } },
-    { label: '📥 Importer Excel', show: editable, onClick: importOne },
-    { label: '✉ Transmettre au CCS', kind: 'accent', show: canTransmit(u, rec), onClick: transmit },
-    { label: '✅ Valider', kind: 'primary', show: canValidate(u, rec), onClick: validateRec },
-    { label: '↩ Demander une correction', show: canValidate(u, rec), onClick: correction },
-    { label: '🔓 Déverrouiller', show: u.role === 'ADMIN' && rec.statut !== 'Brouillon', onClick: unlock },
-    { label: '🗑 Vider', kind: 'danger', show: editable, onClick: clearAll },
+    { label: '\uE009 PDF', onClick: async () => { await save(); download(pdfBlob(await X.schoolPdf(rec)), base + '.pdf'); } },
+    { label: '\uE009 Excel', onClick: async () => { await save(); download(await X.schoolXlsx(rec), base + '.xlsx'); } },
+    { label: '\uE00B Importer Excel', show: editable, onClick: importOne },
+    { label: '\uE04F Transmettre au CCS', kind: 'accent', show: canTransmit(u, rec), onClick: transmit },
+    { label: '\uE004 Valider', kind: 'primary', show: canValidate(u, rec), onClick: validateRec },
+    { label: '\uE037 Demander une correction', show: canValidate(u, rec), onClick: correction },
+    { label: '\uE034 Déverrouiller', show: u.role === 'ADMIN' && rec.statut !== 'Brouillon', onClick: unlock },
+    { label: '\uE005 Vider', kind: 'danger', show: editable, onClick: clearAll },
   ]);
   return async () => { clearTimeout(timer); if (dirty) await save(); };
 }

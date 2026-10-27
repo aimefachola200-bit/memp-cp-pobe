@@ -266,7 +266,7 @@ table.sect tr.sect-tot td{background:#fff2cc;font-weight:800}
 
 /* =====================================================================
    1.12 — Présentation alignée sur SCOLARIS et GESCOL (téléphone, tablette, PC)
-   Menu latéral bleu nuit fixe (tiroir ☰ sous 1000 px), barre du haut blanche
+   Menu latéral bleu nuit fixe (tiroir [menu] sous 1000 px), barre du haut blanche
    « titre + année », bleu institutionnel, tableaux et indicateurs sobres.
    ===================================================================== */
 :root{--green:#1F4E79;--green-d:#12324F;--green-l:#EEF4FA;--bg:#F4F6F9;--ink:#1D2939;--mute:#667085;--line:#D0D5DD;--ok:#1B7F3B;--warn:#B54708;--err:#B42318;--sb:260px;--shadow:none;

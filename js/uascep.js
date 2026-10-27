@@ -1,7 +1,7 @@
 /* République du Bénin — MEMP — Module « Bureaux UASCEP » (commun à CS Pobè, Mon école, MEMP-CP, DOSP, ÉduGestion)
    Membres et responsables des bureaux de l'UASCEP par école, unité pédagogique, zone pédagogique, circonscription
-   scolaire et département (DDEMP) : ➕ ajouter, ✏️ modifier, 🗑 supprimer, ♻ réinitialiser (nouveau mandat, ancien bureau
-   archivé), 🔁 renouvellement, synthèse, anciens bureaux, impression / PDF, Excel (export et import, mêmes colonnes dans
+   scolaire et département (DDEMP) : \uE001 ajouter, \uE006 modifier, \uE005 supprimer, \uE058 réinitialiser (nouveau mandat, ancien bureau
+   archivé), \uE058 renouvellement, synthèse, anciens bureaux, impression / PDF, Excel (export et import, mêmes colonnes dans
    toutes les applications — voir outils/uascep/spec.md).
    L'application hôte fournit un adaptateur : charger / enregistrer l'état, contexte (entités et droits), Excel, impression.
    Conception : Maître Aimé FACHE */
@@ -178,6 +178,54 @@
       + lignes.map((l, k) => '<text x="100" y="' + (y0 + k * fc * 1.16).toFixed(1) + '" font-size="' + fc.toFixed(1) + '" text-anchor="middle">' + esc(l) + '</text>').join('')
       + '</g></svg>';
   }
+  /** Logo UASCEP (dessin original) : anneau, « UASCEP » dans l'arc du haut, texte modifiable dans l'arc du bas
+      (commune, zone, école…), coureur d'endurance sur une piste dans le cercle intérieur.
+      logoSvg({ haut, bas, couleurs: { c1 (fond), c2 (filets, texte du bas), c3 (piste) }, taille }) → SVG */
+  const LOGO_COULEURS = { c1: '#1F4E79', c2: '#E8B10E', c3: '#1B8A3C' };
+  const DEFINITION = 'Union des associations sportives et culturelles des écoles primaires';
+  /** Logo UASCEP (dessin original) : anneau, « UASCEP » dans l'arc du haut, sa définition dans un petit arc juste dessous
+      (initiales en couleur c2), texte modifiable dans l'arc du bas (commune, zone, école…), coureur d'endurance sur une
+      piste dans le cercle intérieur. logoSvg({ haut, definition, bas, couleurs: { c1, c2, c3 }, taille }) → SVG */
+  function logoSvg(o) {
+    o = o || {};
+    const c = Object.assign({}, LOGO_COULEURS, o.couleurs || {}, ['c1', 'c2', 'c3'].reduce((x, k) => { if (o[k]) x[k] = o[k]; return x; }, {}));
+    ['c1', 'c2', 'c3'].forEach(k => { if (!/^#[0-9a-f]{3,8}$/i.test(c[k] || '')) c[k] = LOGO_COULEURS[k]; });
+    const haut = String(o.haut || 'UASCEP').toUpperCase(), bas = String(o.bas == null ? '' : o.bas).toUpperCase(), t = o.taille || 400;
+    const def = String(o.definition == null ? DEFINITION : o.definition).trim();
+    const ajuste = (txt, fs, ls, dispo) => (txt.length * (fs * 0.64 + ls) > dispo ? ' textLength="' + dispo + '" lengthAdjust="spacingAndGlyphs"' : '');
+    const PETITS = /^(des|de|du|et|la|le|les|d['’]?|l['’]?|aux?|en)$/i;
+    const defSvg = def.split(/\s+/).filter(Boolean).map(m => PETITS.test(m) ? esc(m.toUpperCase()) : '<tspan fill="' + c.c2 + '" font-weight="900">' + esc(m.charAt(0).toUpperCase()) + '</tspan>' + esc(m.slice(1).toUpperCase())).join(' ');
+    const fb = Math.max(20, Math.min(30, Math.floor((420 / Math.max(1, bas.length) - 3) / 0.64)));
+    return '<svg xmlns="http://www.w3.org/2000/svg" class="uas-logo" viewBox="0 0 400 400" width="' + t + '" height="' + t + '" role="img" aria-label="Logo UASCEP — ' + esc(bas) + '">'
+      + '<defs><path id="uasLH" d="M 50 200 A 150 150 0 0 1 350 200"/><path id="uasLD" d="M 85.4 241.7 A 122 122 0 1 1 314.6 241.7"/><path id="uasLB" d="M 40 200 A 160 160 0 0 0 360 200"/></defs>'
+      + '<circle cx="200" cy="200" r="196" fill="' + c.c1 + '"/><circle cx="200" cy="200" r="186" fill="none" stroke="' + c.c2 + '" stroke-width="4"/>'
+      + '<circle cx="200" cy="200" r="100" fill="#fff" stroke="' + c.c2 + '" stroke-width="6"/>'
+      + '<text font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="52" letter-spacing="8" fill="#fff" text-anchor="middle"><textPath href="#uasLH" startOffset="50%"' + ajuste(haut, 52, 8, 400) + '>' + esc(haut) + '</textPath></text>'
+      + (def ? '<text font-family="Arial, sans-serif" font-weight="700" font-size="10.6" letter-spacing="0.3" fill="#fff" text-anchor="middle"><textPath href="#uasLD" startOffset="50%"' + (def.length > 70 ? ' textLength="560" lengthAdjust="spacingAndGlyphs"' : '') + '>' + defSvg + '</textPath></text>' : '')
+      + (bas ? '<text font-family="Arial, sans-serif" font-weight="700" font-size="' + fb + '" letter-spacing="3" fill="' + c.c2 + '" text-anchor="middle"><textPath href="#uasLB" startOffset="50%"' + ajuste(bas, fb, 3, 430) + '>' + esc(bas) + '</textPath></text>' : '')
+      + '<circle cx="38" cy="200" r="7" fill="' + c.c2 + '"/><circle cx="362" cy="200" r="7" fill="' + c.c2 + '"/>'
+      + '<g transform="translate(200 200) scale(0.86) translate(-200 -196)">'
+      + '<path d="M 118 262 Q 200 238 284 262" fill="none" stroke="' + c.c3 + '" stroke-width="7" stroke-linecap="round"/>'
+      + '<path d="M 128 276 Q 200 256 274 276" fill="none" stroke="' + c.c3 + '" stroke-width="4" stroke-linecap="round" opacity=".6"/>'
+      + '<g fill="none" stroke="' + c.c1 + '" stroke-linecap="round" stroke-linejoin="round"><circle cx="214" cy="118" r="15" fill="' + c.c1 + '" stroke="none"/>'
+      + '<path d="M 206 140 L 190 196" stroke-width="20"/><path d="M 204 148 L 228 168 L 248 156" stroke-width="11"/><path d="M 200 150 L 178 166 L 162 154" stroke-width="11"/>'
+      + '<path d="M 190 196 L 218 214 L 214 248" stroke-width="13"/><path d="M 190 196 L 170 226 L 140 230" stroke-width="13"/><path d="M 214 248 L 230 250" stroke-width="8"/></g>'
+      + '<path d="M 150 140 L 130 140 M 146 160 L 120 160 M 150 180 L 132 180" stroke="' + c.c2 + '" stroke-width="5" stroke-linecap="round"/></g></svg>';
+  }
+  /** Texte du bas proposé pour une entité : « EPP … », « UP … », « ZONE PÉDAGOGIQUE 1 », « COMMUNE DE POBÈ », « DDEMP … » */
+  function texteLogo(niveau, lib) {
+    const l = String(lib || '').trim();
+    if (niveau === 'CS') return 'COMMUNE DE ' + l.replace(/^circonscription( scolaire)?( de| d’| d')?\s*/i, '').replace(/^cs\s+(de\s+)?/i, '').toUpperCase();
+    if (niveau === 'ZONE') { const m = /^zone\s*(p[ée]dagogique)?\s*n?°?\s*(\d+)\s*$/i.exec(l); return m ? 'ZONE PÉDAGOGIQUE ' + m[2] : l.toUpperCase(); }
+    if (niveau === 'UP') return (/^up\b|unit/i.test(l) ? l : 'UP ' + l).toUpperCase();
+    return l.toUpperCase();
+  }
+  /** Logo d'un bureau : image importée, sinon logo généré avec ses réglages */
+  function logoBureau(b, taille) {
+    const g = (b && b.logo) || {};
+    if (g.image) return '<img class="uas-logo" src="' + g.image + '" alt="Logo UASCEP" width="' + (taille || 120) + '" height="' + (taille || 120) + '" style="object-fit:contain">';
+    return logoSvg({ haut: g.haut || 'UASCEP', definition: g.definition, bas: g.bas != null && g.bas !== '' ? g.bas : texteLogo(b && b.niveau, b && b.entiteLib), couleurs: { c1: g.c1, c2: g.c2, c3: g.c3 }, taille: taille || 120 });
+  }
   /** Image choisie par l'utilisateur, réduite (PNG) : cachet scanné, signature numérisée */
   function lireImage(fichier, maxL, maxH) {
     return new Promise((resolve, reject) => {
@@ -305,7 +353,7 @@
   async function imprimerDefaut(titre, html) {
     if (typeof html === 'function') html = await html();
     const doc = h('div', { class: 'uas-apercu', html });
-    dialogue(titre, doc, [{ l: 'Fermer' }, { l: '🖨️ Imprimer / PDF', p: true, action: () => {
+    dialogue(titre, doc, [{ l: 'Fermer' }, { l: '\uE008 Imprimer / PDF', p: true, action: () => {
       let zone = document.getElementById('uas-impression');
       if (!zone) { zone = h('div', { id: 'uas-impression' }); document.body.append(zone); }
       zone.innerHTML = html; document.body.classList.add('uas-imprime');
@@ -430,15 +478,15 @@
       const bImgC = h('button', { class: 'uas-btn s', type: 'button', onclick: async () => {
         const f = await choisirFichier('image/*'); if (!f) return;
         try { st.cachetImage = await lireImage(f, 480, 480); st.cachetType = 'image'; sForme.value = 'image'; maj(); } catch (e) { toast && toast(e.message); }
-      } }, '📁 Importer un cachet');
+      } }, '\uE013 Importer un cachet');
       const bRazC = h('button', { class: 'uas-btn s', type: 'button', onclick: () => { st.cachetType = avecApp ? 'app' : 'rond'; st.cachetCouleur = 'bleu'; st.cachetImage = ''; sForme.value = st.cachetType; sCoul.value = 'bleu'; maj(); } }, '↺ Réinitialiser');
-      const bSig = h('button', { class: 'uas-btn s p', type: 'button', 'data-uas': 'signer', onclick: async () => { const r = await dialogueSignature(titre, st.signature); if (r !== null) { st.signature = r; maj(); } } }, '✍️ Signer');
+      const bSig = h('button', { class: 'uas-btn s p', type: 'button', 'data-uas': 'signer', onclick: async () => { const r = await dialogueSignature(titre, st.signature); if (r !== null) { st.signature = r; maj(); } } }, '\uE029 Signer');
       const bImgS = h('button', { class: 'uas-btn s', type: 'button', onclick: async () => {
         const f = await choisirFichier('image/*'); if (!f) return;
         try { st.signature = await lireImage(f, 400, 150); maj(); } catch (e) { toast && toast(e.message); }
-      } }, '📁 Importer une signature');
-      const bRazS = h('button', { class: 'uas-btn s d', type: 'button', onclick: () => { st.signature = ''; maj(); } }, '🗑 Effacer la signature');
-      const el = h('div', { class: 'uas-sc' }, h('h4', {}, '🔏 Cachet et signature'),
+      } }, '\uE013 Importer une signature');
+      const bRazS = h('button', { class: 'uas-btn s d', type: 'button', onclick: () => { st.signature = ''; maj(); } }, '\uE005 Effacer la signature');
+      const el = h('div', { class: 'uas-sc' }, h('h4', {}, '\uE033 Cachet et signature'),
         h('div', { class: 'uas-sc-g' },
           h('div', {}, h('div', { class: 'uas-form', style: 'margin-bottom:6px' }, champ('Cachet', sForme), champ('Couleur', sCoul)), apC,
             h('div', { class: 'uas-actions' }, bImgC, bRazC)),
@@ -452,7 +500,7 @@
       return dialogue('Signature — ' + titre, h('div', {}, h('p', { class: 'uas-aide', style: 'margin:0 0 8px' }, 'Signez dans le cadre avec le doigt, un stylet ou la souris.'), pad.el), [
         { l: 'Annuler', v: null },
         { l: 'Effacer', action: () => { pad.effacer(); return false; } },
-        { l: '💾 Valider la signature', p: true, action: () => pad.image() }]);
+        { l: '\uE007 Valider la signature', p: true, action: () => pad.image() }]);
     }
     /** Entités de l'onglet après filtres zone / UP */
     function entitesFiltrees(niv) {
@@ -473,10 +521,10 @@
       }, l))));
       // outils communs : export / import / impression de l'ensemble
       z.append(h('div', { class: 'uas-actions' },
-        h('button', { class: 'uas-btn', type: 'button', onclick: exporterTout }, '📊 Exporter (Excel)'),
-        ctx.peutImporter === false ? null : h('button', { class: 'uas-btn', type: 'button', onclick: importer }, '📥 Importer (Excel)'),
-        h('button', { class: 'uas-btn', type: 'button', onclick: () => imprimerListe(onglet) }, '🖨️ Imprimer / PDF'),
-        h('button', { class: 'uas-btn', type: 'button', 'data-uas': 'liste-signee', onclick: () => editerListe(onglet) }, '📋 Liste des bureaux signée (QR)')));
+        h('button', { class: 'uas-btn', type: 'button', onclick: exporterTout }, '\uE015 Exporter (Excel)'),
+        ctx.peutImporter === false ? null : h('button', { class: 'uas-btn', type: 'button', onclick: importer }, '\uE00B Importer (Excel)'),
+        h('button', { class: 'uas-btn', type: 'button', onclick: () => imprimerListe(onglet) }, '\uE008 Imprimer / PDF'),
+        h('button', { class: 'uas-btn', type: 'button', 'data-uas': 'liste-signee', onclick: () => editerListe(onglet) }, '\uE00F Liste des bureaux signée (QR)')));
       if (onglet === 'SYNTHESE') z.append(synthese());
       else if (onglet === 'ARCHIVES') z.append(archives());
       else z.append(vueNiveau(onglet));
@@ -523,11 +571,11 @@
             h('td', {}, m.fonction || ''), h('td', {}, m.qualite || ''), h('td', {}, m.contact || ''),
             h('td', {}, fr(m.dateElection || b.dateElection)), h('td', {}, fr(fin)), h('td', {}, h('span', { class: 'uas-badge ' + st[0] }, st[1])),
             h('td', { class: 'c', title: (m.cachetType === 'aucun' ? 'Sans cachet' : 'Cachet') + ' — ' + (m.signature ? 'signé le ' + fr(m.signatureLe) : 'signature à recueillir') },
-              (m.cachetType === 'aucun' ? '—' : '🔵') + ' ' + (m.signature ? '✍️' : '…')),
+              (m.cachetType === 'aucun' ? '—' : '\uE077') + ' ' + (m.signature ? '\uE029' : '…')),
             ecrire ? h('td', { style: 'white-space:nowrap' }, w ? [
-              h('button', { class: 'uas-btn s', type: 'button', title: 'Attestation de fonction (signée, QR)', 'aria-label': 'Attestation de ' + nomComplet(m), onclick: () => editerDocument('ATTESTATION', b, m) }, '📜'), ' ',
-              h('button', { class: 'uas-btn s', type: 'button', title: 'Modifier', 'aria-label': 'Modifier ' + nomComplet(m), onclick: () => formMembre(b.niveau, b.entite, m) }, '✏️'), ' ',
-              h('button', { class: 'uas-btn s d', type: 'button', title: 'Supprimer', 'aria-label': 'Supprimer ' + nomComplet(m), onclick: () => supprimerMembre(m) }, '🗑')] : '') : null);
+              h('button', { class: 'uas-btn s', type: 'button', title: 'Attestation de fonction (signée, QR)', 'aria-label': 'Attestation de ' + nomComplet(m), onclick: () => editerDocument('ATTESTATION', b, m) }, '\uE02F'), ' ',
+              h('button', { class: 'uas-btn s', type: 'button', title: 'Modifier', 'aria-label': 'Modifier ' + nomComplet(m), onclick: () => formMembre(b.niveau, b.entite, m) }, '\uE006'), ' ',
+              h('button', { class: 'uas-btn s d', type: 'button', title: 'Supprimer', 'aria-label': 'Supprimer ' + nomComplet(m), onclick: () => supprimerMembre(m) }, '\uE005')] : '') : null);
         }))));
     }
 
@@ -544,8 +592,8 @@
         const membres = bs.flatMap(membresDe);
         const ecrivables = liste.filter(e => peut(niv, e.cle));
         box.append(h('div', { class: 'uas-actions' },
-          ecrivables.length ? h('button', { class: 'uas-btn p', type: 'button', onclick: () => choisirPuis(niv, liste, (c) => formMembre(niv, c)) }, '➕ Ajouter un membre') : null,
-          ecrivables.length && bs.length ? h('button', { class: 'uas-btn d', type: 'button', onclick: () => reinitialiserTous(niv, bs.filter(ecrireB)) }, '♻ Réinitialiser tous les bureaux') : null));
+          ecrivables.length ? h('button', { class: 'uas-btn p', type: 'button', onclick: () => choisirPuis(niv, liste, (c) => formMembre(niv, c)) }, '\uE001 Ajouter un membre') : null,
+          ecrivables.length && bs.length ? h('button', { class: 'uas-btn d', type: 'button', onclick: () => reinitialiserTous(niv, bs.filter(ecrireB)) }, '\uE058 Réinitialiser tous les bureaux') : null));
         box.append(h('p', { class: 'uas-sous' }, `${bs.length} bureau(x) constitué(s) sur ${liste.length} — ${membres.length} membre(s). Choisissez ${niv === 'ECOLE' ? 'une école' : 'une entité'} ci-dessus pour gérer son bureau.`));
         box.append(tableMembres(membres, true, ecrireB));
         return box;
@@ -566,18 +614,53 @@
           e.rup ? h('span', {}, h('b', {}, 'RUP : '), e.rup) : null),
         b && b.observations ? h('p', { class: 'uas-sous', style: 'margin:6px 0 0' }, b.observations) : null,
         h('div', { class: 'uas-actions' },
-          w ? h('button', { class: 'uas-btn p', type: 'button', onclick: () => formMembre(niv, cle) }, '➕ Ajouter un membre') : null,
-          w ? h('button', { class: 'uas-btn', type: 'button', onclick: () => formBureau(niv, cle) }, '✏️ Modifier le bureau') : null,
-          w && b ? h('button', { class: 'uas-btn', type: 'button', onclick: () => renouveler(b) }, '🔁 Renouvellement') : null,
-          w && b ? h('button', { class: 'uas-btn d', type: 'button', onclick: () => reinitialiser([b]) }, '♻ Réinitialiser') : null,
-          h('button', { class: 'uas-btn', type: 'button', onclick: () => imprimerBureau(b, e, niv) }, '🖨️ Imprimer / PDF'),
-          w && b ? h('button', { class: 'uas-btn p', type: 'button', 'data-uas': 'documents', onclick: () => choisirDocument(b) }, '📄 Documents signés (QR)') : null,
+          w ? h('button', { class: 'uas-btn p', type: 'button', onclick: () => formMembre(niv, cle) }, '\uE001 Ajouter un membre') : null,
+          w ? h('button', { class: 'uas-btn', type: 'button', onclick: () => formBureau(niv, cle) }, '\uE006 Modifier le bureau') : null,
+          w && b ? h('button', { class: 'uas-btn', type: 'button', onclick: () => renouveler(b) }, '\uE058 Renouvellement') : null,
+          w && b ? h('button', { class: 'uas-btn d', type: 'button', onclick: () => reinitialiser([b]) }, '\uE058 Réinitialiser') : null,
+          h('button', { class: 'uas-btn', type: 'button', onclick: () => imprimerBureau(b, e, niv) }, '\uE008 Imprimer / PDF'),
+          w && b ? h('button', { class: 'uas-btn p', type: 'button', 'data-uas': 'documents', onclick: () => choisirDocument(b) }, '\uE00D Documents signés (QR)') : null,
+          b ? h('button', { class: 'uas-btn', type: 'button', 'data-uas': 'logo', onclick: () => reglerLogo(b, w) }, '\uE047 Logo UASCEP') : null,
           !w ? h('span', { class: 'uas-sous', style: 'margin:0;align-self:center' }, 'Consultation seulement.') : null)));
       box.append(tableMembres(membres, false, w ? () => true : null));
       if (b) box.append(vieBureau(b, w));
       return box;
     }
 
+    /** Logo UASCEP du bureau : texte du bas (pré-rempli depuis l'entité), texte du haut, couleurs, image importée ;
+        aperçu en direct, téléchargement SVG / PNG ; il figure en tête de tous les documents du bureau. */
+    async function reglerLogo(b, w) {
+      const g = Object.assign({ haut: 'UASCEP', definition: DEFINITION, bas: texteLogo(b.niveau, b.entiteLib) }, LOGO_COULEURS, b.logo || {});
+      const iDef = h('input', { type: 'text', value: g.definition, 'aria-label': 'Définition du sigle', 'data-uas': 'logo-definition', 'data-geo': 'aucun' }), iHaut = h('input', { type: 'text', value: g.haut, 'aria-label': 'Texte du haut', 'data-geo': 'aucun' }), iBas = h('input', { type: 'text', value: g.bas, 'aria-label': 'Texte du bas', 'data-uas': 'logo-bas', 'data-geo': 'aucun' });
+      const coul = ['c1', 'c2', 'c3'].map(k => h('input', { type: 'color', value: g[k], 'aria-label': { c1: 'Couleur du fond', c2: 'Couleur des filets et du texte du bas', c3: 'Couleur de la piste' }[k] }));
+      const ap = h('div', { class: 'uas-ap', 'data-uas': 'apercu-logo', style: 'min-height:200px' });
+      const lire = () => ({ haut: iHaut.value.trim() || 'UASCEP', definition: iDef.value.trim(), bas: iBas.value.trim(), c1: coul[0].value, c2: coul[1].value, c3: coul[2].value, image: g.image || '' });
+      const svgDe = (x) => logoSvg({ haut: x.haut, definition: x.definition, bas: x.bas, couleurs: x, taille: 400 });
+      const maj = () => { const x = lire(); ap.innerHTML = x.image ? '<img src="' + x.image + '" alt="Logo importé" style="max-height:200px">' : svgDe(x).replace('width="400" height="400"', 'width="200" height="200"'); };
+      [iHaut, iDef, iBas].concat(coul).forEach(i => i.addEventListener('input', maj));
+      const telecharger = async (png) => {
+        const x = lire(), nom = 'logo-uascep-' + norm(x.bas || b.entiteLib).replace(/\s+/g, '-').slice(0, 40);
+        if (!png && !x.image) { A.telecharger(nom + '.svg', new Blob([svgDe(x)], { type: 'image/svg+xml' })); return; }
+        const src = x.image || 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgDe(x));
+        const img = new Image(); await new Promise((ok, ko) => { img.onload = ok; img.onerror = ko; img.src = src; });
+        const c = document.createElement('canvas'); c.width = 800; c.height = 800; c.getContext('2d').drawImage(img, 0, 0, 800, 800);
+        const blob = await new Promise(r => c.toBlob(r, 'image/png')); A.telecharger(nom + '.png', blob);
+      };
+      maj();
+      const corps = h('div', {}, h('div', { class: 'uas-form' }, champ('Texte du bas (commune, zone, école…)', iBas, true), champ('Définition du sigle (sous « UASCEP », initiales en couleur)', iDef, true), champ('Texte du haut', iHaut),
+          champ('Fond', coul[0]), champ('Filets et texte du bas', coul[1]), champ('Piste', coul[2])),
+        h('p', { class: 'uas-aide' }, 'Aperçu (le logo figure en tête de tous les documents de ce bureau) :'), ap,
+        h('div', { class: 'uas-actions' },
+          h('button', { class: 'uas-btn s', type: 'button', 'data-uas': 'logo-svg', onclick: () => telecharger(false) }, '\uE009 SVG'),
+          h('button', { class: 'uas-btn s', type: 'button', 'data-uas': 'logo-png', onclick: () => telecharger(true) }, '\uE009 PNG'),
+          w ? h('button', { class: 'uas-btn s', type: 'button', onclick: async () => { const f = await choisirFichier('image/*'); if (!f) return; try { g.image = await lireImage(f, 800, 800); maj(); } catch (e) { toast && toast(e.message); } } }, '\uE013 Importer un logo personnalisé') : null,
+          w ? h('button', { class: 'uas-btn s d', type: 'button', 'data-uas': 'logo-reinit', onclick: () => { g.image = ''; iHaut.value = 'UASCEP'; iDef.value = DEFINITION; iBas.value = texteLogo(b.niveau, b.entiteLib); coul[0].value = LOGO_COULEURS.c1; coul[1].value = LOGO_COULEURS.c2; coul[2].value = LOGO_COULEURS.c3; maj(); } }, '↺ Réinitialiser') : null));
+      const r = await dialogue('Logo UASCEP — ' + b.entiteLib, corps, w ? [{ l: 'Fermer', v: null }, { l: '\uE007 Enregistrer le logo', p: true, action: () => lire() }] : [{ l: 'Fermer', v: null }]);
+      if (!r) return;
+      const def = r.haut === 'UASCEP' && r.definition === DEFINITION && r.bas === texteLogo(b.niveau, b.entiteLib) && r.c1 === LOGO_COULEURS.c1 && r.c2 === LOGO_COULEURS.c2 && r.c3 === LOGO_COULEURS.c3 && !r.image;
+      if (def) delete b.logo; else b.logo = r;
+      await sauver(); toast && toast('Logo enregistré.'); dessiner();
+    }
     function choisirPuis(niv, liste, suite) {
       const ok = liste.filter(e => peut(niv, e.cle));
       if (ok.length === 1) return suite(ok[0].cle);
@@ -634,7 +717,7 @@
           champ('Date de fin de mandat', f.dateFin, false, 'Calculée, modifiable'), champ("Date d'installation", f.dateInstallation),
           champ('Observations', f.observations, true), cs.el));
       dialogue(nouveau ? 'Ajouter un membre' : 'Modifier un membre', corps, [{ l: 'Annuler' }, {
-        l: '💾 Enregistrer', p: true, action: async () => {
+        l: '\uE007 Enregistrer', p: true, action: async () => {
           if (!f.nom.value.trim()) { f.nom.focus(); toast && toast('Le nom est obligatoire.'); return false; }
           const bu = assurerBureau(niv, cle);
           const v = { ordre: +f.ordre.value || '', nom: f.nom.value.trim().toUpperCase(), prenoms: f.prenoms.value.trim(), sexe: f.sexe.value,
@@ -662,7 +745,7 @@
       const vTitre = h('input', { value: vi.titre || '', placeholder: VISA_DEFAUT[niv] }), vNom = h('input', { value: vi.nom || '', placeholder: 'Nom et prénoms du signataire' });
       const vcs = blocCachetSignature('visa — ' + (VISA_DEFAUT[niv] || ''), vi, () => mentionsCachet({ niveau: niv, entiteLib: e.lib }, (vTitre.value || VISA_DEFAUT[niv] || '').replace(/^(le|la)\s+/i, ''), vNom.value), true);
       [vTitre, vNom].forEach(x => x.addEventListener('input', vcs.maj));
-      const visa = h('div', { class: 'uas-sc' }, h('h4', {}, "🏛️ Visa de l'autorité hiérarchique"),
+      const visa = h('div', { class: 'uas-sc' }, h('h4', {}, "\uE023 Visa de l'autorité hiérarchique"),
         h('p', { class: 'uas-aide', style: 'margin:0 0 8px' }, "Apposé sur les pièces du bureau. Laissé vide, l'application appose la signature et le cachet qu'elle connaît (directeur, CP, chef de circonscription…), sinon un emplacement à signer."),
         h('div', { class: 'uas-form', style: 'margin-bottom:8px' }, champ('Qualité du signataire', vTitre), champ('Nom du signataire', vNom)), vcs.el);
       let finManuelle = !!(b.dateFin && b.dateFin !== plusAns(b.dateElection, b.duree));
@@ -673,7 +756,7 @@
         champ("Date d'installation", f.dateInstallation), champ("Date de l'assemblée générale", f.agDate), champ("Lieu de l'assemblée générale", f.agLieu),
         champ('PV (référence)', f.pv), champ('Observations', f.observations, true),
         h('label', { class: 'large', style: 'flex-direction:row;align-items:center;gap:8px;font-weight:400' }, f.appliquer, 'Appliquer ces dates de mandat aux membres qui n’ont pas de date propre'), visa),
-      [{ l: 'Annuler' }, { l: '💾 Enregistrer', p: true, action: async () => {
+      [{ l: 'Annuler' }, { l: '\uE007 Enregistrer', p: true, action: async () => {
         const bu = assurerBureau(niv, cle);
         Object.assign(bu, { dateElection: f.dateElection.value, duree: +f.duree.value || DUREE_DEFAUT, dateFin: f.dateFin.value, dateInstallation: f.dateInstallation.value,
           agDate: f.agDate.value, agLieu: f.agLieu.value.trim(), pv: f.pv.value.trim(), observations: f.observations.value.trim(), maj: auj(),
@@ -686,7 +769,7 @@
 
     /* ---------- actions ---------- */
     async function supprimerMembre(m) {
-      if (!(await confirmer('Supprimer un membre', `Supprimer ${nomComplet(m)} du bureau ?`, '🗑 Supprimer'))) return;
+      if (!(await confirmer('Supprimer un membre', `Supprimer ${nomComplet(m)} du bureau ?`, '\uE005 Supprimer'))) return;
       etat.membres = etat.membres.filter(x => x.id !== m.id); await sauver(); toast && toast('Membre supprimé.'); dessiner();
     }
     async function reinitialiser(bs) {
@@ -695,7 +778,7 @@
       const ok = await dialogue('Réinitialiser ' + (bs.length > 1 ? bs.length + ' bureaux' : 'le bureau'), h('div', {},
         h('p', {}, bs.length > 1 ? `Les ${bs.length} bureaux seront vidés pour un nouveau mandat.` : `Le bureau « ${bs[0].entiteLib} » sera vidé pour un nouveau mandat.`),
         h('label', { style: 'display:flex;gap:8px;align-items:center' }, archiver, 'Garder l’ancien bureau dans « Anciens bureaux » (recommandé)')),
-      [{ l: 'Annuler', v: false }, { l: '♻ Réinitialiser', d: true, v: true }]);
+      [{ l: 'Annuler', v: false }, { l: '\uE058 Réinitialiser', d: true, v: true }]);
       if (!ok) return;
       const ids = new Set(bs.map(b => b.id));
       if (archiver.checked) etat.bureaux.forEach(b => { if (ids.has(b.id)) { b.statut = 'archive'; b.archiveLe = auj(); } });
@@ -707,7 +790,7 @@
       const d = h('input', { type: 'date', value: auj() }), du = h('input', { type: 'number', min: '0.5', step: '0.5', value: b.duree || DUREE_DEFAUT });
       const ok = await dialogue('Renouvellement du bureau', h('div', { class: 'uas-form' },
         h('p', { class: 'uas-sous large', style: 'grid-column:1/-1' }, "L'ancien bureau passe dans « Anciens bureaux » ; ses membres sont recopiés dans le nouveau, que vous pouvez ensuite modifier."),
-        champ("Date d'élection du nouveau bureau", d), champ('Durée du mandat (ans)', du)), [{ l: 'Annuler', v: false }, { l: '🔁 Renouveler', p: true, v: true }]);
+        champ("Date d'élection du nouveau bureau", d), champ('Durée du mandat (ans)', du)), [{ l: 'Annuler', v: false }, { l: '\uE058 Renouveler', p: true, v: true }]);
       if (!ok) return;
       const nb = Object.assign({}, b, { id: uid(), dateElection: d.value, duree: +du.value || DUREE_DEFAUT, dateFin: plusAns(d.value, du.value), dateInstallation: '', agDate: '', agLieu: '', pv: '', statut: 'actif', creeLe: auj(), archiveLe: undefined });
       const anciens = membresDe(b);
@@ -749,12 +832,12 @@
         h('tbody', {}, bs.map(b => h('tr', {}, h('td', {}, LIB_NIVEAU[b.niveau]), h('td', {}, b.entiteLib), h('td', {}, fr(b.dateElection) || '—'), h('td', {}, fr(b.dateFin) || '—'),
           h('td', {}, fr(b.archiveLe) || '—'), h('td', { class: 'c' }, membresDe(b).length),
           h('td', { style: 'white-space:nowrap' },
-            h('button', { class: 'uas-btn s', type: 'button', onclick: () => dialogue('Ancien bureau — ' + b.entiteLib, tableMembres(membresDe(b), false, null)) }, '👁 Voir'), ' ',
-            peut(b.niveau, b.entite) && !bureauActif(b.niveau, b.entite) ? h('button', { class: 'uas-btn s', type: 'button', onclick: async () => { b.statut = 'actif'; delete b.archiveLe; await sauver(); dessiner(); } }, '↩ Restaurer') : null, ' ',
+            h('button', { class: 'uas-btn s', type: 'button', onclick: () => dialogue('Ancien bureau — ' + b.entiteLib, tableMembres(membresDe(b), false, null)) }, '\uE043 Voir'), ' ',
+            peut(b.niveau, b.entite) && !bureauActif(b.niveau, b.entite) ? h('button', { class: 'uas-btn s', type: 'button', onclick: async () => { b.statut = 'actif'; delete b.archiveLe; await sauver(); dessiner(); } }, '\uE037 Restaurer') : null, ' ',
             peut(b.niveau, b.entite) ? h('button', { class: 'uas-btn s d', type: 'button', onclick: async () => {
-              if (!(await confirmer('Supprimer un ancien bureau', `Supprimer définitivement l'ancien bureau « ${b.entiteLib} » et ses ${membresDe(b).length} membre(s) ?`, '🗑 Supprimer'))) return;
+              if (!(await confirmer('Supprimer un ancien bureau', `Supprimer définitivement l'ancien bureau « ${b.entiteLib} » et ses ${membresDe(b).length} membre(s) ?`, '\uE005 Supprimer'))) return;
               etat.membres = etat.membres.filter(m => m.bureauId !== b.id); etat.bureaux = etat.bureaux.filter(x => x.id !== b.id); COLLECTIONS.forEach(c => { etat[c] = etat[c].filter(r => r.bureauId !== b.id); }); await sauver(); dessiner();
-            } }, '🗑') : null)))))));
+            } }, '\uE005') : null)))))));
       return box;
     }
 
@@ -777,7 +860,7 @@
       return '<div class="uas-sig"><div>' + esc(sig[0]) + '</div><div>' + (ctx.lieu ? esc(ctx.lieu) + ', le ' + fr(auj()) + '<br>' : '') + esc(sig[1]) + '</div></div>';
     }
     function imprimerBureau(b, e, niv) {
-      const corps = CSS_IMP + (A.entete ? A.entete() : '') + `<h2 class="uas-it">Bureau UASCEP — ${esc(LIB_NIVEAU[niv])} : ${esc(e.lib)}</h2>`
+      const corps = CSS_IMP + CSS_DOC + (A.entete ? A.entete() : '') + bandeLogo(b || { niveau: niv, entiteLib: e.lib }) + `<h2 class="uas-it">Bureau UASCEP — ${esc(LIB_NIVEAU[niv])} : ${esc(e.lib)}</h2>`
         + `<p class="uas-ip">Élu le ${esc(fr(b && b.dateElection) || '…………')} — mandat de ${esc(b && b.duree || DUREE_DEFAUT)} an(s), jusqu'au ${esc(fr(b && b.dateFin) || '…………')}`
         + (b && b.agLieu ? ' — assemblée générale : ' + esc([fr(b.agDate), b.agLieu].filter(Boolean).join(', ')) : '') + '</p>'
         + tableHtml(membresDe(b), false) + signatures(niv);
@@ -799,7 +882,8 @@
       + '.uas-sb-c{position:absolute;left:50%;top:50%;transform:translate(-72%,-50%);opacity:.88}.uas-sb-c svg{height:100px;width:auto;max-width:210px}.uas-sb-c .cachets-duo{display:flex;gap:4px;align-items:center}.uas-sb-c .cachets-duo svg{height:84px}.uas-sb-c svg.rond{width:104px;height:104px}.uas-sb-c svg.rect{width:190px;height:auto}.uas-sb-c img{max-width:150px;max-height:104px}'
       + '.uas-sb-s{position:relative;max-height:74px;max-width:170px;mix-blend-mode:multiply}.uas-sb-n{font-weight:700;text-transform:none}.uas-sb-v{border-top:1px dashed #999;margin:0 18px}'
       + '.uas-qrb{display:flex;gap:12px;align-items:center;margin-top:18px;padding-top:8px;border-top:1px solid #999;font:8.5pt Arial,sans-serif;page-break-inside:avoid;break-inside:avoid}'
-      + '.uas-qrb .uas-qri svg,.uas-qrb .uas-qri img{width:96px;height:96px;display:block}.uas-qrb b{font-family:monospace;font-size:9.5pt}</style>';
+      + '.uas-qrb .uas-qri svg,.uas-qrb .uas-qri img{width:96px;height:96px;display:block}.uas-qrb b{font-family:monospace;font-size:9.5pt}'
+      + '.uas-bl{display:flex;gap:12px;align-items:center;margin:6px 0 4px;padding:4px 0;border-bottom:1px solid #1F4E79;font:10pt Arial,sans-serif}.uas-bl-i svg,.uas-bl-i img{width:78px;height:78px;display:block}.uas-bl-1{font-size:9pt;color:#333}.uas-bl-2{font-weight:700;color:#1F4E79;text-transform:uppercase}.uas-garde .uas-gl svg,.uas-garde .uas-gl img{width:170px;height:170px}</style>';
     const parRole = (b, r) => membresDe(b).find(m => roleDe(m.fonction) === r);
     const genre = (m, mas, fem) => (m && m.sexe === 'F' ? fem : mas);
     function blocSig(lib, nom, sig, cachet) {
@@ -809,7 +893,9 @@
     const sigMembre = (m, b, lib) => m ? blocSig(lib, nomComplet(m), m.signature, cachetMembre(m, b)) : blocSig(lib, '', '', '');
     async function sigVisa(niv, cle, b) { const v = await visaDe(niv, cle, b); return { html: blocSig('Vu — ' + v.titre, v.nom, v.signature, v.cachet), v }; }
     const faitA = () => '<p style="text-align:right;margin:14px 0 0">Fait à ' + esc(ctx.lieu || '……………………') + ', le ' + esc(fr(auj())) + '</p>';
-    const enTete = () => (A.entete ? A.entete() : '');
+    /** En-tête officiel de l'application, puis bandeau du logo UASCEP du bureau */
+    const bandeLogo = (b) => b ? '<div class="uas-bl"><div class="uas-bl-i">' + logoBureau(b, 78) + '</div><div><div class="uas-bl-1">' + esc((b.logo && b.logo.definition) || DEFINITION) + '</div><div class="uas-bl-2">UASCEP — ' + esc(LIB_NIVEAU[b.niveau] || '') + ' : ' + esc(b.entiteLib || '') + '</div></div></div>' : '';
+    const enTete = (b) => (A.entete ? A.entete() : '') + bandeLogo(b);
     function tableMembresDoc(b, avecContact) {
       const ms = membresDe(b);
       return '<table class="uas-imp"><thead><tr><th class="n">N°</th><th>Nom et prénoms</th><th style="width:22%">Fonction</th><th>Qualité</th><th>École / structure</th>' + (avecContact ? '<th>Contact</th>' : '') + '<th style="width:12%">Signature</th></tr></thead><tbody>'
@@ -853,7 +939,7 @@
         const ms = membresDe(b);
         corps = '<p class="uas-ip">' + esc(lib) + '</p>'
           + '<p class="uas-tx">L’an ' + esc((iso(b.agDate || b.dateElection) || auj()).slice(0, 4)) + ', le ' + esc(fr(b.agDate || b.dateElection) || '…………') + ', s’est tenue' + (b.agLieu ? ' à ' + esc(b.agLieu) : '')
-          + ' l’assemblée générale élective de l’Union des associations scolaires et culturelles des écoles primaires (UASCEP) — ' + esc(lib) + '.</p>'
+          + ' l’assemblée générale élective de l’Union des associations sportives et culturelles des écoles primaires (UASCEP) — ' + esc(lib) + '.</p>'
           + '<p class="uas-tx">Après le compte rendu de gestion du bureau sortant et l’appel des candidatures, il a été procédé à l’élection des membres du nouveau bureau, '
           + esc(mandat) + '. Le bureau élu, composé de ' + ms.length + ' membre(s), se présente comme suit :</p>' + tableMembresDoc(b, false)
           + '<p class="uas-tx">' + (b.dateInstallation ? 'Le bureau a été officiellement installé dans ses fonctions le ' + esc(fr(b.dateInstallation)) + '.' : 'Le bureau sera installé dans ses fonctions à une date fixée par l’autorité hiérarchique.')
@@ -875,7 +961,7 @@
         signataire = sign ? nomComplet(sign) + ' (' + fs + ')' : visa.v.nom;
       }
       const qr = await sceau(type, h2, [b], m, signataire || (visa.v.nom ? visa.v.nom + ' (' + visa.v.titre + ')' : ''));
-      return CSS_IMP + CSS_DOC + '<div class="uas-doc">' + enTete() + '<h2 class="uas-it">' + esc(h2) + '</h2>' + corps + faitA() + '<div class="uas-sigs">' + sigs.join('') + '</div>' + qr + '</div>';
+      return CSS_IMP + CSS_DOC + '<div class="uas-doc">' + enTete(b) + '<h2 class="uas-it">' + esc(h2) + '</h2>' + corps + faitA() + '<div class="uas-sigs">' + sigs.join('') + '</div>' + qr + '</div>';
     }
     function editerDocument(type, b, m) {
       if (!b) { toast && toast('Constituez d’abord le bureau.'); return; }
@@ -890,7 +976,7 @@
       const choix = await dialogue('Documents signés — ' + b.entiteLib, h('div', { class: 'uas-docs' },
         h('p', { class: 'uas-aide', style: 'margin:0' }, 'Chaque document porte les signatures et cachets du président et du secrétaire général (et du trésorier), le visa de l’autorité hiérarchique et un code QR de vérification.'),
         ms.length ? h('div', { class: 'uas-form' }, champ('Membre (pour l’attestation de fonction)', sel, true)) : h('p', { class: 'uas-vide' }, 'Aucun membre : ajoutez d’abord les membres du bureau.')),
-      [{ l: 'Fermer', v: null }, bouton('COMPOSITION', '📄'), bouton('PV', '📝')].concat(ms.length ? [bouton('ATTESTATION', '📜')] : []));
+      [{ l: 'Fermer', v: null }, bouton('COMPOSITION', '\uE00D'), bouton('PV', '\uE00E')].concat(ms.length ? [bouton('ATTESTATION', '\uE02F')] : []));
       if (!choix) return;
       editerDocument(choix, b, choix === 'ATTESTATION' ? ms.find(m => m.id === sel.value) : null);
     }
@@ -909,7 +995,7 @@
         const au = ctx.autorite || (() => { const n = ['CS', 'ZONE', 'DDEMP', 'UP', 'ECOLE'].find(x => niveaux.some(y => y[0] === x) && entites(x).length === 1); return n ? { niveau: n, cle: entites(n)[0].cle } : null; })();
         const visa = au ? await sigVisa(au.niveau, au.cle, bureauActif(au.niveau, au.cle)) : { html: blocSig('Le Responsable', '', '', ''), v: { nom: '', titre: 'Le Responsable' } };
         const qr = await sceau('LISTE', titre, bs, null, visa.v.nom ? visa.v.nom + ' (' + visa.v.titre + ')' : visa.v.titre);
-        return CSS_IMP + CSS_DOC + '<div class="uas-doc">' + enTete() + '<h2 class="uas-it">' + esc(titre) + '</h2><p class="uas-ip">' + bs.length + ' bureau(x) — ' + nbM + ' membre(s) — situation au ' + esc(fr(auj())) + '</p>'
+        return CSS_IMP + CSS_DOC + '<div class="uas-doc">' + enTete(au ? { niveau: au.niveau, entiteLib: (entite(au.niveau, au.cle) || {}).lib || '', logo: (bureauActif(au.niveau, au.cle) || {}).logo } : null) + '<h2 class="uas-it">' + esc(titre) + '</h2><p class="uas-ip">' + bs.length + ' bureau(x) — ' + nbM + ' membre(s) — situation au ' + esc(fr(auj())) + '</p>'
           + tab + faitA() + '<div class="uas-sigs"><div class="uas-sb"></div>' + visa.html + '</div>' + qr + '</div>';
       });
     }
@@ -929,33 +1015,33 @@
     /* Rubriques de chaque registre : k clé, l libellé, t type (text, date, number, select, liste, textarea, membres, ecole, montant), o options,
        total : totalisé, calc : colonne calculée, court : masqué dans le tableau de l'écran */
     const SPEC = {
-      activites: { titre: 'Calendrier, compétitions et résultats', onglet: '🏆 Activités', doc: 'JOURNAL', tri: 'date', champs: [
+      activites: { titre: 'Calendrier, compétitions et résultats', onglet: '\uE04C Activités', doc: 'JOURNAL', tri: 'date', champs: [
         { k: 'date', l: 'Date', t: 'date', req: 1 }, { k: 'discipline', l: 'Discipline', t: 'liste', o: DISCIPLINES, req: 1 }, { k: 'categorie', l: 'Catégorie', t: 'liste', o: CATEGORIES },
         { k: 'genre', l: 'Genre', t: 'select', o: ['Garçons', 'Filles', 'Mixte'] }, { k: 'phase', l: 'Phase', t: 'liste', o: ['Éliminatoires', 'Poules', 'Quarts de finale', 'Demi-finales', 'Finale', 'Rencontre amicale', 'Festival / démonstration', 'Compétition culturelle'] },
         { k: 'lieu', l: 'Lieu / site' }, { k: 'ecoles', l: 'Écoles', t: 'number', total: 1 }, { k: 'equipes', l: 'Équipes', t: 'number', total: 1 },
         { k: 'pg', l: 'Participants G', t: 'number', total: 1 }, { k: 'pf', l: 'Participants F', t: 'number', total: 1 }, { k: 'pt', l: 'Total', calc: r => nb(r.pg) + nb(r.pf), total: 1 },
         { k: 'encadreurs', l: 'Encadreurs', t: 'number', total: 1 }, { k: 'resultats', l: 'Résultats / classement', t: 'textarea' }, { k: 'qualifies', l: 'Qualifiés au niveau supérieur', t: 'textarea' },
         { k: 'observations', l: 'Observations', t: 'textarea', court: 1 }] },
-      engagements: { titre: 'Fiches d’engagement des équipes', onglet: '📝 Engagements', doc: 'ENGAGEMENTS', tri: 'ecole', champs: [
+      engagements: { titre: 'Fiches d’engagement des équipes', onglet: '\uE00E Engagements', doc: 'ENGAGEMENTS', tri: 'ecole', champs: [
         { k: 'ecole', l: 'École', t: 'ecole', req: 1 }, { k: 'discipline', l: 'Discipline', t: 'liste', o: DISCIPLINES, req: 1 }, { k: 'categorie', l: 'Catégorie', t: 'liste', o: CATEGORIES },
         { k: 'genre', l: 'Genre', t: 'select', o: ['Garçons', 'Filles', 'Mixte'] }, { k: 'equipe', l: 'Nom de l’équipe' }, { k: 'jg', l: 'Joueurs G', t: 'number', total: 1 }, { k: 'jf', l: 'Joueuses F', t: 'number', total: 1 },
         { k: 'jt', l: 'Total', calc: r => nb(r.jg) + nb(r.jf), total: 1 }, { k: 'encadreur', l: 'Encadreur' }, { k: 'contact', l: 'Contact' },
         { k: 'droit', l: 'Droit d’engagement (F)', t: 'montant', total: 1 }, { k: 'paye', l: 'Payé', t: 'select', o: ['Oui', 'Non'] }, { k: 'date', l: 'Date d’engagement', t: 'date', court: 1 }] },
-      reunions: { titre: 'Réunions et comptes rendus (rapporteur)', onglet: '🗒️ Réunions', doc: 'CR', tri: 'date', champs: [
+      reunions: { titre: 'Réunions et comptes rendus (rapporteur)', onglet: '\uE010 Réunions', doc: 'CR', tri: 'date', champs: [
         { k: 'date', l: 'Date', t: 'date', req: 1 }, { k: 'heure', l: 'Heure', court: 1 }, { k: 'type', l: 'Nature', t: 'liste', o: ['Réunion ordinaire du bureau', 'Réunion extraordinaire', 'Assemblée générale', 'Réunion technique (commission)', 'Réunion avec les directeurs', 'Réunion de bilan'] },
         { k: 'lieu', l: 'Lieu' }, { k: 'ordre', l: 'Ordre du jour', t: 'textarea' }, { k: 'presents', l: 'Membres présents', t: 'membres' }, { k: 'invites', l: 'Invités / autres participants', t: 'textarea', court: 1 },
         { k: 'deroulement', l: 'Déroulement / échanges', t: 'textarea', court: 1 }, { k: 'decisions', l: 'Décisions', t: 'textarea' }, { k: 'recommandations', l: 'Recommandations', t: 'textarea', court: 1 },
         { k: 'prochaine', l: 'Prochaine réunion', t: 'date', court: 1 }, { k: 'redacteur', l: 'Rapporteur (rédacteur)', t: 'membre', court: 1 }] },
-      caisse: { titre: 'Journal de caisse (trésorier)', onglet: '💰 Caisse', doc: 'FINANCES', tri: 'date', champs: [
+      caisse: { titre: 'Journal de caisse (trésorier)', onglet: '\uE04E Caisse', doc: 'FINANCES', tri: 'date', champs: [
         { k: 'date', l: 'Date', t: 'date', req: 1 }, { k: 'nature', l: 'Nature', t: 'select', o: ['Recette', 'Dépense'], req: 1 }, { k: 'categorie', l: 'Catégorie', t: 'categorie' },
         { k: 'libelle', l: 'Libellé', req: 1 }, { k: 'ecole', l: 'École (cotisation)', t: 'ecole', court: 1 }, { k: 'piece', l: 'Pièce justificative n°' },
         { k: 'recette', l: 'Recette (F)', calc: r => r.nature === 'Recette' ? nb(r.montant) : '', total: 1, f: 1 }, { k: 'depense', l: 'Dépense (F)', calc: r => r.nature === 'Dépense' ? nb(r.montant) : '', total: 1, f: 1 },
         { k: 'solde', l: 'Solde (F)', calc: r => r._solde, f: 1 }, { k: 'montant', l: 'Montant (F)', t: 'montant', req: 1, cache: 1 }] },
-      budget: { titre: 'Budget prévisionnel et réalisé', onglet: '📈 Budget', doc: 'FINANCES', tri: 'nature', champs: [
+      budget: { titre: 'Budget prévisionnel et réalisé', onglet: '\uE016 Budget', doc: 'FINANCES', tri: 'nature', champs: [
         { k: 'nature', l: 'Nature', t: 'select', o: ['Recette', 'Dépense'], req: 1 }, { k: 'categorie', l: 'Catégorie', t: 'categorie', req: 1 }, { k: 'libelle', l: 'Précision' },
         { k: 'prevu', l: 'Prévu (F)', t: 'montant', total: 1 }, { k: 'realise', l: 'Réalisé (F)', calc: r => r._realise, total: 1, f: 1 }, { k: 'ecart', l: 'Écart (F)', calc: r => r._realise - nb(r.prevu), total: 1, f: 1 },
         { k: 'taux', l: 'Taux', calc: r => nb(r.prevu) ? Math.round(r._realise * 100 / nb(r.prevu)) + ' %' : '—' }] },
-      materiel: { titre: 'Inventaire du matériel sportif', onglet: '⚽ Matériel', doc: 'INVENTAIRE', tri: 'designation', champs: [
+      materiel: { titre: 'Inventaire du matériel sportif', onglet: '\uE078 Matériel', doc: 'INVENTAIRE', tri: 'designation', champs: [
         { k: 'designation', l: 'Désignation', req: 1 }, { k: 'discipline', l: 'Discipline', t: 'liste', o: DISCIPLINES }, { k: 'quantite', l: 'Quantité', t: 'number', total: 1 },
         { k: 'etat', l: 'État', t: 'select', o: ['Bon', 'Usagé', 'À réparer', 'Hors d’usage'] }, { k: 'origine', l: 'Origine', t: 'liste', o: ['Achat', 'Don', 'Dotation', 'Prêt'] },
         { k: 'date', l: 'Date d’acquisition', t: 'date' }, { k: 'valeur', l: 'Valeur (F)', t: 'montant', total: 1 }, { k: 'detenteur', l: 'Détenteur / lieu de garde' }, { k: 'observations', l: 'Observations', t: 'textarea', court: 1 }] }
@@ -1007,7 +1093,7 @@
       const majCat = () => { const dl = listes.find(x => x.getAttribute('data-k') === 'categorie'); if (dl && f.nature) dl.replaceChildren(...(CAT_FIN[f.nature.value] || []).map(x => h('option', { value: x }))); };
       if (f.nature) { f.nature.addEventListener('change', majCat); majCat(); }
       dialogue((rec ? 'Modifier — ' : 'Ajouter — ') + sp.titre, h('div', {}, h('p', { class: 'uas-sous' }, b.entiteLib + ' — saison ' + saison), listes, corps), [{ l: 'Annuler' }, {
-        l: '💾 Enregistrer', p: true, action: async () => {
+        l: '\uE007 Enregistrer', p: true, action: async () => {
           const v = {};
           for (const ch of champs) {
             const el = f[ch.k];
@@ -1021,11 +1107,11 @@
         } }]);
     }
     async function supprimerEnr(c, r) {
-      if (!(await confirmer('Supprimer', 'Supprimer cette ligne ?', '🗑 Supprimer'))) return;
+      if (!(await confirmer('Supprimer', 'Supprimer cette ligne ?', '\uE005 Supprimer'))) return;
       etat[c] = etat[c].filter(x => x.id !== r.id); await sauver(); dessiner();
     }
     async function reinitialiserColl(c, b) {
-      if (!(await confirmer('Réinitialiser', `Vider « ${SPEC[c].titre} » du bureau ${b.entiteLib} pour la saison ${saison} ?`, '♻ Réinitialiser'))) return;
+      if (!(await confirmer('Réinitialiser', `Vider « ${SPEC[c].titre} » du bureau ${b.entiteLib} pour la saison ${saison} ?`, '\uE058 Réinitialiser'))) return;
       etat[c] = etat[c].filter(x => !(x.bureauId === b.id && x.saison === saison)); await sauver(); toast && toast('Registre réinitialisé.'); dessiner();
     }
     function feuilleDe(c, b) {
@@ -1044,9 +1130,9 @@
       if (!l.length) return h('p', { class: 'uas-vide' }, 'Rien d’enregistré pour la saison ' + saison + '.');
       return h('div', { class: 'uas-tw' }, h('table', { class: 'uas-t', 'data-uas-coll': c }, h('thead', {}, h('tr', {}, cols.map(ch => h('th', {}, ch.l)), h('th', {}, ''))),
         h('tbody', {}, l.map(r => h('tr', {}, cols.map(ch => h('td', { class: ch.t === 'number' || ch.total || ch.f ? 'c' : '' }, String(valeur(ch, r, b)))),
-          h('td', { style: 'white-space:nowrap' }, c === 'reunions' ? h('button', { class: 'uas-btn s', type: 'button', title: 'Compte rendu signé (QR)', 'aria-label': 'Compte rendu', onclick: () => editerCR(b, r._src || r) }, '📝') : null, ' ',
-            w ? [h('button', { class: 'uas-btn s', type: 'button', title: 'Modifier', 'aria-label': 'Modifier', onclick: () => formEnregistrement(c, b, r._src || r) }, '✏️'), ' ',
-              h('button', { class: 'uas-btn s d', type: 'button', title: 'Supprimer', 'aria-label': 'Supprimer', onclick: () => supprimerEnr(c, r) }, '🗑')] : null))),
+          h('td', { style: 'white-space:nowrap' }, c === 'reunions' ? h('button', { class: 'uas-btn s', type: 'button', title: 'Compte rendu signé (QR)', 'aria-label': 'Compte rendu', onclick: () => editerCR(b, r._src || r) }, '\uE00E') : null, ' ',
+            w ? [h('button', { class: 'uas-btn s', type: 'button', title: 'Modifier', 'aria-label': 'Modifier', onclick: () => formEnregistrement(c, b, r._src || r) }, '\uE006'), ' ',
+              h('button', { class: 'uas-btn s d', type: 'button', title: 'Supprimer', 'aria-label': 'Supprimer', onclick: () => supprimerEnr(c, r) }, '\uE005')] : null))),
           tv.some(x => x != null) ? h('tr', { class: 'tot' }, cols.map((ch, i) => h('td', { class: 'c' }, i === 0 ? 'Total' : tv[i] == null ? '' : ((ch.t === 'montant' || ch.f) ? fcfa(tv[i]) : String(tv[i])))), h('td', {})) : null)));
     }
     function resumeFinances(b) {
@@ -1055,7 +1141,7 @@
       return { R, D, S: R - D, ca };
     }
     function vieBureau(b, w) {
-      const onglets = Object.keys(SPEC).map(c => [c, SPEC[c].onglet]).concat([['rapport', '📘 Rapport de saison']]);
+      const onglets = Object.keys(SPEC).map(c => [c, SPEC[c].onglet]).concat([['rapport', '\uE030 Rapport de saison']]);
       let so = memo.get('vie') || 'activites'; if (!onglets.some(o => o[0] === so)) so = 'activites';
       const saisons = [...new Set([saisonCourante(), saison].concat(COLLECTIONS.flatMap(c => etat[c].filter(r => r.bureauId === b.id).map(r => r.saison))).filter(Boolean))].sort().reverse();
       const sel = h('select', { 'aria-label': 'Saison', onchange: (e) => { saison = e.target.value; memo.set('saison', saison); dessiner(); } }, saisons.map(x => h('option', { value: x, selected: x === saison }, x)));
@@ -1073,11 +1159,11 @@
       const resume = so === 'caisse' || so === 'budget' ? (() => { const x = resumeFinances(b); return h('div', { class: 'uas-info', style: 'margin:4px 0 8px' }, h('span', {}, h('b', {}, 'Recettes : '), fcfa(x.R)), h('span', {}, h('b', {}, 'Dépenses : '), fcfa(x.D)), h('span', {}, h('b', {}, 'Solde : '), fcfa(x.S))); })() : null;
       carte.append(...[h('p', { class: 'uas-sous', style: 'margin:4px 0' }, sp.titre), resume,
         h('div', { class: 'uas-actions' },
-          w ? h('button', { class: 'uas-btn p', type: 'button', 'data-uas': 'ajouter-' + so, onclick: () => formEnregistrement(so, b) }, '➕ Ajouter') : null,
-          w ? h('button', { class: 'uas-btn d', type: 'button', onclick: () => reinitialiserColl(so, b) }, '♻ Réinitialiser') : null,
-          h('button', { class: 'uas-btn', type: 'button', onclick: () => excelColl(so === 'budget' || so === 'caisse' ? ['caisse', 'budget'] : [so], b, so) }, '📊 Excel'),
-          w && sp.doc !== 'CR' ? h('button', { class: 'uas-btn', type: 'button', 'data-uas': 'pdf-' + so, onclick: () => editerRegistre(sp.doc, b) }, '🖨️ PDF signé (QR)') : null,
-          so === 'reunions' ? h('span', { class: 'uas-aide', style: 'align-self:center' }, '📝 sur une ligne : compte rendu signé (rapporteur, président) avec QR.') : null),
+          w ? h('button', { class: 'uas-btn p', type: 'button', 'data-uas': 'ajouter-' + so, onclick: () => formEnregistrement(so, b) }, '\uE001 Ajouter') : null,
+          w ? h('button', { class: 'uas-btn d', type: 'button', onclick: () => reinitialiserColl(so, b) }, '\uE058 Réinitialiser') : null,
+          h('button', { class: 'uas-btn', type: 'button', onclick: () => excelColl(so === 'budget' || so === 'caisse' ? ['caisse', 'budget'] : [so], b, so) }, '\uE015 Excel'),
+          w && sp.doc !== 'CR' ? h('button', { class: 'uas-btn', type: 'button', 'data-uas': 'pdf-' + so, onclick: () => editerRegistre(sp.doc, b) }, '\uE008 PDF signé (QR)') : null,
+          so === 'reunions' ? h('span', { class: 'uas-aide', style: 'align-self:center' }, '\uE00E sur une ligne : compte rendu signé (rapporteur, président) avec QR.') : null),
         tableColl(so, b, w)].filter(Boolean));
       if (so === 'caisse') carte.append(cotisationsEcoles(b));
       return carte;
@@ -1139,10 +1225,10 @@
           h('span', {}, h('b', {}, 'Élèves : '), st.T + ' (G ' + st.G + ' / F ' + st.F + ')'), h('span', {}, h('b', {}, 'Écoles : '), st.ecolesPart + (st.ecolesTot ? ' / ' + st.ecolesTot : '')),
           h('span', {}, h('b', {}, 'Solde : '), fcfa(f.S)), h('span', {}, h('b', {}, 'Rapport : '), r ? 'rédigé' + (r.maj ? ' (mis à jour le ' + fr(r.maj) + ')' : '') : 'à rédiger')),
         h('div', { class: 'uas-actions' },
-          w ? h('button', { class: 'uas-btn p', type: 'button', 'data-uas': 'rediger-rapport', onclick: () => formRapport(b) }, r ? '✏️ Modifier le rapport' : '➕ Rédiger le rapport') : null,
-          w && r ? h('button', { class: 'uas-btn d', type: 'button', onclick: async () => { if (!(await confirmer('Réinitialiser le rapport', 'Effacer le rapport de la saison ' + saison + ' ?', '♻ Réinitialiser'))) return; etat.rapports = etat.rapports.filter(x => x !== r); await sauver(); dessiner(); } }, '♻ Réinitialiser') : null,
-          h('button', { class: 'uas-btn', type: 'button', onclick: () => excelColl(['activites', 'engagements', 'reunions', 'caisse', 'budget', 'materiel'], b, 'rapport-saison') }, '📊 Excel (tableaux)'),
-          w ? h('button', { class: 'uas-btn p', type: 'button', 'data-uas': 'pdf-rapport', onclick: () => editerRapport(b) }, '🖨️ Rapport PDF signé (QR)') : null));
+          w ? h('button', { class: 'uas-btn p', type: 'button', 'data-uas': 'rediger-rapport', onclick: () => formRapport(b) }, r ? '\uE006 Modifier le rapport' : '\uE001 Rédiger le rapport') : null,
+          w && r ? h('button', { class: 'uas-btn d', type: 'button', onclick: async () => { if (!(await confirmer('Réinitialiser le rapport', 'Effacer le rapport de la saison ' + saison + ' ?', '\uE058 Réinitialiser'))) return; etat.rapports = etat.rapports.filter(x => x !== r); await sauver(); dessiner(); } }, '\uE058 Réinitialiser') : null,
+          h('button', { class: 'uas-btn', type: 'button', onclick: () => excelColl(['activites', 'engagements', 'reunions', 'caisse', 'budget', 'materiel'], b, 'rapport-saison') }, '\uE015 Excel (tableaux)'),
+          w ? h('button', { class: 'uas-btn p', type: 'button', 'data-uas': 'pdf-rapport', onclick: () => editerRapport(b) }, '\uE008 Rapport PDF signé (QR)') : null));
       if (r) box.append(h('div', { class: 'uas-rapport', style: 'max-height:320px' }, SECTIONS_RAPPORT.map(([k, l]) => r[k] ? h('div', { style: 'margin-bottom:6px' }, h('b', {}, l + ' : '), String(r[k]).slice(0, 260) + (String(r[k]).length > 260 ? '…' : '')) : null)));
       return box;
     }
@@ -1153,11 +1239,11 @@
       const corps = h('div', { class: 'uas-form' }, champ('Rapporteur (rédacteur)', red), champ('Date du rapport', date), champ('Lieu', lieu));
       SECTIONS_RAPPORT.forEach(([k, l]) => {
         f[k] = h('textarea', { rows: k === 'annexes' ? '2' : '4', 'data-k': k }, r[k] != null ? r[k] : brouillon(k, b));
-        const prop = h('button', { class: 'uas-btn s', type: 'button', onclick: () => { f[k].value = brouillon(k, b); } }, '✨ Proposer un texte');
+        const prop = h('button', { class: 'uas-btn s', type: 'button', onclick: () => { f[k].value = brouillon(k, b); } }, '\uE03D Proposer un texte');
         corps.append(h('label', { class: 'large' }, h('span', { style: 'display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap' }, l, prop), f[k]));
       });
       corps.append(h('p', { class: 'uas-aide large', style: 'grid-column:1/-1' }, 'Les tableaux (bureau, activités, participation, résultats, bilan financier, engagements, matériel, réunions) sont repris d’eux-mêmes des registres de la saison.'));
-      dialogue('Rapport de fin de saison — ' + b.entiteLib + ' — ' + saison, corps, [{ l: 'Annuler' }, { l: '💾 Enregistrer', p: true, action: async () => {
+      dialogue('Rapport de fin de saison — ' + b.entiteLib + ' — ' + saison, corps, [{ l: 'Annuler' }, { l: '\uE007 Enregistrer', p: true, action: async () => {
         const v = { rapporteur: red.value, date: date.value, lieu: lieu.value.trim() }; SECTIONS_RAPPORT.forEach(([k]) => { v[k] = f[k].value.trim(); });
         const ex = rapportDe(b);
         if (ex) Object.assign(ex, v, { maj: auj() }); else etat.rapports.push(Object.assign({ id: uid(), bureauId: b.id, saison, cree: new Date().toISOString(), maj: auj() }, v));
@@ -1209,7 +1295,7 @@
     function editerRegistre(type, b) {
       const titre = TYPES_DOC[type] + ' — ' + b.entiteLib + ' — saison ' + saison, lib = LIB_NIVEAU[b.niveau] + ' : ' + b.entiteLib;
       lancer(titre, async () => {
-        const entete = enTete() + '<h2 class="uas-it">' + esc(TYPES_DOC[type]) + '</h2><p class="uas-ip">Bureau UASCEP — ' + esc(lib) + ' — saison ' + esc(saison) + '</p>';
+        const entete = enTete(b) + '<h2 class="uas-it">' + esc(TYPES_DOC[type]) + '</h2><p class="uas-ip">Bureau UASCEP — ' + esc(lib) + ' — saison ' + esc(saison) + '</p>';
         let corps = '', sigs = [], signataire = '';
         const P = parRole(b, 'P');
         if (type === 'JOURNAL') {
@@ -1238,7 +1324,7 @@
         const lib = LIB_NIVEAU[b.niveau] + ' : ' + b.entiteLib, pres = new Set(r.presents || []);
         const ms = membresDe(b), presents = ms.filter(m => pres.has(m.id)), absents = ms.filter(m => !pres.has(m.id));
         const liste = (l) => l.length ? l.map(m => esc(nomComplet(m)) + (m.fonction ? ' (' + esc(m.fonction) + ')' : '')).join(' ; ') : 'néant';
-        const corps = enTete() + '<h2 class="uas-it">' + esc(TYPES_DOC.CR) + '</h2><p class="uas-ip">' + esc(r.type || 'Réunion du bureau') + ' — Bureau UASCEP — ' + esc(lib) + '</p>'
+        const corps = enTete(b) + '<h2 class="uas-it">' + esc(TYPES_DOC.CR) + '</h2><p class="uas-ip">' + esc(r.type || 'Réunion du bureau') + ' — Bureau UASCEP — ' + esc(lib) + '</p>'
           + '<p class="uas-tx">L’an ' + esc((iso(r.date) || auj()).slice(0, 4)) + ', le ' + esc(fr(r.date)) + (r.heure ? ' à ' + esc(r.heure) : '') + (r.lieu ? ', à ' + esc(r.lieu) : '') + ', s’est tenue ' + esc((r.type || 'une réunion du bureau').toLowerCase().replace(/^réunion/, 'la réunion'))
           + ' du bureau de l’UASCEP — ' + esc(lib) + ', sous la présidence de ' + esc(parRole(b, 'P') ? nomComplet(parRole(b, 'P')) : '……………') + '.</p>'
           + '<p class="uas-tx"><b>Présents (' + presents.length + ') :</b> ' + liste(presents) + '<br><b>Absents (' + absents.length + ') :</b> ' + liste(absents) + (r.invites ? '<br><b>Invités :</b> ' + esc(r.invites) : '') + '</p>'
@@ -1255,7 +1341,7 @@
       lancer(TYPES_DOC.RAPPORT + ' — ' + b.entiteLib + ' — ' + saison, async () => {
         const lib = LIB_NIVEAU[b.niveau] + ' : ' + b.entiteLib, st = statsSaison(b), sec = (k) => texte(r[k] != null ? r[k] : brouillon(k, b));
         const visa = await sigVisa(b.niveau, b.entite, b);
-        const garde = '<div class="uas-garde"><div>' + enTete() + '</div><div><p class="uas-g3">Union des associations scolaires et culturelles des écoles primaires (UASCEP)</p>'
+        const garde = '<div class="uas-garde"><div>' + enTete() + '</div><div><div class="uas-gl">' + logoBureau(b, 170) + '</div><p class="uas-g3">Union des associations sportives et culturelles des écoles primaires (UASCEP)</p>'
           + '<p class="uas-g2">Bureau — ' + esc(lib) + '</p><h1>Rapport des activités sportives et culturelles</h1><p class="uas-g2">Saison ' + esc(saison) + '</p>'
           + '<p class="uas-g3">' + st.ac.length + ' activité(s) — ' + st.T + ' élève(s) participant(s) — ' + st.ecolesPart + ' école(s)</p></div>'
           + '<div><p class="uas-g3">Rédigé par : ' + esc((membresDe(b).find(x => x.id === r.rapporteur) && nomComplet(membresDe(b).find(x => x.id === r.rapporteur))) || (parRole(b, 'R') ? nomComplet(parRole(b, 'R')) : '……………')) + ', rapporteur</p>'
@@ -1330,7 +1416,7 @@
         const ok = await dialogue('Importer des bureaux UASCEP', h('div', {},
           h('p', {}, `${stats.ajoutes} membre(s) à ajouter, ${stats.maj} à mettre à jour, ${stats.bureaux} bureau(x) à créer.`),
           rejets.length ? [h('p', {}, h('b', {}, rejets.length + ' ligne(s) refusée(s) :')), h('div', { class: 'uas-rapport' }, rejets.map(r => h('div', {}, r)))] : null),
-        [{ l: 'Annuler', v: false }, { l: '📥 Importer', p: true, v: true }]);
+        [{ l: 'Annuler', v: false }, { l: '\uE00B Importer', p: true, v: true }]);
         if (!ok) return;
         etat = tmp; await sauver(); toast && toast('Import terminé.'); dessiner();
       });
@@ -1342,5 +1428,5 @@
   }
 
   global.UASCEP = { monter, NIVEAUX, FONCTIONS, QUALITES, COLONNES_MEMBRES, COLONNES_BUREAUX, versLignes, objets, statutMandat, iso, fr, plusAns, niveauDe,
-    TYPES_DOC, VISA_DEFAUT, COULEURS_CACHET, DISCIPLINES, CATEGORIES, CAT_FIN, COLLECTIONS, saisonCourante, canon, contenuDocument, cachetSvg, roleDe, padSignature, lireImage };
+    TYPES_DOC, VISA_DEFAUT, COULEURS_CACHET, logoSvg, logoBureau, texteLogo, LOGO_COULEURS, DEFINITION, DISCIPLINES, CATEGORIES, CAT_FIN, COLLECTIONS, saisonCourante, canon, contenuDocument, cachetSvg, roleDe, padSignature, lireImage };
 })(typeof window !== 'undefined' ? window : globalThis);
