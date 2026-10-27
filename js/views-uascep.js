@@ -8,6 +8,36 @@ import { db } from './db.js';
 import { scoped, inScope } from './data.js';
 import { readXlsx } from './xlsx.js';
 import { upsDeZone } from './officiel-cs.js';
+import { getIdentity, makeCachet, makeCachetRond, COULEURS_CACHET, qrPayload } from './sign.js';
+import { qrDataURL } from './qr.js';
+import { sha256, uid, nowISO } from './util.js';
+
+/* Cachet rond de l'application (même dessin que les autres pièces) ; le module dessine les autres formes et couleurs */
+function cachet(o) {
+  if (o.forme !== 'rond' || !COULEURS_CACHET[o.couleur || 'bleu']) return null;
+  const centre = String(o.centre || '').toUpperCase().split(/\s+/).reduce((l, w) => { const d = l[l.length - 1]; if (d && (d + ' ' + w).length <= 14) l[l.length - 1] = d + ' ' + w; else l.push(w); return l; }, []).slice(0, 3).join('|');
+  const src = makeCachetRond({ cachetSup: o.haut, cachetInf: o.bas, cachetCentre: centre, cachetCouleur: o.couleur || 'bleu' }, 360);
+  return '<img class="uas-cachet rond" src="' + src + '" alt="Cachet" width="' + (o.taille || 104) + '" height="' + (o.taille || 104) + '">';
+}
+/** Pièce UASCEP signée : enregistrée dans le registre des documents (menu « Vérifier un document »), empreinte SHA-256 du contenu */
+export async function signerUascep(doc, u) {
+  const idn = (await getIdentity()) || {};
+  const hash = await sha256(window.UASCEP.canon(doc.contenu));
+  const id = 'D' + uid().replace(/-/g, '').slice(0, 10).toUpperCase();
+  const codeCp = idn.codeCp || u.codeCp || u.username;
+  await db.put('docs', { id, ficheId: 'UASCEP', store: 'uascep', hash, date: nowISO(), cp: codeCp, by: u.username, label: doc.typeLib + ' — ' + (doc.resume.bureau || ''),
+    uascep: { type: doc.type, bureauIds: doc.bureauIds, membreId: doc.membreId || null, options: doc.options || null, resume: doc.resume } });
+  const texte = qrPayload(id, hash, codeCp);
+  return { numero: id, code: hash.slice(0, 16).toUpperCase(), qr: '<img src="' + qrDataURL(texte, 4, 2) + '" alt="Code QR de vérification" width="96" height="96">', texte,
+    mention: 'Vérifiable dans l’application (menu « Vérifier un document ») : numéro ou code QR ; toute modification du bureau après la signature est signalée.' };
+}
+/** Vérification d'une pièce UASCEP : l'empreinte est recalculée sur le bureau tel qu'il est enregistré */
+export async function verifierUascep(d) {
+  const etat = (await db.setting('uascep')) || { bureaux: [], membres: [] };
+  const x = d.uascep || {};
+  const now = await sha256(window.UASCEP.canon(window.UASCEP.contenuDocument(etat, x.type, x.bureauIds || [], x.membreId, x.options || undefined)));
+  return { same: now === d.hash, resume: x.resume || {} };
+}
 
 export async function render(id, ctx) {
   if (!window.UASCEP) { ctx.el.append(Object.assign(document.createElement('p'), { textContent: 'Module UASCEP indisponible : rechargez l’application.' })); return; }
@@ -53,7 +83,9 @@ export async function render(id, ctx) {
     const ajouterDep = (d) => { if (d && !deps.has(norm(d))) deps.set(norm(d), { cle: String(d).toUpperCase(), lib: 'DDEMP ' + String(d).toUpperCase(), alias: [d, 'DDEMP du ' + d, 'Direction départementale ' + d] }); };
     ajouterDep(u.departement); if (u.role === 'DDEMP' || u.role === 'ADMIN') ecoles.forEach(s => ajouterDep(s.departement));
     const ecrire = (niv) => niveaux.includes(niv);
-    return { niveaux, lieu: u.nomCs ? u.nomCs.charAt(0) + u.nomCs.slice(1).toLowerCase() : '', fixe: { zone: u.role === 'CP' },
+    const autorite = u.role === 'CP' && u.codeZone ? { niveau: 'ZONE', cle: u.codeZone } : (u.role === 'CCS' || u.role === 'DOSP') && u.codeCs ? { niveau: 'CS', cle: u.codeCs }
+      : u.role === 'DDEMP' && u.departement ? { niveau: 'DDEMP', cle: String(u.departement).toUpperCase() } : null;
+    return { niveaux, autorite, lieu: u.nomCs ? u.nomCs.charAt(0) + u.nomCs.slice(1).toLowerCase() : '', fixe: { zone: u.role === 'CP' },
       entites: { ECOLE: ent, UP: ups, ZONE: zones, CS: [...css.values()], DDEMP: [...deps.values()] }, droits: { ecrire } };
   }
 
@@ -70,7 +102,16 @@ export async function render(id, ctx) {
     app: 'MEMP-CP', sansTitre: true,
     charger: async () => (await db.setting('uascep')) || null,
     enregistrer: async (etat) => { await db.setting('uascep', etat); },
-    contexte, entete,
+    contexte, entete, cachet,
+    // visa : la signature et le cachet de l'identité numérique du compte, au niveau qu'il dirige (CP → zone, CCS → circonscription, DDEMP → département)
+    visa: async (niv) => {
+      const NIV = { CP: 'ZONE', CCS: 'CS', DDEMP: 'DDEMP' };
+      if (NIV[u.role] !== niv) return null;
+      const idn = await getIdentity(); if (!idn || !idn.nom) return null;
+      return { titre: idn.titre || window.UASCEP.VISA_DEFAUT[niv], nom: `${idn.prenoms || ''} ${String(idn.nom || '').toUpperCase()}`.trim(), signature: idn.signature || '',
+        cachet: '<img src="' + (await makeCachet(idn)) + '" alt="Cachet" style="max-width:150px;max-height:104px">' };
+    },
+    signer: (doc) => signerUascep(doc, u),
     toast: (m) => toast(m),
     memo: { get: (k) => { try { return localStorage.getItem('uascep.' + k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem('uascep.' + k, v); } catch (e) { /* indisponible */ } } },
     xlsxEcrire: async (feuilles) => window.XlsxEcrire.classeur(feuilles),

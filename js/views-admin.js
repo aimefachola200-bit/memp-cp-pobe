@@ -97,6 +97,14 @@ async function verifier(ctx) {
     const p = txt.split('|'), docId = p[0] === 'MEMP-BJ' && p[1] === '1' ? p[2] : txt.toUpperCase(), q32 = p[3] || '';
     const d = await db.get('docs', docId);
     if (!d) return res.replaceChildren(h('div', { class: 'verdict unk' }, `Document ${docId} inconnu sur cet appareil.`, h('div', { class: 'notes' }, 'Importez le paquet de transmission qui contient cette fiche, puis relancez la vérification.')));
+    if (d.store === 'uascep') {
+      const { verifierUascep } = await import('./views-uascep.js');
+      const v = await verifierUascep(d), qrOkU = !q32 || d.hash.startsWith(q32), r = v.resume;
+      return res.replaceChildren(h('div', { class: 'verdict ' + (v.same && qrOkU ? 'ok' : 'bad') }, v.same && qrOkU ? '✔ Document UASCEP authentique : le bureau est identique à celui qui a été signé.' : '✖ ATTENTION : ' + (!qrOkU ? 'le QR code ne correspond pas au document enregistré.' : 'le bureau ou ses registres ont été modifiés après la signature.')),
+        h('div', { class: 'card', style: { marginTop: '10px' } }, h('p', h('b', 'Type : '), 'UASCEP — ' + (r.type || d.label)), h('p', h('b', 'Document : '), d.id), h('p', h('b', 'Bureau : '), r.bureau || '—'),
+          r.membre ? h('p', h('b', 'Membre : '), r.membre) : null, r.fonction ? h('p', h('b', 'Fonction : '), r.fonction) : null, r.saison ? h('p', h('b', 'Saison : '), r.saison) : null,
+          h('p', h('b', 'Date : '), r.date || fmtDateTime(d.date)), h('p', h('b', 'Signataire : '), r.signataire || '—'), h('p', h('b', 'Édité par : '), `${d.by} (${d.cp})`), h('p', { class: 'notes' }, 'Empreinte SHA-256 : ' + d.hash)));
+    }
     const rec = await db.get(d.store || 'fiches', d.ficheId); if (!rec) return res.replaceChildren(h('div', { class: 'verdict unk' }, 'La fiche associée n\'est plus présente sur cet appareil.'));
     const now = d.store === 'classReports' ? await reportHash(rec) : d.store === 'bilans' ? await bilanHash(rec) : await ficheHash(rec), same = now === d.hash, qrOk = !q32 || d.hash.startsWith(q32);
     res.replaceChildren(h('div', { class: 'verdict ' + (same && qrOk ? 'ok' : 'bad') }, same && qrOk ? '✔ Document authentique : le contenu est identique à celui qui a été signé.' : '✖ ATTENTION : ' + (!qrOk ? 'le QR code ne correspond pas au document enregistré.' : 'la fiche a été modifiée après la signature.')),
