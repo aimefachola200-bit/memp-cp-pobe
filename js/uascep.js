@@ -325,6 +325,7 @@
       .uas-ap img{max-width:100%;max-height:120px}.uas-ap svg{max-width:100%;height:auto;max-height:120px}
       .uas-ap .uas-aide{font-style:italic}
       .uas-pad{display:block;width:100%;max-width:600px;aspect-ratio:600/220;height:auto;border:1px dashed #98A2B3;border-radius:8px;background:#fff;touch-action:none;cursor:crosshair}
+      .uas-aide-panneau summary{cursor:pointer}.uas-vide-etat{border-style:dashed;background:#F9FAFB}.uas-onglet svg.ico{margin-right:4px}
       .uas-docs{display:grid;gap:8px}.uas-docs .uas-btn{text-align:left;white-space:normal}
       #uas-impression{display:none}
       @media print{.uas-voile{display:none!important}body.uas-imprime>*:not(#uas-impression){display:none!important}body.uas-imprime #uas-impression{display:block!important}}
@@ -400,14 +401,28 @@
     let ctx = await A.contexte();
     const niveaux = NIVEAUX.filter(n => (ctx.niveaux || NIVEAUX.map(x => x[0])).includes(n[0]));
     const memo = A.memo || { get: () => null, set: () => {} };
-    let onglet = memo.get('onglet') || (niveaux[0] || ['SYNTHESE'])[0];
-    if (!niveaux.some(n => n[0] === onglet) && onglet !== 'SYNTHESE' && onglet !== 'ARCHIVES') onglet = (niveaux[0] || ['SYNTHESE'])[0];
+    const ONGLETS = [['AJOUTER', 'Ajouter un membre', 'ajouter'], ['MEMBRES', 'Membres', 'groupe'], ['BUREAUX', 'Bureaux', 'institution'], ['VIE', 'Vie du bureau', 'calendrier'],
+      ['DOCUMENTS', 'Documents', 'document'], ['LOGO', 'Logo', 'insigne'], ['IMPORT', 'Importer (Excel)', 'importer'], ['SYNTHESE', 'Synthèse', 'graphique'], ['ARCHIVES', 'Anciens bureaux', 'classeur']];
+    let onglet = memo.get('onglet2') || (etat.membres.length ? 'MEMBRES' : 'AJOUTER');
+    if (!ONGLETS.some(o => o[0] === onglet)) onglet = 'AJOUTER';
+    let nivBureaux = memo.get('onglet') && niveaux.some(n => n[0] === memo.get('onglet')) ? memo.get('onglet') : (niveaux[0] || ['ECOLE'])[0];
     const filtres = { zone: memo.get('zone') || '', up: memo.get('up') || '', entite: {} };
     const sauver = async () => { etat.maj = new Date().toISOString(); await A.enregistrer(etat); };
     const toast = (m) => (A.toast ? A.toast(m) : null);
-    const entites = (niv) => (ctx.entites[niv] || []);
+    if (!Array.isArray(etat.entitesManuelles)) etat.entitesManuelles = [];
+    /** Entités du périmètre, plus celles saisies à la main (absentes de l'application) */
+    const entites = (niv) => { const l = ctx.entites[niv] || []; return l.concat(etat.entitesManuelles.filter(m => m.niveau === niv && !l.some(e => norm(e.lib) === norm(m.lib)))); };
+    /** Le compte peut-il écrire à ce niveau (au moins une entité, ou niveau vide de son périmètre) ? */
+    const niveauEcrivable = (niv) => {
+      if (ctx.droits && ctx.droits.ecrireNiveau) return !!ctx.droits.ecrireNiveau(niv);
+      const l = ctx.entites[niv] || []; return l.some(e => ctx.droits && ctx.droits.ecrire && ctx.droits.ecrire(niv, e.cle)) || (!l.length && (ctx.niveaux || []).includes(niv) && !!(ctx.droits && ctx.droits.ecrire && ctx.droits.ecrire(niv, '')));
+    };
+    /** Saisie manuelle d'une entité : pas pour l'école d'un poste école (directeur, Mon école) */
+    const manuelPermis = (niv) => niveauEcrivable(niv) && !(niv === 'ECOLE' && ctx.autorite && ctx.autorite.niveau === 'ECOLE');
+    const QUI_ECRIT = { ECOLE: 'le directeur ou la directrice de l’école (ou le CP, le chef de circonscription, la DDEMP, l’administrateur)', UP: 'le responsable de l’UP (RUP), le CP de la zone ou l’administrateur',
+      ZONE: 'le conseiller pédagogique (CP) de la zone ou l’administrateur', CS: 'le chef de circonscription (CCS), la DOSP ou l’administrateur de la CS', DDEMP: 'la DDEMP ou l’administrateur' };
     const entite = (niv, cle) => entites(niv).find(e => String(e.cle) === String(cle));
-    const peut = (niv, cle) => !!(ctx.droits && ctx.droits.ecrire && ctx.droits.ecrire(niv, cle));
+    const peut = (niv, cle) => { const m = etat.entitesManuelles.find(x => x.niveau === niv && String(x.cle) === String(cle)); return m ? manuelPermis(niv) : !!(ctx.droits && ctx.droits.ecrire && ctx.droits.ecrire(niv, cle)); };
     const bureauActif = (niv, cle) => etat.bureaux.find(b => b.niveau === niv && String(b.entite) === String(cle) && b.statut !== 'archive');
     const membresDe = (b) => b ? etat.membres.filter(m => m.bureauId === b.id).sort((x, y) => (+x.ordre || 0) - (+y.ordre || 0)) : [];
     function assurerBureau(niv, cle) {
@@ -508,27 +523,152 @@
         && (!filtres.up || niv !== 'ECOLE' || norm(e.up) === norm(filtres.up)));
     }
 
+    const IC = (n) => (global.Icones ? global.Icones.code(n) + ' ' : '');
+    function aideRenseigner() {
+      return h('details', { class: 'uas-carte uas-aide-panneau', open: etat.membres.length ? null : true, 'data-uas': 'aide' },
+        h('summary', {}, h('b', {}, IC('info') + 'Comment renseigner ce module')),
+        h('ol', { style: 'margin:8px 0 0;padding-left:20px;line-height:1.6' },
+          h('li', {}, 'Ouvrez l’onglet « Ajouter un membre », choisissez le niveau (école, UP, zone, circonscription, DDEMP) et l’entité ; si elle manque à la liste, saisissez-la à la main.'),
+          h('li', {}, 'Renseignez le membre (nom, fonction, qualité, dates, contact, cachet et signature) puis « Enregistrer » ou « Enregistrer et ajouter un autre » : le bureau est créé tout seul.'),
+          h('li', {}, 'Complétez le bureau (dates d’élection, AG, visa) dans « Bureaux », la vie du bureau (activités, réunions, caisse) dans « Vie du bureau », le logo dans « Logo ».'),
+          h('li', {}, 'Éditez les pièces signées avec code QR dans « Documents ». Pour saisir hors ligne : « Importer (Excel) » → téléchargez le modèle vierge, remplissez-le, importez-le.')));
+    }
     function dessiner() {
       racine.replaceChildren();
       const z = h('div', { class: 'uas' });
       // l'application hôte peut afficher elle-même le titre de la page (sansTitre)
       if (!A.sansTitre) z.append(h('h2', { class: 'uas-titre' }, 'Bureaux UASCEP'),
         h('p', { class: 'uas-sous' }, "Membres et responsables des bureaux de l'UASCEP par école, unité pédagogique, zone pédagogique, circonscription et département."));
-      const tabs = niveaux.map(([c, l]) => [c, l]).concat([['SYNTHESE', 'Synthèse'], ['ARCHIVES', 'Anciens bureaux']]);
-      z.append(h('div', { class: 'uas-onglets', role: 'tablist' }, tabs.map(([c, l]) => h('button', {
-        class: 'uas-onglet' + (onglet === c ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': onglet === c ? 'true' : 'false',
-        onclick: () => { onglet = c; memo.set('onglet', c); dessiner(); }
-      }, l))));
-      // outils communs : export / import / impression de l'ensemble
-      z.append(h('div', { class: 'uas-actions' },
-        h('button', { class: 'uas-btn', type: 'button', onclick: exporterTout }, '\uE015 Exporter (Excel)'),
-        ctx.peutImporter === false ? null : h('button', { class: 'uas-btn', type: 'button', onclick: importer }, '\uE00B Importer (Excel)'),
-        h('button', { class: 'uas-btn', type: 'button', onclick: () => imprimerListe(onglet) }, '\uE008 Imprimer / PDF'),
-        h('button', { class: 'uas-btn', type: 'button', 'data-uas': 'liste-signee', onclick: () => editerListe(onglet) }, '\uE00F Liste des bureaux signée (QR)')));
-      if (onglet === 'SYNTHESE') z.append(synthese());
-      else if (onglet === 'ARCHIVES') z.append(archives());
-      else z.append(vueNiveau(onglet));
+      z.append(aideRenseigner());
+      z.append(h('div', { class: 'uas-onglets', role: 'tablist' }, ONGLETS.map(([c, l, ic]) => h('button', {
+        class: 'uas-onglet' + (onglet === c ? ' on' : ''), type: 'button', role: 'tab', 'aria-selected': onglet === c ? 'true' : 'false', 'data-uas-onglet': c,
+        onclick: () => { onglet = c; memo.set('onglet2', c); dessiner(); }
+      }, IC(ic) + l))));
+      const vues = { AJOUTER: vueAjouter, MEMBRES: vueMembres, BUREAUX: vueBureaux, VIE: vueVie, DOCUMENTS: vueDocuments, LOGO: vueLogo, IMPORT: vueImport, SYNTHESE: synthese, ARCHIVES: archives };
+      z.append(vues[onglet]());
       racine.append(z);
+    }
+    /** Bureaux actifs visibles (pour les onglets qui travaillent sur un bureau) */
+    const bureauxVisibles = () => etat.bureaux.filter(b => b.statut !== 'archive' && entite(b.niveau, b.entite))
+      .sort((a, b) => (NIVEAUX.findIndex(n => n[0] === a.niveau) - NIVEAUX.findIndex(n => n[0] === b.niveau)) || String(a.entiteLib).localeCompare(String(b.entiteLib), 'fr'));
+    const videBureaux = () => h('div', { class: 'uas-carte uas-vide-etat', 'data-uas': 'vide' }, h('p', { style: 'margin:0 0 8px' }, 'Aucun bureau pour le moment : cliquez sur « Ajouter un membre » pour enregistrer le premier membre, le bureau sera créé automatiquement.'),
+      h('button', { class: 'uas-btn p', type: 'button', onclick: () => { onglet = 'AJOUTER'; memo.set('onglet2', onglet); dessiner(); } }, IC('ajouter') + 'Ajouter un membre'));
+    function choixBureau(cleMemo) {
+      const bs = bureauxVisibles(); if (!bs.length) return { el: videBureaux(), b: null };
+      let id = memo.get(cleMemo) || ''; if (!bs.some(b => b.id === id)) id = bs[0].id;
+      const s = h('select', { 'aria-label': 'Bureau', 'data-uas': 'choix-bureau', onchange: (e) => { memo.set(cleMemo, e.target.value); dessiner(); } }, bs.map(b => h('option', { value: b.id, selected: b.id === id }, LIB_NIVEAU[b.niveau] + ' — ' + b.entiteLib + ' (' + membresDe(b).length + ' membre(s))')));
+      return { el: h('div', { class: 'uas-barre' }, h('label', { style: 'max-width:520px;flex:3 1 300px' }, 'Bureau', s)), b: bs.find(b => b.id === id) };
+    }
+
+    /* ---------- onglet « Ajouter un membre » (formulaire en pleine page) ---------- */
+    let ajout = { niv: memo.get('ajout.niv') || '', cle: memo.get('ajout.cle') || '' };
+    function vueAjouter() {
+      const box = h('div', { 'data-uas': 'vue-ajouter' });
+      const ecr = niveaux.filter(([n]) => niveauEcrivable(n));
+      if (!ecr.length) {
+        box.append(h('div', { class: 'uas-carte uas-vide-etat' }, h('p', { style: 'margin:0' }, 'Votre compte consulte les bureaux UASCEP sans pouvoir les modifier.'),
+          h('ul', {}, niveaux.map(([n, l]) => h('li', {}, l + ' : renseigné par ' + QUI_ECRIT[n] + '.')))));
+        return box;
+      }
+      if (!ecr.some(([n]) => n === ajout.niv)) ajout.niv = (ecr.find(([n]) => n === (ctx.autorite || {}).niveau) || ecr[0])[0];
+      const sNiv = selectListe(ecr, ajout.niv); sNiv.setAttribute('data-uas', 'ajout-niveau'); sNiv.setAttribute('aria-label', 'Niveau');
+      sNiv.onchange = () => { ajout.niv = sNiv.value; ajout.cle = ''; memo.set('ajout.niv', ajout.niv); dessiner(); };
+      const liste = entites(ajout.niv).filter(e => peut(ajout.niv, e.cle));
+      if (!liste.some(e => String(e.cle) === String(ajout.cle))) ajout.cle = liste.length === 1 ? String(liste[0].cle) : (liste.find(e => String(e.cle) === String((ctx.autorite || {}).cle)) || {}).cle || '';
+      const rech = h('input', { type: 'search', placeholder: 'Rechercher…', 'aria-label': 'Rechercher une entité', 'data-geo': 'aucun' });
+      const sEnt = h('select', { 'aria-label': 'Entité', 'data-uas': 'ajout-entite' });
+      const remplir = () => { const q = norm(rech.value); sEnt.replaceChildren(h('option', { value: '' }, liste.length ? '— choisir (' + liste.length + ') —' : '— aucune entité : saisissez-la ci-dessous —'),
+        ...liste.filter(e => !q || norm(e.lib).includes(q)).map(e => { const n = membresDe(bureauActif(ajout.niv, e.cle)).length; return h('option', { value: e.cle, selected: String(e.cle) === String(ajout.cle) }, e.lib + (n ? ' — ' + n + ' membre(s)' : '') + (e.manuel ? ' (saisie manuelle)' : '')); })); };
+      remplir(); rech.oninput = remplir;
+      sEnt.onchange = () => { ajout.cle = sEnt.value; memo.set('ajout.cle', ajout.cle); dessiner(); };
+      const manuel = h('input', { type: 'text', placeholder: ajout.niv === 'ECOLE' ? 'Ex. : EPP Ahoyéyé' : 'Nom de l’entité', 'aria-label': 'Saisir l’entité manuellement', 'data-uas': 'ajout-manuel', 'data-geo': 'aucun' });
+      const bManuel = h('button', { class: 'uas-btn', type: 'button', 'data-uas': 'ajout-manuel-ok', onclick: async () => {
+        const lib = manuel.value.trim(); if (!lib) { manuel.focus(); return; }
+        const ex = entites(ajout.niv).find(e => norm(e.lib) === norm(lib));
+        if (ex) { ajout.cle = String(ex.cle); } else { const m = { niveau: ajout.niv, cle: 'man-' + uid(), lib, manuel: true, cree: auj() }; etat.entitesManuelles.push(m); ajout.cle = m.cle; await sauver(); }
+        memo.set('ajout.cle', ajout.cle); toast && toast('Entité « ' + lib + ' » retenue.'); dessiner(); } }, IC('ajouter') + 'Utiliser cette entité');
+      box.append(h('div', { class: 'uas-carte' }, h('h3', {}, IC('ajouter') + 'Ajouter un membre — 1. Bureau'),
+        h('div', { class: 'uas-form' }, ecr.length > 1 ? champ('Niveau', sNiv) : null, liste.length > 6 ? champ('Rechercher', rech) : null, champ(ajout.niv === 'ECOLE' ? 'École' : LIB_NIVEAU[ajout.niv], sEnt, true),
+          manuelPermis(ajout.niv) ? champ('Entité absente de la liste ? Saisir l’entité manuellement', h('div', { style: 'display:flex;gap:6px' }, manuel, bManuel), true) : null)));
+      if (!ajout.cle || !entite(ajout.niv, ajout.cle)) { box.append(h('p', { class: 'uas-vide' }, 'Choisissez l’entité (ou saisissez-la) pour ouvrir le formulaire du membre.')); return box; }
+      const b = bureauActif(ajout.niv, ajout.cle);
+      box.append(h('p', { class: 'uas-sous' }, b ? 'Bureau existant : ' + membresDe(b).length + ' membre(s) déjà enregistré(s).' : 'Aucun bureau pour cette entité : il sera créé à l’enregistrement du premier membre.'));
+      const fm = construireFormMembre(ajout.niv, ajout.cle, null);
+      box.append(h('div', { class: 'uas-carte' }, h('h3', {}, '2. Membre'), fm.el, h('div', { class: 'uas-actions' },
+        h('button', { class: 'uas-btn p', type: 'button', 'data-uas': 'ajout-enregistrer', onclick: async () => { if (await fm.enregistrer()) { onglet = 'MEMBRES'; memo.set('onglet2', onglet); dessiner(); } } }, IC('enregistrer') + 'Enregistrer'),
+        h('button', { class: 'uas-btn', type: 'button', 'data-uas': 'ajout-autre', onclick: async () => { if (await fm.enregistrer()) dessiner(); } }, IC('ajouter') + 'Enregistrer et ajouter un autre'),
+        h('button', { class: 'uas-btn d', type: 'button', 'data-uas': 'ajout-reinit', onclick: () => dessiner() }, IC('actualiser') + 'Réinitialiser le formulaire'))));
+      return box;
+    }
+    /* ---------- onglet « Membres » ---------- */
+    let filtreMembres = { niv: '', q: '' };
+    function vueMembres() {
+      const box = h('div', { 'data-uas': 'vue-membres' });
+      const bs = bureauxVisibles(); if (!bs.length) { box.append(videBureaux()); return box; }
+      const sNiv = selectListe(niveaux, filtreMembres.niv, 'Tous les niveaux'); sNiv.onchange = () => { filtreMembres.niv = sNiv.value; dessiner(); };
+      const q = h('input', { type: 'search', value: filtreMembres.q, placeholder: 'Nom, fonction, entité…', 'data-geo': 'aucun' }); let tq; q.oninput = () => { clearTimeout(tq); tq = setTimeout(() => { filtreMembres.q = q.value; zt.replaceChildren(table()); }, 250); };
+      const zt = h('div');
+      const choisis = () => bs.filter(b => !filtreMembres.niv || b.niveau === filtreMembres.niv);
+      const table = () => tableMembres(choisis().flatMap(membresDe).filter(m => !filtreMembres.q || norm([m.nom, m.prenoms, m.fonction, (etat.bureaux.find(b => b.id === m.bureauId) || {}).entiteLib].join(' ')).includes(norm(filtreMembres.q))), true, (b) => peut(b.niveau, b.entite));
+      const ecr = choisis().filter(b => peut(b.niveau, b.entite));
+      box.append(h('div', { class: 'uas-barre' }, h('label', {}, 'Niveau', sNiv), h('label', {}, 'Recherche', q)),
+        h('div', { class: 'uas-actions' }, h('button', { class: 'uas-btn p', type: 'button', onclick: () => { onglet = 'AJOUTER'; memo.set('onglet2', onglet); dessiner(); } }, IC('ajouter') + 'Ajouter un membre'),
+          ecr.length ? h('button', { class: 'uas-btn d', type: 'button', 'data-uas': 'reinit-membres', onclick: () => reinitialiser(ecr) }, IC('actualiser') + 'Réinitialiser les bureaux affichés') : null,
+          h('button', { class: 'uas-btn', type: 'button', onclick: () => imprimerListe(filtreMembres.niv || 'TOUS') }, IC('imprimer') + 'Imprimer / PDF')));
+      zt.append(table()); box.append(zt);
+      return box;
+    }
+    /* ---------- onglet « Bureaux » : par niveau ---------- */
+    function vueBureaux() {
+      const box = h('div', {});
+      box.append(h('div', { class: 'uas-onglets', role: 'tablist', style: 'margin-top:0' }, niveaux.map(([c, l]) => h('button', { class: 'uas-onglet' + (nivBureaux === c ? ' on' : ''), type: 'button', 'data-uas-niveau': c,
+        onclick: () => { nivBureaux = c; memo.set('onglet', c); dessiner(); } }, l))));
+      if (!niveauEcrivable(nivBureaux)) box.append(h('p', { class: 'uas-aide' }, 'Consultation : à ce niveau, les bureaux sont renseignés par ' + QUI_ECRIT[nivBureaux] + '.'));
+      box.append(vueNiveau(nivBureaux));
+      return box;
+    }
+    function vueVie() {
+      const box = h('div', {}), c = choixBureau('vie.bureau'); box.append(c.el);
+      if (c.b) box.append(vieBureau(c.b, peut(c.b.niveau, c.b.entite)));
+      return box;
+    }
+    function vueDocuments() {
+      const box = h('div', {}), c = choixBureau('docs.bureau'); box.append(c.el);
+      if (c.b) box.append(h('div', { class: 'uas-carte' }, h('h3', {}, IC('document') + 'Pièces signées avec code QR — ' + c.b.entiteLib),
+        h('div', { class: 'uas-actions' }, h('button', { class: 'uas-btn p', type: 'button', 'data-uas': 'documents', onclick: () => choisirDocument(c.b) }, IC('document') + 'Composition, PV, attestation'),
+          h('button', { class: 'uas-btn', type: 'button', onclick: () => imprimerBureau(c.b, entite(c.b.niveau, c.b.entite) || { lib: c.b.entiteLib }, c.b.niveau) }, IC('imprimer') + 'Imprimer la liste du bureau'))));
+      box.append(h('div', { class: 'uas-carte' }, h('h3', {}, IC('classeur') + 'Ensemble des bureaux'), h('div', { class: 'uas-actions' },
+        h('button', { class: 'uas-btn', type: 'button', 'data-uas': 'liste-signee', onclick: () => editerListe('TOUS') }, IC('document') + 'Liste des bureaux signée (QR)'),
+        h('button', { class: 'uas-btn', type: 'button', onclick: () => imprimerListe('TOUS') }, IC('imprimer') + 'Membres de tous les bureaux'))));
+      return box;
+    }
+    function vueLogo() {
+      const box = h('div', {}), c = choixBureau('logo.bureau'); box.append(c.el);
+      if (c.b) box.append(h('div', { class: 'uas-carte' }, h('div', { class: 'uas-ap', html: logoBureau(c.b, 180), style: 'min-height:190px' }),
+        h('div', { class: 'uas-actions' }, h('button', { class: 'uas-btn p', type: 'button', 'data-uas': 'logo', onclick: () => reglerLogo(c.b, peut(c.b.niveau, c.b.entite)) }, IC('insigne') + 'Régler le logo (textes, couleurs, image, SVG / PNG)'))));
+      return box;
+    }
+    function vueImport() {
+      const box = h('div', { class: 'uas-carte' });
+      box.append(h('h3', {}, IC('importer') + 'Importer des bureaux et des membres (Excel)'),
+        h('ol', { style: 'margin:4px 0 10px;padding-left:20px;line-height:1.6' }, h('li', {}, 'Téléchargez le modèle vierge (feuilles « Membres UASCEP », « Bureaux » et « Mode d’emploi »).'),
+          h('li', {}, 'Remplissez une ligne par membre : Niveau (École, UP, Zone pédagogique, Circonscription, DDEMP) et Entité (nom exact, ou nouveau nom : l’entité est alors créée).'),
+          h('li', {}, 'Importez le fichier : un rapport indique les lignes ajoutées, mises à jour ou refusées avant validation.')),
+        h('div', { class: 'uas-actions' },
+          h('button', { class: 'uas-btn p', type: 'button', 'data-uas': 'modele', onclick: modeleVierge }, IC('telecharger') + 'Télécharger le modèle vierge'),
+          ctx.peutImporter === false ? null : h('button', { class: 'uas-btn', type: 'button', 'data-uas': 'importer', onclick: importer }, IC('importer') + 'Importer un fichier'),
+          h('button', { class: 'uas-btn', type: 'button', onclick: exporterTout }, IC('graphique') + 'Exporter les bureaux (Excel)')));
+      return box;
+    }
+    async function modeleVierge() {
+      const ex = (niveaux.find(([n]) => niveauEcrivable(n)) || niveaux[0] || ['ECOLE', 'École']);
+      const e0 = entites(ex[0])[0];
+      const blob = await A.xlsxEcrire([{ nom: 'Membres UASCEP', lignes: [COLONNES_MEMBRES, COLONNES_MEMBRES.map(c => ({ 'Niveau': ex[1], 'Entité': e0 ? e0.lib : '', "N° d'ordre": 1, 'Nom': 'EXEMPLE (à remplacer)', 'Fonction': 'Président' }[c] || ''))], entete: 0 },
+        { nom: 'Bureaux', lignes: [COLONNES_BUREAUX], entete: 0 },
+        { nom: 'Mode d’emploi', lignes: [['Rubrique', 'Comment la remplir'], ['Niveau', 'École, Unité pédagogique, Zone pédagogique, Circonscription scolaire ou DDEMP (ou ECOLE, UP, ZONE, CS, DDEMP)'],
+          ['Entité', 'Nom de l’école, de l’UP, de la zone… ; une entité inconnue de l’application est créée (saisie manuelle) si votre compte peut écrire à ce niveau'],
+          ['Dates', 'JJ/MM/AAAA'], ['Sexe', 'M ou F'], ['Fonction', FONCTIONS.join(', ')], ['Qualité', QUALITES.join(', ')], ['Ligne d’exemple', 'Remplacez ou supprimez la ligne « EXEMPLE » avant l’import']], entete: 0 }]);
+      A.telecharger('modele-membres-uascep.xlsx', blob);
     }
 
     function barreFiltres(niv) {
@@ -583,7 +723,8 @@
       const box = h('div', {});
       box.append(barreFiltres(niv));
       const liste = entitesFiltrees(niv);
-      if (!liste.length) { box.append(h('p', { class: 'uas-vide' }, 'Aucune entité de ce niveau dans votre périmètre.')); return box; }
+      if (!liste.length) { box.append(h('div', { class: 'uas-carte uas-vide-etat' }, h('p', { style: 'margin:0 0 8px' }, 'Aucune entité de ce niveau dans votre périmètre.' + (niveauEcrivable(niv) ? ' Saisissez-la dans « Ajouter un membre » (champ « Saisir l’entité manuellement »).' : ' Ce niveau est renseigné par ' + QUI_ECRIT[niv] + '.')),
+        niveauEcrivable(niv) ? h('button', { class: 'uas-btn p', type: 'button', onclick: () => { onglet = 'AJOUTER'; ajout.niv = niv; memo.set('onglet2', onglet); dessiner(); } }, '\uE001 Ajouter un membre') : null)); return box; }
       const cle = filtres.entite[niv];
       const ecrireB = (b) => peut(b.niveau, b.entite);
       if (!cle) {
@@ -595,7 +736,7 @@
           ecrivables.length ? h('button', { class: 'uas-btn p', type: 'button', onclick: () => choisirPuis(niv, liste, (c) => formMembre(niv, c)) }, '\uE001 Ajouter un membre') : null,
           ecrivables.length && bs.length ? h('button', { class: 'uas-btn d', type: 'button', onclick: () => reinitialiserTous(niv, bs.filter(ecrireB)) }, '\uE058 Réinitialiser tous les bureaux') : null));
         box.append(h('p', { class: 'uas-sous' }, `${bs.length} bureau(x) constitué(s) sur ${liste.length} — ${membres.length} membre(s). Choisissez ${niv === 'ECOLE' ? 'une école' : 'une entité'} ci-dessus pour gérer son bureau.`));
-        box.append(tableMembres(membres, true, ecrireB));
+        box.append(membres.length ? tableMembres(membres, true, ecrireB) : h('p', { class: 'uas-vide' }, ecrivables.length ? 'Aucun bureau : cliquez sur « Ajouter un membre » ; le bureau est créé avec le premier membre.' : 'Aucun bureau. À ce niveau, les bureaux sont renseignés par ' + QUI_ECRIT[niv] + '.'));
         return box;
       }
       const e = entite(niv, cle) || { lib: cle };
@@ -621,7 +762,7 @@
           h('button', { class: 'uas-btn', type: 'button', onclick: () => imprimerBureau(b, e, niv) }, '\uE008 Imprimer / PDF'),
           w && b ? h('button', { class: 'uas-btn p', type: 'button', 'data-uas': 'documents', onclick: () => choisirDocument(b) }, '\uE00D Documents signés (QR)') : null,
           b ? h('button', { class: 'uas-btn', type: 'button', 'data-uas': 'logo', onclick: () => reglerLogo(b, w) }, '\uE047 Logo UASCEP') : null,
-          !w ? h('span', { class: 'uas-sous', style: 'margin:0;align-self:center' }, 'Consultation seulement.') : null)));
+          !w ? h('span', { class: 'uas-sous', style: 'margin:0;align-self:center' }, 'Consultation seulement : renseigné par ' + QUI_ECRIT[niv] + '.') : null)));
       box.append(tableMembres(membres, false, w ? () => true : null));
       if (b) box.append(vieBureau(b, w));
       return box;
@@ -675,8 +816,8 @@
       return h('select', {}, vide ? h('option', { value: '' }, vide) : null, valeurs.map(x => Array.isArray(x)
         ? h('option', { value: x[0], selected: x[0] === v }, x[1]) : h('option', { value: x, selected: x === v }, x)));
     }
-    function formMembre(niv, cle, m) {
-      if (!peut(niv, cle)) return;
+    /** Formulaire d'un membre (dans une boîte de dialogue ou en pleine page) : { el, enregistrer() → vrai si enregistré } */
+    function construireFormMembre(niv, cle, m) {
       const e = entite(niv, cle) || { lib: cle }, b = bureauActif(niv, cle);
       const d = m || {}, nouveau = !m;
       const listeId = 'uas-fonctions-' + Math.random().toString(36).slice(2, 7);
@@ -716,9 +857,9 @@
           champ('Contact', f.contact), champ('E-mail', f.email), champ("Date d'élection", f.dateElection), champ('Durée du mandat (ans)', f.duree),
           champ('Date de fin de mandat', f.dateFin, false, 'Calculée, modifiable'), champ("Date d'installation", f.dateInstallation),
           champ('Observations', f.observations, true), cs.el));
-      dialogue(nouveau ? 'Ajouter un membre' : 'Modifier un membre', corps, [{ l: 'Annuler' }, {
-        l: '\uE007 Enregistrer', p: true, action: async () => {
+      const enregistrer = async () => {
           if (!f.nom.value.trim()) { f.nom.focus(); toast && toast('Le nom est obligatoire.'); return false; }
+          if (!peut(niv, cle)) { toast && toast('Votre compte ne peut pas écrire à ce niveau.'); return false; }
           const bu = assurerBureau(niv, cle);
           const v = { ordre: +f.ordre.value || '', nom: f.nom.value.trim().toUpperCase(), prenoms: f.prenoms.value.trim(), sexe: f.sexe.value,
             fonction: f.fonction.value.trim(), qualite: f.qualite.value, ecole: f.ecole.value.trim(), up: f.up.value.trim(), zone: f.zone.value.trim(),
@@ -731,9 +872,14 @@
           // le bureau reprend les dates de mandat quand elles manquent
           if (!bu.dateElection && v.dateElection) { bu.dateElection = v.dateElection; bu.duree = v.duree || bu.duree; bu.dateFin = v.dateFin; }
           if (!bu.dateInstallation && v.dateInstallation) bu.dateInstallation = v.dateInstallation;
-          await sauver(); toast && toast('Membre enregistré.'); dessiner();
-        }
-      }]);
+          await sauver(); toast && toast('Membre enregistré.'); return true;
+      };
+      return { el: corps, enregistrer };
+    }
+    function formMembre(niv, cle, m) {
+      if (!peut(niv, cle)) return;
+      const fm = construireFormMembre(niv, cle, m);
+      dialogue(m ? 'Modifier un membre' : 'Ajouter un membre', fm.el, [{ l: 'Annuler' }, { l: '\uE007 Enregistrer', p: true, action: async () => { if (!(await fm.enregistrer())) return false; dessiner(); } }]);
     }
     function formBureau(niv, cle) {
       const e = entite(niv, cle) || { lib: cle }, b = bureauActif(niv, cle) || {};
@@ -1383,8 +1529,10 @@
         feuilles.forEach(f => { const o = objets(f.lignes || []); if (!o) return; const k = Object.keys(o[0] || {}); if (k.includes('nom') || k.includes('prenoms')) lignesM = lignesM || o; else lignesB = lignesB || o; });
         if (!lignesM && !lignesB) { toast && toast('Colonnes « Niveau », « Entité », « Nom » introuvables.'); return; }
         const rejets = [], stats = { ajoutes: 0, maj: 0, bureaux: 0 };
-        const trouverEntite = (niv, lib) => entites(niv).find(e => norm(e.lib) === norm(lib) || norm(e.cle) === norm(lib) || (e.alias || []).some(a => norm(a) === norm(lib)));
-        const tmp = JSON.parse(JSON.stringify(etat));
+        const tmp = JSON.parse(JSON.stringify(etat)); let creees = 0; const nouvellesEnt = [];
+        const trouverEntite = (niv, lib) => entites(niv).find(e => norm(e.lib) === norm(lib) || norm(e.cle) === norm(lib) || (e.alias || []).some(a => norm(a) === norm(lib)))
+          || (tmp.entitesManuelles || []).find(e => e.niveau === niv && norm(e.lib) === norm(lib))
+          || (lib && manuelPermis(niv) ? (() => { const m = { niveau: niv, cle: 'man-' + uid(), lib: String(lib).trim(), manuel: true, cree: auj() }; (tmp.entitesManuelles = tmp.entitesManuelles || []).push(m); etat.entitesManuelles.push(m); nouvellesEnt.push(m.cle); creees++; return m; })() : null);
         const actifTmp = (niv, cle) => tmp.bureaux.find(b => b.niveau === niv && String(b.entite) === String(cle) && b.statut !== 'archive');
         const assurerTmp = (niv, e) => { let b = actifTmp(niv, e.cle); if (!b) { b = { id: uid(), niveau: niv, entite: String(e.cle), entiteLib: e.lib, duree: DUREE_DEFAUT, statut: 'actif', creeLe: auj() }; tmp.bureaux.push(b); stats.bureaux++; } return b; };
         (lignesB || []).forEach(o => {
@@ -1414,10 +1562,10 @@
           if (!b.dateElection && v.dateElection) { b.dateElection = v.dateElection; b.duree = v.duree; b.dateFin = v.dateFin; }
         });
         const ok = await dialogue('Importer des bureaux UASCEP', h('div', {},
-          h('p', {}, `${stats.ajoutes} membre(s) à ajouter, ${stats.maj} à mettre à jour, ${stats.bureaux} bureau(x) à créer.`),
+          h('p', {}, `${stats.ajoutes} membre(s) à ajouter, ${stats.maj} à mettre à jour, ${stats.bureaux} bureau(x) à créer` + (creees ? `, ${creees} entité(s) nouvelle(s) (saisie manuelle).` : '.')),
           rejets.length ? [h('p', {}, h('b', {}, rejets.length + ' ligne(s) refusée(s) :')), h('div', { class: 'uas-rapport' }, rejets.map(r => h('div', {}, r)))] : null),
         [{ l: 'Annuler', v: false }, { l: '\uE00B Importer', p: true, v: true }]);
-        if (!ok) return;
+        if (!ok) { etat.entitesManuelles = etat.entitesManuelles.filter(e => !nouvellesEnt.includes(e.cle)); return; }
         etat = tmp; await sauver(); toast && toast('Import terminé.'); dessiner();
       });
       inp.click();
