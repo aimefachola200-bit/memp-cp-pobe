@@ -192,6 +192,7 @@
     const niveaux = NIVEAUX.filter(n => (ctx.niveaux || NIVEAUX.map(x => x[0])).includes(n[0]));
     const memo = A.memo || { get: () => null, set: () => {} };
     let onglet = memo.get('onglet') || (niveaux[0] || ['SYNTHESE'])[0];
+    if (!niveaux.some(n => n[0] === onglet) && onglet !== 'SYNTHESE' && onglet !== 'ARCHIVES') onglet = (niveaux[0] || ['SYNTHESE'])[0];
     const filtres = { zone: memo.get('zone') || '', up: memo.get('up') || '', entite: {} };
     const sauver = async () => { etat.maj = new Date().toISOString(); await A.enregistrer(etat); };
     const toast = (m) => (A.toast ? A.toast(m) : null);
@@ -219,8 +220,8 @@
     function dessiner() {
       racine.replaceChildren();
       const z = h('div', { class: 'uas' });
-      if (!A.sansTitre) z.append(h('h2', { class: 'uas-titre' }, 'Bureaux UASCEP'));
-      z.append(
+      // l'application hôte peut afficher elle-même le titre de la page (sansTitre)
+      if (!A.sansTitre) z.append(h('h2', { class: 'uas-titre' }, 'Bureaux UASCEP'),
         h('p', { class: 'uas-sous' }, "Membres et responsables des bureaux de l'UASCEP par école, unité pédagogique, zone pédagogique, circonscription et département."));
       const tabs = niveaux.map(([c, l]) => [c, l]).concat([['SYNTHESE', 'Synthèse'], ['ARCHIVES', 'Anciens bureaux']]);
       z.append(h('div', { class: 'uas-onglets', role: 'tablist' }, tabs.map(([c, l]) => h('button', {
