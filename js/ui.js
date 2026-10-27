@@ -45,7 +45,7 @@ export function dataTable({ columns, rows = [], getId = (r) => r.id, onOpen, onS
       }));
       const parts = [thead, tbody];
       if (totals) parts.push(h('tfoot', h('tr', columns.map((c, i) => h('td', { class: c.num ? 'num' : '' }, totals[c.k] ?? (i === 0 ? 'TOTAL' : ''))))));
-      wrap.appendChild(h('table', { class: 't' }, parts));
+      wrap.appendChild(h('table', { class: 't fixe1' }, parts));
     }
     pager.replaceChildren(
       h('button', { class: 'btn sm', disabled: page === 0, onclick: () => { page--; draw(); } }, '◀ Précédent'),

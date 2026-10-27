@@ -330,3 +330,55 @@ table.t tbody tr:hover{background:#FAFBFD}
 @media (max-width:700px){.zu td.zu-liste{min-width:220px}.zu td.zu-pers{min-width:120px}}
 .zu .zu-autre{color:#B54708;font-size:.78rem}
 .zu td.zu-liste .zu-autre{font-size:inherit}
+/* =====================================================================
+   1.14 — En-têtes fixes : la rubrique reste visible pendant le défilement
+   --hdr = hauteur de la barre du haut + barre d'actions (mesurée en direct, js/main.js).
+   Les tableaux défilent avec la page ; js/entetes.js garde la ligne d'en-tête de chaque tableau juste sous les barres
+   et sous le titre de sa rubrique (qui reste lui aussi affiché). La première colonne (noms, libellés) reste à gauche
+   quand on fait défiler un tableau large sur téléphone.
+   ===================================================================== */
+:root{--hdr:110px}
+.tbl-wrap,.gridwrap,.rc-tw,.fixe-wrap{overflow-x:auto;max-height:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.tbl-wrap thead,.gridwrap thead,.rc-tw thead,.fixe-wrap thead{position:relative;z-index:6;will-change:transform}
+thead.entete-flottante{box-shadow:0 -4px 0 var(--card),0 3px 6px rgba(16,24,40,.18)}
+table.t th{position:static}
+table.g thead th{background:#E3ECF5;color:var(--ink)}
+table.rc-t thead th{background:#E3ECF5}
+/* première colonne figée (tableaux de saisie et listes) */
+table.g tbody td:first-child,table.g tbody th:first-child,table.eff tbody td:first-child,table.rc-t tbody td:first-child,table.rc-t tbody th:first-child,table.fixe1 tbody td:first-child{position:sticky;left:0;z-index:2;background:#F8FAFC;box-shadow:1px 0 0 var(--line)}
+table.g thead tr th:first-child,table.eff thead tr th:first-child,table.rc-t thead tr th:first-child,table.fixe1 thead tr th:first-child{position:sticky;left:0;z-index:7}
+table.t.fixe1 thead tr th:first-child{background:#F9FAFB}
+table.t.fixe1 tbody td:first-child{background:#fff}
+table.t.fixe1 tbody tr:nth-child(even) td:first-child{background:#FCFCFD}
+/* titres de rubrique (fiches de recensement, de rentrée, de fin d'année, effectifs, cartes de chiffres) */
+.sec-title,.eff-wrap>h4,.card>h3.fixe,.rubrique-fixe{position:sticky;top:var(--hdr);z-index:8}
+.sec-title{box-shadow:0 2px 4px rgba(16,24,40,.12)}
+.eff-wrap>h4,.card>h3.fixe,.rubrique-fixe{background:var(--card);margin:0 -14px 8px;padding:8px 14px;border-bottom:1px solid var(--line)}
+.actionbar{top:var(--hbar,56px)}
+.ed-nav{top:calc(var(--hdr) + 6px);max-height:calc(100dvh - var(--hdr) - 20px)}
+@media print{thead{transform:none!important;box-shadow:none!important}.sec-title,.eff-wrap>h4,.rubrique-fixe,.card>h3.fixe{position:static!important}}
+/* 1.14 — Planification des activités du CP */
+table.planning{font-size:.8rem}
+table.planning th{min-width:150px}
+table.planning thead th:first-child{min-width:96px}
+table.planning td.lab{min-width:96px;white-space:nowrap}
+table.planning td.pl-cel{min-width:150px;padding:6px;vertical-align:top;cursor:pointer;line-height:1.35;background:#fff}
+table.planning td.pl-cel:hover,table.planning td.pl-cel:focus{outline:2px solid #2E6DA4;outline-offset:-2px;background:#FAFCFF}
+table.planning td.pl-cel .pl-vide{color:#98A2B3}
+table.planning td.pl-conge,table.planning tr.pl-ferme td{background:#F2F4F7;color:var(--mute);font-style:italic;text-align:center}
+table.planning td.pl-evt{min-width:200px;padding:4px 6px;vertical-align:top;font-size:.76rem;color:var(--mute)}
+table.planning .pl-badge{display:block;white-space:normal;margin:2px 0;text-align:left}
+table.planning .pl-obs{width:100%;border:1px dashed var(--line);border-radius:5px;padding:4px 6px;font-size:.78rem;margin-top:2px;background:transparent}
+table.planning td.pl-sem{min-width:170px;vertical-align:top;padding:5px;cursor:pointer;font-size:.76rem;line-height:1.3;background:#fff}
+table.planning .pl-ligne{border-left:3px solid #2E6DA4;padding-left:5px;margin:3px 0}
+table.planning td.pl-visite-de-classe{border-left:4px solid #1B7F3B}table.planning td.pl-unite-pedagogique{border-left:4px solid #2E6DA4}
+table.planning td.pl-formation-groupee,table.planning td.pl-conference-pedagogique{border-left:4px solid #7A5AF8}table.planning td.pl-reunion{border-left:4px solid #B54708}
+table.planning.an th{min-width:46px}table.planning.an td.pl-evt{min-width:260px}
+/* écoles de la zone */
+table.ez td{vertical-align:middle}table.ez td small.sub{font-size:.72rem}
+/* barre d'actions sur une seule ligne défilante sur téléphone : elle ne mange plus l'écran au-dessus des tableaux */
+@media (max-width:600px){
+  .actionbar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding:6px 10px;-webkit-overflow-scrolling:touch}
+  .actionbar .btn{flex:none;padding:6px 10px;font-size:.84rem}
+  .card>h3.fixe,.eff-wrap>h4,.rubrique-fixe{font-size:.9rem;padding:6px 10px;margin:0 -14px 6px}
+}

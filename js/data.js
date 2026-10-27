@@ -34,7 +34,23 @@ export async function addLog(user, { action, target, from = '', to = '', comment
   await db.put('logs', { id: uid(), date: nowISO(), user: user?.username || '-', role: user?.role || '-', action, target, from, to, comment, refId });
 }
 
+/** Zone de chaque agent = zone d'appartenance de son école ; sans école (ou école sans zone), la zone attribuée à l'agent.
+    Appelée à chaque démarrage : un agent suit automatiquement son école quand la zone de l'école change. */
+export async function synchroZonesPersonnel() {
+  const ecoles = new Map((await db.all('schools')).map(x => [x.id, x]));
+  const maj = [];
+  for (const p of await db.all('personnel')) {
+    const e = p.schoolId && ecoles.get(p.schoolId);
+    if (e && e.codeZone && (p.codeZone !== e.codeZone || String(p.numZone || '') !== String(e.numZone || ''))) maj.push({ ...p, codeZone: e.codeZone, numZone: e.numZone || '', arrondissement: p.arrondissement || e.arrondissement || '' });
+  }
+  if (maj.length) await db.putMany('personnel', maj);
+  return maj.length;
+}
+
 export async function seedIfEmpty() {
+  try { await seedIfEmpty0(); } finally { try { await synchroZonesPersonnel(); } catch (e) { console.warn('Zones du personnel', e); } }
+}
+async function seedIfEmpty0() {
   if (VARIANT.seed) {
     await seedVariant();
     // zones, unités pédagogiques, effectifs et personnel de la circonscription (bloc « officiel ») : cases vides, une fois

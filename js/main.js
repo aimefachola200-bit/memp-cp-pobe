@@ -68,6 +68,7 @@ const NAV = [
   { id: 'plandosp', ic: '🎯', t: "Attributions et plan d'action", seul: 'dosp' },
   { id: 'docsdosp', ic: '🧾', t: 'Documents officiels de la DOSP', seul: 'dosp' },
   { g: 'Pédagogie', id: 'activites', ic: '📅', t: 'Activités pédagogiques' },
+  { id: 'planningcp', ic: '🗓️', t: 'Planification des activités (CP)', pasDosp: true },
   { id: 'bilans', ic: '📈', t: 'Bilans trimestriel / annuel' },
   { id: 'themes', ic: '🎯', t: 'Thèmes 2026-2027' },
   { id: 'planif', ic: '🗓️', t: 'Planification annuelle EM et EP' },
@@ -86,7 +87,7 @@ const NAV = [
   { id: 'parametres', ic: '⚙️', t: 'Paramètres & à propos' },
 ];
 const ROUTES = { zonesup: 'views-zonesup', accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles', cep: 'views-cep',
-  synoptique: 'views-more', activites: 'views-more', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', synocp: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', carriere: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
+  synoptique: 'views-more', activites: 'views-more', planningcp: 'views-planning', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', synocp: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', carriere: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
   saisie: 'views-saisie', recensement: 'views-recensement', recfiche: 'views-recensement', synodosp: 'views-synodosp', whatsapp: 'views-whatsapp', espacedosp: 'views-dosp', envois: 'views-dosp', prevision: 'views-dosp', besoins: 'views-dosp', suivieval: 'views-dosp', capacites: 'views-dosp', plandosp: 'views-dosp', docsdosp: 'views-dosp', identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
 
 const app = $('#app');
@@ -208,7 +209,23 @@ async function route() {
   sessionStorage.removeItem('maj-recharge');
   if (!live()) { if (fn) { try { await fn(); } catch { /* ignore */ } } return; }
   cleanup = fn; body.replaceChildren(el); bar.replaceWith(nbar); window.scrollTo(0, 0);
+  mesurerEntetes();
 }
+
+/* En-têtes fixes : hauteur réelle de la barre du haut et de la barre d'actions (elle passe sur plusieurs lignes sur téléphone) */
+let _obs = null;
+function mesurerEntetes() {
+  const top = document.querySelector('.topbar'), bar = document.getElementById('v-bar');
+  const maj = () => {
+    const ht = top ? top.getBoundingClientRect().height : 56, hb = bar && bar.childElementCount ? bar.getBoundingClientRect().height : 0;
+    document.documentElement.style.setProperty('--hbar', Math.round(ht) + 'px');
+    document.documentElement.style.setProperty('--hdr', Math.round(ht + hb) + 'px');
+  };
+  maj();
+  if (window.ResizeObserver) { if (_obs) _obs.disconnect(); _obs = new ResizeObserver(maj); if (top) _obs.observe(top); if (bar) _obs.observe(bar); }
+}
+addEventListener('resize', () => mesurerEntetes());
+import('./entetes.js').catch(() => { /* en-têtes flottants indisponibles : tableaux normaux */ });
 
 function logout() {
   if (VARIANT.integre) { location.href = retourEduGestion(); return; } sessionStorage.removeItem(CLE_SESSION); sessionStorage.removeItem(CLE_SESSION + '-vu'); session.user = null; loginScreen(); }
