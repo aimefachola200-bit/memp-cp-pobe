@@ -1200,6 +1200,7 @@
       const IND_SAISIE = champsDe('indicateurs').filter(c => c.t !== 'calc' && c.k !== 'observations').map(c => c.k);
       ecoles().forEach(e => {
         const cle = String(e.cle), a = app[cle] || {}, s = saisie[cle] || {}, v = {};
+        Object.keys(a).forEach(k => { if (!vide(a[k])) v[k] = a[k]; });
         IND_SAISIE.forEach(k => { v[k] = !vide(s[k]) ? s[k] : (!vide(a[k]) ? a[k] : ''); });
         const lic = etat.licences.filter(l => String(l.entite) === cle && l.saison === annee);
         v.licenciesG = lic.filter(l => l.sexe === 'M').length; v.licenciesF = lic.filter(l => l.sexe === 'F').length;
@@ -1207,7 +1208,7 @@
       });
       return out;
     }
-    const SOMMES = ['effG', 'effF', 'groupes', 'salles', 'enseignants', 'enseignantsF', 'ensFE', 'ensContractuels', 'ensCommunautaires', 'ensAutres', 'tablesBancs', 'latrines', 'cepInscritsG', 'cepInscritsF', 'cepPresentsG', 'cepPresentsF', 'cepAdmisG', 'cepAdmisF', 'abandonsG', 'abandonsF', 'redoublantsG', 'redoublantsF', 'licenciesG', 'licenciesF'];
+    const SOMMES = ['effG', 'effF', 'groupes', 'salles', 'enseignants', 'enseignantsF', 'ensFE', 'ensContractuels', 'ensCommunautaires', 'ensAutres', 'tablesBancs', 'latrines', 'cepInscritsG', 'cepInscritsF', 'cepPresentsG', 'cepPresentsF', 'cepAdmisG', 'cepAdmisF', 'abandonsG', 'abandonsF', 'redoublantsG', 'redoublantsF', 'licenciesG', 'licenciesF', 'ebComposes', 'ebAdmis'];
     function agregerEcoles(calc, ecs, niv, cle, annee) {
       const v = { ecoles: ecs.length };
       SOMMES.forEach(k => { const vals = ecs.map(e => (calc[String(e.cle)] || {})[k]).filter(x => !vide(x)); v[k] = vals.length ? vals.reduce((s, x) => s + num(x), 0) : ''; });

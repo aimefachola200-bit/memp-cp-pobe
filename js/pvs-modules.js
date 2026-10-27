@@ -435,7 +435,9 @@
     { k: 'licenciesG', l: 'Licenciés garçons', g: 'Sport scolaire' }, { k: 'licenciesF', l: 'Licenciées filles', g: 'Sport scolaire' },
     { k: 'licencies', l: 'Licenciés (total)', g: 'Sport scolaire' }, { k: 'tauxLicence', l: 'Élèves licenciés (%)', g: 'Sport scolaire', ratio: ['licencies', 'effT', 100] },
     { k: 'competitions', l: 'Compétitions organisées', g: 'Sport scolaire' }, { k: 'matchsJoues', l: 'Rencontres jouées', g: 'Sport scolaire' },
-    { k: 'titres', l: 'Titres et podiums', g: 'Sport scolaire' }
+    { k: 'titres', l: 'Titres et podiums', g: 'Sport scolaire' },
+    { k: 'ebComposes', l: 'Examen blanc : ont composé', g: 'Examen blanc' }, { k: 'ebAdmis', l: 'Examen blanc : seuil atteint', g: 'Examen blanc' },
+    { k: 'ebTaux', l: 'Examen blanc : taux de réussite (%)', g: 'Examen blanc', ratio: ['ebAdmis', 'ebComposes', 100] }
   ];
 
   /** Documents officiels (code, intitulé, signataires) */

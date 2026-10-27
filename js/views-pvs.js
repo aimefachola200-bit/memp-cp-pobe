@@ -75,13 +75,13 @@ export async function adaptateurPvs(u) {
     charger: async () => (await db.setting('pvs')) || null,
     enregistrer: async (etat) => { await db.setting('pvs', etat); },
     signer: (doc) => signerPvs(doc, u),
-    indicateurs: (annee) => indicateurs(u, annee),
+    indicateurs: async (annee) => { const a = await indicateurs(u, annee); const { indicateursEcoles } = await import('./views-examen.js'); const eb = await indicateursEcoles(annee); Object.entries(eb).forEach(([k, v]) => { a[k] = Object.assign(a[k] || {}, v); }); return a; },
     uascep: () => ({ charger: base.charger, enregistrer: base.enregistrer }),
     memo: { get: (k) => { try { return localStorage.getItem('pvs.' + k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem('pvs.' + k, v); } catch (e) { /* indisponible */ } } },
     ouvrir: (route) => { location.hash = '#/' + route; },
     utilisateur: () => [u.prenoms, u.nom].filter(Boolean).join(' ') || u.username,
-    liens: { patrimoine: [{ l: I('chantier') + 'Infrastructures et mobilier (fiches)', route: 'infra' }], examens: [{ l: I('diplome') + 'CEP : candidats et réussite (fiches)', route: 'cep' }], inspection: [{ l: I('calendrier') + 'Activités pédagogiques', route: 'activites' }],
-      communication: [{ l: I('message') + 'Groupe WhatsApp des directeurs', route: 'whatsapp' }], sport: [{ l: I('insigne') + 'Bureaux UASCEP', route: 'uascep' }], pilotage: [{ l: I('eleve') + 'Effectifs des apprenants', route: 'effectifs' }, { l: I('diplome') + 'CEP : candidats et réussite', route: 'cep' }, { l: I('chantier') + 'Infrastructures et mobilier', route: 'infra' }] }
+    liens: { patrimoine: [{ l: I('chantier') + 'Infrastructures et mobilier (fiches)', route: 'infra' }], examens: [{ l: I('stade') + 'Examen blanc du CEP', route: 'examenblanc' }, { l: I('diplome') + 'CEP : candidats et réussite (fiches)', route: 'cep' }], inspection: [{ l: I('calendrier') + 'Activités pédagogiques', route: 'activites' }],
+      communication: [{ l: I('message') + 'Groupe WhatsApp des directeurs', route: 'whatsapp' }], sport: [{ l: I('insigne') + 'Bureaux UASCEP', route: 'uascep' }], pilotage: [{ l: I('stade') + 'Examen blanc du CEP', route: 'examenblanc' }, { l: I('eleve') + 'Effectifs des apprenants', route: 'effectifs' }, { l: I('diplome') + 'CEP : candidats et réussite', route: 'cep' }, { l: I('chantier') + 'Infrastructures et mobilier', route: 'infra' }] }
   });
 }
 

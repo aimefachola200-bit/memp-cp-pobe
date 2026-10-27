@@ -97,6 +97,13 @@ async function verifier(ctx) {
     const p = txt.split('|'), docId = p[0] === 'MEMP-BJ' && p[1] === '1' ? p[2] : txt.toUpperCase(), q32 = p[3] || '';
     const d = await db.get('docs', docId);
     if (!d) return res.replaceChildren(h('div', { class: 'verdict unk' }, `Document ${docId} inconnu sur cet appareil.`, h('div', { class: 'notes' }, 'Importez le paquet de transmission qui contient cette fiche, puis relancez la vérification.')));
+    if (d.store === 'examenBlanc') {
+      const { verifierExamen } = await import('./views-examen.js');
+      const v = await verifierExamen(d), qrOkE = !q32 || d.hash.startsWith(q32), r = v.resume;
+      return res.replaceChildren(h('div', { class: 'verdict ' + (v.same && qrOkE ? 'ok' : 'bad') }, v.same && qrOkE ? '\uE003 Document authentique : les notes sont identiques à celles qui ont été signées.' : '\uE002 ATTENTION : ' + (!qrOkE ? 'le QR code ne correspond pas au document enregistré.' : 'les données ont été modifiées après la signature.')),
+        h('div', { class: 'card', style: { marginTop: '10px' } }, h('p', h('b', 'Type : '), r.type || d.label), h('p', h('b', 'Document : '), d.id), r.objet ? h('p', h('b', 'Objet : '), r.objet) : null, r.mention ? h('p', h('b', 'Mention : '), r.mention) : null,
+          h('p', h('b', 'Date : '), fmtDateTime(d.date)), h('p', h('b', 'Édité par : '), `${d.by} (${d.cp})`), h('p', { class: 'notes' }, 'Empreinte SHA-256 : ' + d.hash)));
+    }
     if (d.store === 'pvs') {
       const { verifierPvs } = await import('./views-pvs.js');
       const v = await verifierPvs(d), qrOkP = !q32 || d.hash.startsWith(q32), r = v.resume;
