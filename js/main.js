@@ -231,6 +231,10 @@ function logout() {
   if (VARIANT.integre) { location.href = retourEduGestion(); return; } sessionStorage.removeItem(CLE_SESSION); sessionStorage.removeItem(CLE_SESSION + '-vu'); session.user = null; loginScreen(); }
 
 async function start() {
+  // référentiel des villages (js/choix.js) : département / commune par défaut des formulaires qui n'en ont pas
+  const u0 = session.user || {};
+  window.CHOIX_GEO_DEFAUT = /pobe/i.test(VARIANT.seed || VARIANT.id || '') ? { departement: 'Plateau', commune: 'Pobè' }
+    : { departement: u0.departement || '', commune: u0.commune || '' };
   await refreshDatalists();
   shell();
   const espaceDe = (u) => (u.role === 'CP' && VARIANT.profil !== 'dosp' ? '#/espace' : u.role === 'DOSP' ? '#/espacedosp' : '#/accueil');

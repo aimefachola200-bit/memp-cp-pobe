@@ -1,5 +1,5 @@
 {
- "version": "955a8cfcc566",
+ "version": "0ffbb38038b9",
  "files": [
   "./",
   "NOTICE.txt",
@@ -12,6 +12,7 @@
   "data/planification.json",
   "data/rapports.json",
   "data/recensement.json",
+  "data/referentiel_villages.json",
   "data/reglement/page-1.jpg",
   "data/reglement/page-2.jpg",
   "data/reglement/page-3.jpg",
@@ -51,6 +52,7 @@
   "js/bilan-schema.js",
   "js/camera.js",
   "js/carriere.js",
+  "js/choix.js",
   "js/config.js",
   "js/data.js",
   "js/db.js",
