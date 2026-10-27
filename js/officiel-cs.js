@@ -132,7 +132,7 @@ export async function migrerOfficiel() {
   const cle = 'officiel-cs-v' + (O.version || 1);
   if (await db.setting(cle)) return null;
   if (!(await db.count('schools'))) return null;   // l'installation se termine d'abord (écoles de départ)
-  const r = { maj: 0, ...(await mettreAJourV1(O)) };
+  const r = { maj: 0, ...(await mettreAJourV1(O)), ...(await zonesCorrigees(O)) };
   Object.assign(r, await appliquer({ force: false }));
   await recalculerMembres(O);
   await db.setting(cle, { date: nowISO(), ...r });
@@ -154,15 +154,36 @@ async function mettreAJourV1(O) {
     if (JSON.stringify(x) !== JSON.stringify(s)) maj.push(x);
   }
   if (maj.length) await db.putMany('schools', maj);
-  // fiches déjà créées (effectifs, fiches de collecte, recensements, rapports) : zone de l'école mise à jour pour les consolidations par zone
-  const zoneDe = new Map(maj.map(x => [x.id, x]));
+  return { v1: maj.length, fichesZone: await zoneDesFiches(maj) };
+}
+
+/** Fiches déjà créées (effectifs, fiches de collecte, recensements, rapports) : zone de l'école mise à jour (consolidations par zone) */
+async function zoneDesFiches(ecoles) {
+  const zoneDe = new Map(ecoles.map(x => [x.id, x]));
   let n = 0;
+  if (!zoneDe.size) return 0;
   for (const st of ['effectifs', 'fiches', 'recensements', 'classReports']) {
     const l = (await db.all(st)).filter(r => zoneDe.has(r.schoolId) && r.codeZone !== zoneDe.get(r.schoolId).codeZone)
       .map(r => ({ ...r, codeZone: zoneDe.get(r.schoolId).codeZone, ...('numZone' in r ? { numZone: zoneDe.get(r.schoolId).numZone } : {}), ...(r.ident ? { ident: { ...r.ident, numZone: zoneDe.get(r.schoolId).numZone } } : {}) }));
     if (l.length) { await db.putMany(st, l); n += l.length; }
   }
-  return { v1: maj.length, fichesZone: n };
+  return n;
+}
+
+/** Zones corrigées d'une version du bloc officiel à l'autre (officiel.zonesAvant = { vN: { id: { codeZone, numZone } } }) :
+    une école encore dans la zone que la version N lui avait donnée passe dans la nouvelle zone officielle ; une zone choisie
+    à la main est gardée. Ex. v2 → v3 : écoles maternelles (tableaux EM des feuilles 2 et 3 du classeur inversés). */
+async function zonesCorrigees(O) {
+  const maj = [];
+  for (const [ver, carte] of Object.entries(O.zonesAvant || {})) {
+    if (!(await db.setting('officiel-cs-' + ver))) continue;
+    for (const s of await db.all('schools')) {
+      const a = carte[s.id], o = O.ecoles[s.id];
+      if (a && o && s.codeZone === a.codeZone && s.codeZone !== o.codeZone && !maj.some(x => x.id === s.id)) maj.push({ ...s, codeZone: o.codeZone, numZone: o.numZone });
+    }
+  }
+  if (maj.length) await db.putMany('schools', maj);
+  return maj.length ? { zonesCorrigees: maj.length, fichesZoneCorrigees: await zoneDesFiches(maj) } : {};
 }
 
 /** « Écoles membres » de chaque UP recalculées d'après le rattachement des écoles (UP + zone de l'UP), écoles en activité seulement */
