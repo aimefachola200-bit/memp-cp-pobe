@@ -321,3 +321,10 @@ table.t tbody tr:hover{background:#FAFBFD}
 .tuile b{color:var(--green);font-size:15px;line-height:1.25}
 .tuile small{color:var(--mute);font-size:12.5px;line-height:1.3}
 @media (max-width:420px){.tuiles{grid-template-columns:1fr 1fr}}
+/* 1.13 — Zones pédagogiques et UP */
+.zu table.t td{vertical-align:top}
+.zu td.zu-nom{white-space:nowrap}
+.zu td.zu-pers{min-width:150px}
+.zu td.zu-liste{min-width:280px;max-width:520px;font-size:.8rem;color:var(--mute);line-height:1.35}
+.zu td.zu-liste b{color:var(--ink)}
+@media (max-width:700px){.zu td.zu-liste{min-width:220px}.zu td.zu-pers{min-width:120px}}

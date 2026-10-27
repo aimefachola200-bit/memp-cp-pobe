@@ -47,6 +47,7 @@ const NAV = [
   { id: 'espacedosp', ic: '🗂️', t: 'Mon espace de travail DOSP', seul: 'dosp' },
   { id: 'espace', ic: '🧑‍🏫', t: 'Espace CP de zone', pasDosp: true },
   { id: 'synocp', ic: '📋', t: 'Tableau synoptique du CP', pasDosp: true },
+  { id: 'zonesup', ic: '🧭', t: 'Zones pédagogiques et UP' },
   { id: 'synodosp', ic: '📋', t: 'Tableau synoptique de la DOSP', seul: 'dosp' },
   { g: 'Collecte', id: 'ecoles', ic: '🏫', t: 'Écoles' },
   { id: 'personnel', ic: '👩‍🏫', t: 'Personnel enseignant' },
@@ -84,7 +85,7 @@ const NAV = [
   { id: 'utilisateurs', ic: '👥', t: 'Utilisateurs', roles: ['ADMIN'], horsIntegre: true },
   { id: 'parametres', ic: '⚙️', t: 'Paramètres & à propos' },
 ];
-const ROUTES = { accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles', cep: 'views-cep',
+const ROUTES = { zonesup: 'views-zonesup', accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles', cep: 'views-cep',
   synoptique: 'views-more', activites: 'views-more', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', synocp: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', carriere: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
   saisie: 'views-saisie', recensement: 'views-recensement', recfiche: 'views-recensement', synodosp: 'views-synodosp', whatsapp: 'views-whatsapp', espacedosp: 'views-dosp', envois: 'views-dosp', prevision: 'views-dosp', besoins: 'views-dosp', suivieval: 'views-dosp', capacites: 'views-dosp', plandosp: 'views-dosp', docsdosp: 'views-dosp', identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
 
@@ -158,7 +159,7 @@ function shell() {
 
 const CEP_SECT = { titre: 'Candidats présentés au CEP dans la circonscription, par sexe (inscrits, présents, admis)', colonnes: 'cep', note: 'Source : fiche de fin d’année des EP (rubrique CEP), à défaut le rapport du CM2. Modes « Par zone », « Par arrondissement » et « Par école » : sous-totaux public / privé.' };
 const GEN_SECT = { titre: 'Chiffres de la circonscription : public / privé', colonnes: 'general' };
-const SECTEURS = { accueil: [GEN_SECT], ecoles: [GEN_SECT], ecolesstruct: [GEN_SECT], infra: [GEN_SECT], synoptique: [GEN_SECT], synodosp: [GEN_SECT, CEP_SECT], synocp: [GEN_SECT],
+const SECTEURS = { accueil: [GEN_SECT], ecoles: [GEN_SECT], ecolesstruct: [GEN_SECT], infra: [GEN_SECT], synoptique: [GEN_SECT], synodosp: [GEN_SECT, CEP_SECT], synocp: [GEN_SECT], zonesup: [GEN_SECT],
   effectifs: [{ titre: 'Effectifs des apprenants : public / privé', colonnes: 'effectifs' }], personnel: [{ titre: 'Personnel enseignant par sexe : public / privé', colonnes: 'personnel' }],
   suivieval: [GEN_SECT, CEP_SECT], besoins: [GEN_SECT], prevision: [GEN_SECT], cep: [CEP_SECT], espacedosp: [GEN_SECT] };
 let routeSeq = 0;

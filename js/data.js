@@ -26,7 +26,12 @@ export async function addLog(user, { action, target, from = '', to = '', comment
 }
 
 export async function seedIfEmpty() {
-  if (VARIANT.seed) return seedVariant();
+  if (VARIANT.seed) {
+    await seedVariant();
+    // zones, unités pédagogiques, effectifs et personnel de la circonscription (bloc « officiel ») : cases vides, une fois
+    try { const { migrerOfficiel } = await import('./officiel-cs.js'); await migrerOfficiel(); } catch (e) { console.warn('Données de la CS', e); }
+    return;
+  }
   // intégrée à ÉduGestion : les comptes viennent d'ÉduGestion, aucun compte de démonstration
   if (!VARIANT.integre && !(await db.count('users'))) {
     const mk = async (u, pw, extra) => ({ id: uid(), username: u, pwd: await hashPassword(pw), actif: true, mustChange: true, created: nowISO(), ...extra });

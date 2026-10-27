@@ -1,5 +1,5 @@
 {
- "version": "e2902933f628",
+ "version": "b1a2f6c64309",
  "files": [
   "./",
   "NOTICE.txt",
@@ -63,6 +63,7 @@
   "js/integre.js",
   "js/main.js",
   "js/motdepasse.js",
+  "js/officiel-cs.js",
   "js/pdf-canvas.js",
   "js/pdf.js",
   "js/qr.js",
@@ -92,6 +93,7 @@
   "js/views-saisie.js",
   "js/views-synodosp.js",
   "js/views-whatsapp.js",
+  "js/views-zonesup.js",
   "js/workflow.js",
   "js/xlsx.js",
   "lib/jszip.min.js",

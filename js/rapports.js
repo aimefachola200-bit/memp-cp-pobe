@@ -292,6 +292,9 @@ export async function calculerAuto(D, doc, school, annee, user) {
   if (ep) pose('telephone', s.contact); else pose('contact_directeur', s.contact);
   if (/^o/i.test(s.cantine || '')) pose('cantine', ep ? 'OUI' : 'oui');
   pose('chef_nom', user && user.role === 'CCS' ? `${user.nom || ''} ${user.prenoms || ''}`.trim() : '');
+  // zone du CP et RUP de l'unité pédagogique de l'école (zones et UP de la circonscription)
+  pose('cp_zone_num', s.numZone, 'zones et unités pédagogiques');
+  if (s.codeZone && s.up) { const ups = (await db.setting('synocp-up:' + s.codeZone)) || [], x = ups.find(y => norm(y.up || '') === norm(s.up) && (!y.cycle || y.cycle === s.cycle)); if (x && x.rup) pose('rup_nom', x.rup, 'unités pédagogiques'); }
   // personnel enseignant de l'école (menus Personnel enseignant / Saisie manuelle)
   const ref = new Date(+String(annee).slice(0, 4), 11, 31);
   const agents = (await db.all('personnel')).filter(p => p.schoolId === s.id && /^(direct|adjoint|enseign|instit|educat)/.test(norm(p.fonction || ''))).map(p => calculerFiche(p));

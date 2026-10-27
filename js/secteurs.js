@@ -18,6 +18,7 @@ const ENSEIGNANT = /^(direct|adjoint|enseign|instit|educat)/;
 export const COLONNES = {
   ecoles: { l: 'Écoles' },
   ens_H: { l: 'Enseignants H' }, ens_F: { l: 'Enseignants F' }, ens_T: { l: 'Enseignants T' },
+  ens_FE: { l: 'Enseignants FE' }, ens_ACDPE: { l: 'Enseignants ACDPE' }, ens_AME: { l: 'Enseignants AME' }, ens_AUT: { l: 'Enseignants autres' },
   el_G: { l: 'Élèves G' }, el_F: { l: 'Élèves F' }, el_T: { l: 'Élèves T' },
   classes: { l: 'Classes / sections ouvertes' }, salles: { l: 'Salles existantes' },
   red_T: { l: 'Redoublants' }, eh_T: { l: 'Élèves handicapés' },
@@ -29,7 +30,7 @@ export const COLONNES = {
 export const PRESET = {
   general: ['ecoles', 'ens_H', 'ens_F', 'ens_T', 'el_G', 'el_F', 'el_T', 'classes', 'salles'],
   effectifs: ['ecoles', 'el_G', 'el_F', 'el_T', 'red_T', 'eh_T'],
-  personnel: ['ecoles', 'ens_H', 'ens_F', 'ens_T'],
+  personnel: ['ecoles', 'ens_H', 'ens_F', 'ens_T', 'ens_FE', 'ens_ACDPE', 'ens_AME', 'ens_AUT'],
   cep: ['ecoles', 'cep_insc_G', 'cep_insc_F', 'cep_insc_T', 'cep_pres_G', 'cep_pres_F', 'cep_pres_T', 'cep_adm_G', 'cep_adm_F', 'cep_adm_T', 'cep_taux'],
 };
 const n0 = (x) => { const n = parseInt(String(x ?? '').replace(/\s/g, ''), 10); return Number.isFinite(n) ? n : 0; };
@@ -42,7 +43,13 @@ export async function chiffresEcoles(u, annee, schools) {
   const out = new Map();
   for (const s of schools) {
     const em = estEM(s), x = { ecoles: 1, ens_H: 0, ens_F: 0, ens_T: 0, el_G: 0, el_F: 0, el_T: 0, classes: 0, salles: 0, red_T: 0, eh_T: 0 };
-    for (const p of personnel) if (p.schoolId === s.id && ENSEIGNANT.test(norm(p.fonction || ''))) { x.ens_T++; if (/^f/i.test(p.sexe || '')) x.ens_F++; else if (/^m/i.test(p.sexe || '')) x.ens_H++; }
+    Object.assign(x, { ens_FE: 0, ens_ACDPE: 0, ens_AME: 0, ens_AUT: 0 });
+    for (const p of personnel) if (p.schoolId === s.id && ENSEIGNANT.test(norm(p.fonction || ''))) {
+      x.ens_T++; if (/^f/i.test(p.sexe || '')) x.ens_F++; else if (/^m/i.test(p.sexe || '')) x.ens_H++;
+      const st = p.statut === 'FE' ? 'FE' : p.statut === 'ACDPE' ? 'ACDPE' : /AME|ACDPCTD/.test(p.statut || '') ? 'AME' : 'AUT'; x['ens_' + st]++;
+    }
+    // aucun agent enregistré pour l'école : nombres du fichier de la circonscription (personnel par statut, sans le sexe)
+    if (!x.ens_T && s.personnelFichier) { const pf = s.personnelFichier; Object.assign(x, { ens_FE: pf.FE || 0, ens_ACDPE: pf.ACDPE || 0, ens_AME: pf.AME || 0, ens_AUT: pf.Autres || 0 }); x.ens_T = pf.total ?? (x.ens_FE + x.ens_ACDPE + x.ens_AME + x.ens_AUT); }
     const rec = effectifs.find(r => r.schoolId === s.id && r.annee === annee);
     const fr = ficheDe(fiches, s, annee, em ? 'EM_RENTREE' : 'EP_RENTREE'), ff = ficheDe(fiches, s, annee, em ? 'EM_FIN' : 'EP_FIN'), vr = vals(fr), vf = vals(ff);
     let m = null;
