@@ -37,6 +37,12 @@ export async function toutesUps(zones) {
 const memeCycle = (a, b) => !a.cycle || !b.cycle || a.cycle === b.cycle;
 /** Même UP : même identifiant, sinon même nom et même cycle (« Akouho » maternelle et « Akouho » primaire sont deux UP) */
 export const memeUp = (a, b) => (a.id && b.id ? a.id === b.id : norm(a.up || '') === norm(b.up || '') && memeCycle(a, b));
+/** École en activité (une école « ne fonctionnant plus » reste enregistrée mais sort des listes, fiches et totaux) */
+export const estActive = (s) => s && s.rubrique !== 'ne_fonctionne_plus';
+export const RUBRIQUES = { en_attente_up: "Écoles en attente d'UP", ne_fonctionne_plus: 'Écoles ne fonctionnant plus' };
+/** Zone des activités pédagogiques de l'école (zone de son UP), sinon sa zone d'appartenance */
+export const zoneUp = (s) => s.codeZoneUp || s.codeZone || '';
+
 /** L'école appartient à l'UP (nom de l'UP sur la fiche de l'école et cycle de l'UP) */
 export const ecoleDansUp = (s, x) => !!s.up && norm(s.up) === norm(x.up || '') && (!x.cycle || x.cycle === s.cycle);
 const ficheUp = (u) => ({ id: u.id, cycle: u.cycle, numero: u.numero, up: u.up, siege: '', rup: u.rup || '', rup_tel: '', corup: u.corup || '', corup_tel: '', ecoles: u.ecoles || '', jour: '', arrondissement: u.arrondissement || '', officielle: true, ...(u.ajoutee ? { ajoutee: true } : {}) });
@@ -63,11 +69,15 @@ export async function appliquer({ force = false, quoi = ['zones', 'ecoles', 'ups
       let s = tous.get(id);
       if (!s) { const base = O.schools.find(x => x.id === id); if (!base) continue; s = { ...base, created: nowISO() }; maj.push(s); r.nouvelles++; continue; }
       const avant = JSON.stringify(s); s = { ...s };
-      // zone et UP ensemble. Réinitialisation : une école que l'utilisateur a rattachée à une UP « ajoutée » par la CS sans liste
-      // d'écoles (ex. Agbarou), ou à une UP alors que le fichier de la CS ne lui en donne aucune, garde sa zone et son UP.
-      const garderUp = !vide(s.up) && (vide(o.up) || O.ups.some(x => x.ajoutee && x.codeZone === s.codeZone && norm(x.up) === norm(s.up) && (!x.cycle || x.cycle === s.cycle)));
-      if (force ? !garderUp && !vide(o.codeZone) : vide(s.codeZone) && vide(s.numZone)) { s.codeZone = o.codeZone; s.numZone = o.numZone; }
-      if (force ? !garderUp : vide(s.up)) s.up = o.up;
+      // zone d'appartenance (codeZone) ; UP et zone de l'UP (codeZoneUp : zone des activités pédagogiques, parfois une autre).
+      // Réinitialisation : une école que l'utilisateur a rattachée à une UP « ajoutée » par la CS sans liste d'écoles (ex. Agbarou),
+      // ou à une UP alors que le fichier de la CS ne lui en donne aucune, garde son UP.
+      const zUp = s.codeZoneUp || s.codeZone;
+      const garderUp = !vide(s.up) && (vide(o.up) || O.ups.some(x => x.ajoutee && x.codeZone === zUp && norm(x.up) === norm(s.up) && (!x.cycle || x.cycle === s.cycle)));
+      if (force ? !vide(o.codeZone) : vide(s.codeZone) && vide(s.numZone)) { s.codeZone = o.codeZone; s.numZone = o.numZone; }
+      if (force ? !garderUp : vide(s.up)) { s.up = o.up; s.codeZoneUp = o.codeZoneUp || ''; s.numZoneUp = o.numZoneUp || ''; }
+      else if (!vide(s.up) && vide(s.codeZoneUp) && norm(s.up) === norm(o.up || '')) { s.codeZoneUp = o.codeZoneUp || ''; s.numZoneUp = o.numZoneUp || ''; }
+      if (force ? true : vide(s.rubrique)) { const rb = o.rubrique === 'ne_fonctionne_plus' ? 'ne_fonctionne_plus' : (vide(s.up) ? o.rubrique || '' : ''); if ((s.rubrique || '') !== rb) s.rubrique = rb; }
       for (const k of CHAMPS_ECOLE) if (o[k] !== undefined && (force || vide(s[k]))) s[k] = o[k];
       if (JSON.stringify(s) !== avant) { maj.push(s); r.ecoles++; }
     }
@@ -122,9 +132,48 @@ export async function migrerOfficiel() {
   const cle = 'officiel-cs-v' + (O.version || 1);
   if (await db.setting(cle)) return null;
   if (!(await db.count('schools'))) return null;   // l'installation se termine d'abord (écoles de départ)
-  const r = await appliquer({ force: false });
+  const r = { maj: 0, ...(await mettreAJourV1(O)) };
+  Object.assign(r, await appliquer({ force: false }));
+  await recalculerMembres(O);
   await db.setting(cle, { date: nowISO(), ...r });
   return r;
+}
+
+/** Installations de la version 1.13.0 (bloc officiel v1) : la zone de l'école était celle de son UP.
+    - zone d'appartenance : celle du classeur, si l'école est encore dans la zone officielle de l'époque (zone de l'UP) ;
+    - EPP AGBAROU sort de l'UP « Ossomou 2 » (en attente d'UP), sauf si l'utilisateur lui a donné une autre UP ;
+    - zone de l'UP (codeZoneUp) renseignée. */
+async function mettreAJourV1(O) {
+  if (!(await db.setting('officiel-cs-v1'))) return {};
+  const maj = [];
+  for (const s of await db.all('schools')) {
+    const o = O.ecoles[s.id]; if (!o) continue;
+    const x = { ...s };
+    if (o.codeZoneUp && o.codeZoneUp !== o.codeZone && s.codeZone === o.codeZoneUp && norm(s.up || '') === norm(o.up || '')) { x.codeZone = o.codeZone; x.numZone = o.numZone; x.codeZoneUp = o.codeZoneUp; x.numZoneUp = o.numZoneUp; }
+    if (s.nom === 'EPP AGBAROU' && norm(s.up || '') === norm('Ossomou 2')) { x.up = ''; x.codeZoneUp = ''; x.numZoneUp = ''; x.rubrique = 'en_attente_up'; }
+    if (JSON.stringify(x) !== JSON.stringify(s)) maj.push(x);
+  }
+  if (maj.length) await db.putMany('schools', maj);
+  // fiches déjà créées (effectifs, fiches de collecte, recensements, rapports) : zone de l'école mise à jour pour les consolidations par zone
+  const zoneDe = new Map(maj.map(x => [x.id, x]));
+  let n = 0;
+  for (const st of ['effectifs', 'fiches', 'recensements', 'classReports']) {
+    const l = (await db.all(st)).filter(r => zoneDe.has(r.schoolId) && r.codeZone !== zoneDe.get(r.schoolId).codeZone)
+      .map(r => ({ ...r, codeZone: zoneDe.get(r.schoolId).codeZone, ...('numZone' in r ? { numZone: zoneDe.get(r.schoolId).numZone } : {}), ...(r.ident ? { ident: { ...r.ident, numZone: zoneDe.get(r.schoolId).numZone } } : {}) }));
+    if (l.length) { await db.putMany(st, l); n += l.length; }
+  }
+  return { v1: maj.length, fichesZone: n };
+}
+
+/** « Écoles membres » de chaque UP recalculées d'après le rattachement des écoles (UP + zone de l'UP), écoles en activité seulement */
+export async function recalculerMembres(O) {
+  const schools = (await db.all('schools')).filter(estActive);
+  for (const z of O.zones) {
+    const liste = await upsDeZone(z.code); if (!liste.length) continue;
+    let n = 0;
+    for (const x of liste) { const e = schools.filter(s => (s.codeZoneUp || s.codeZone) === z.code && ecoleDansUp(s, x)).map(s => s.nom).join(', '); if (e !== x.ecoles) { x.ecoles = e; n++; } }
+    if (n) await enregistrerUps(z.code, liste);
+  }
 }
 
 /** Valeurs officielles d'une école et d'une UP (pour l'affichage « écart avec le fichier de la CS ») */

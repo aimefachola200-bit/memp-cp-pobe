@@ -468,7 +468,7 @@ async function espace(ctx) {
   async function draw() {
     ctx.title(`Espace CP — ${nomZone()}`, u.role === 'CP' ? `Compte ${u.username}${u.nomCs ? ' · CS ' + u.nomCs : ''}` : 'Espaces de travail des conseillers pédagogiques');
     const dansZone = (r) => r.codeZone === zone;
-    const [schools, perso, fiches, acts, bilans] = await Promise.all([db.all('schools'), personnelDuPerimetre(u), db.all('fiches'), db.all('activities'), db.all('bilans')]);
+    const [schools, perso, fiches, acts, bilans] = await Promise.all([db.all('schools').then(l => l.filter(s => s.rubrique !== 'ne_fonctionne_plus')), personnelDuPerimetre(u), db.all('fiches'), db.all('activities'), db.all('bilans')]);
     const ec = schools.filter(dansZone), pe = perso.filter(dansZone), fi = fiches.filter(dansZone), ac = acts.filter(dansZone), bi = bilans.filter(b => b.codeZone === zone);
     const cps = (await db.all('users')).filter(x => x.role === 'CP' && x.codeZone === zone);
     const n = (a, f) => a.filter(f).length, auj = today();
@@ -518,7 +518,7 @@ async function synocp(ctx) {
     const idn = (await db.setting('cpIdentity')) || {};
     const ccs = (await db.all('users')).find(x => x.role === 'CCS' && x.codeCs === (u.codeCs || z()?.cs));
     const cpU = (await db.all('users')).find(x => x.role === 'CP' && x.codeZone === zone);
-    ecoles = (await db.all('schools')).filter(s => s.codeZone === zone).sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
+    ecoles = (await db.all('schools')).filter(s => s.codeZone === zone && s.rubrique !== 'ne_fonctionne_plus').sort((a, b) => a.nom.localeCompare(b.nom, 'fr'));
     perso = (await personnelDuPerimetre(u)).filter(p => p.codeZone === zone);
     const moi = u.role === 'CP' ? idn : {};
     const defaut = { memp: 'Ministère des Enseignements Maternel et Primaire', ddemp: (u.departement || cpU?.departement) ? 'DDEMP ' + (u.departement || cpU.departement) : '', cs: u.nomCs || cpU?.nomCs || '', ccs: ccs ? `${ccs.nom || ''} ${ccs.prenoms || ''}`.trim() : '',

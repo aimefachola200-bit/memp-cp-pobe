@@ -328,3 +328,5 @@ table.t tbody tr:hover{background:#FAFBFD}
 .zu td.zu-liste{min-width:280px;max-width:520px;font-size:.8rem;color:var(--mute);line-height:1.35}
 .zu td.zu-liste b{color:var(--ink)}
 @media (max-width:700px){.zu td.zu-liste{min-width:220px}.zu td.zu-pers{min-width:120px}}
+.zu .zu-autre{color:#B54708;font-size:.78rem}
+.zu td.zu-liste .zu-autre{font-size:inherit}

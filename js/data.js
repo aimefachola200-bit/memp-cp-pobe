@@ -19,7 +19,16 @@ export function inScope(user, rec) {
   if (user.role === 'CP') return !!user.codeZone && rec.codeZone === user.codeZone;
   return false;
 }
-export const scoped = async (store, user) => (await db.all(store)).filter(r => inScope(user, r));
+/** Enregistrements du périmètre. Les écoles « ne fonctionnant plus » (rubrique ne_fonctionne_plus) et leurs fiches, effectifs,
+    recensements et rapports sortent des listes, de la génération des fiches et des totaux ; { inactives: true } les garde. */
+const STORES_ECOLE = ['fiches', 'effectifs', 'recensements', 'classReports'];
+export async function scoped(store, user, { inactives = false } = {}) {
+  const rows = (await db.all(store)).filter(r => inScope(user, r));
+  if (inactives || (store !== 'schools' && !STORES_ECOLE.includes(store))) return rows;
+  if (store === 'schools') return rows.filter(s => s.rubrique !== 'ne_fonctionne_plus');
+  const fermees = new Set((await db.all('schools')).filter(s => s.rubrique === 'ne_fonctionne_plus').map(s => s.id));
+  return fermees.size ? rows.filter(r => !fermees.has(r.schoolId)) : rows;
+}
 
 export async function addLog(user, { action, target, from = '', to = '', comment = '', refId = '' }) {
   await db.put('logs', { id: uid(), date: nowISO(), user: user?.username || '-', role: user?.role || '-', action, target, from, to, comment, refId });
