@@ -9,6 +9,8 @@
 (function (global) {
   'use strict';
   const NIVEAUX = ['ECOLE', 'UP', 'ZONE', 'CS', 'DDEMP'];
+  /** Marque d'icône (dessin commun outils/icones/icones.js) */
+  const IC = (nom) => (global.Icones ? global.Icones.code(nom) + ' ' : '');
   const DISCIPLINES = ['Football', 'Handball', 'Volleyball', 'Basketball', 'Athlétisme', 'Pétanque', 'Tennis de table', 'Judo', 'Lutte traditionnelle',
     'Jeux traditionnels', 'Jeux de société (awalé, dames…)', 'Course en sac', 'Chant / chorale', 'Danse', 'Théâtre / sketch', 'Poésie / récitation', 'Dessin', 'Quiz / culture générale'];
   const CATEGORIES = ['Poussins', 'Benjamins', 'Minimes', 'Cadets', 'Toutes catégories'];
@@ -145,6 +147,123 @@
             { k: 'redoublantsG', l: 'Redoublants G', t: 'num', cache: true }, { k: 'redoublantsF', l: 'Redoublants F', t: 'num', cache: true },
             { k: 'observations', l: 'Observations', t: 'long', cache: true }] }
       ]
+    },
+    /* ===================================================== LOT B ===================================================== */
+    {
+      id: 'communication', lot: 'B', titre: 'Communication et alertes', icone: IC('annonce').trim(),
+      desc: 'Notes de service, circulaires et convocations diffusées aux entités inférieures avec accusé de réception, boîte de réception, échéances et rappels (rapports, statistiques, examens), messages aux parents (WhatsApp, SMS, copie), agenda partagé.',
+      onglets: [
+        { id: 'boite', titre: 'Boîte de réception', vue: 'boite' },
+        { id: 'notes', titre: 'Notes, circulaires et convocations', coll: 'notes', niveaux: NIVEAUX, unique: ['reference', 'objet'],
+          lib: (r) => [r.type, r.reference ? 'n° ' + r.reference : '', r.objet].filter(Boolean).join(' — '),
+          champs: [
+            { k: 'type', l: 'Type', t: 'choix', o: ['Note de service', 'Circulaire', 'Convocation', 'Communiqué', 'Lettre', 'Message'], def: 'Note de service', req: true },
+            { k: 'reference', l: 'Référence (n°)', t: 'txt' }, { k: 'date', l: 'Date', t: 'date', req: true }, { k: 'objet', l: 'Objet', t: 'txt', req: true },
+            { k: 'destNiveau', l: 'Niveau des destinataires', t: 'choix', o: ['ECOLE', 'UP', 'ZONE', 'CS'], lib: { ECOLE: 'Écoles', UP: 'Unités pédagogiques', ZONE: 'Zones pédagogiques', CS: 'Circonscriptions' }, def: 'ECOLE', req: true },
+            { k: 'destinataires', l: 'Destinataires', t: 'entites', dep: 'destNiveau', aide: 'Aucune case cochée = toutes les entités de ce niveau dans votre périmètre' },
+            { k: 'texte', l: 'Texte', t: 'long', req: true, cache: true },
+            { k: 'lieuReunion', l: 'Lieu (convocation)', t: 'txt', cache: true }, { k: 'dateReunion', l: 'Date de la réunion (convocation)', t: 'date', cache: true }, { k: 'heureReunion', l: 'Heure (convocation)', t: 'heure', cache: true },
+            { k: 'echeance', l: 'Échéance (réponse attendue le)', t: 'date' }, { k: 'pieces', l: 'Pièces jointes / ampliations', t: 'long', cache: true },
+            { k: 'signataire', l: 'Signataire (nom et qualité)', t: 'txt', cache: true },
+            { k: 'accuses', l: 'Accusés de réception', t: 'calc', calc: (r, api) => (api ? api.accuses(r) : '') }],
+          docsLigne: [{ type: 'NOTE', l: IC('document') + 'Note signée' }, { type: 'ACCUSES', l: IC('valider-cercle') + 'État des accusés de réception' }] },
+        { id: 'echeances', titre: 'Échéances et rappels', coll: 'echeances', niveaux: NIVEAUX, unique: ['objet', 'dateLimite'],
+          lib: (r) => r.objet || '',
+          champs: [
+            { k: 'objet', l: 'Objet', t: 'txt', req: true }, { k: 'type', l: 'Type', t: 'choix', o: ['Rapport', 'Statistiques', 'Examen', 'Réunion', 'Formation', 'Compétition', 'Paiement', 'Autre'], def: 'Rapport' },
+            { k: 'dateLimite', l: 'Date limite', t: 'date', req: true }, { k: 'rappelJours', l: 'Rappel (jours avant)', t: 'num', def: 7 },
+            { k: 'responsable', l: 'Responsable', t: 'txt' }, { k: 'statut', l: 'Statut', t: 'choix', o: ['À faire', 'En cours', 'Fait'], def: 'À faire' },
+            { k: 'etat', l: 'État', t: 'calc', calc: (r) => { if (r.statut === 'Fait') return 'Fait'; const j = Math.round((new Date(String(r.dateLimite || '') + 'T12:00:00') - new Date()) / 864e5); return isNaN(j) ? '' : j < 0 ? 'En retard de ' + (-j) + ' j' : j <= (+r.rappelJours || 7) ? 'Dans ' + j + ' j' : 'À venir'; } },
+            { k: 'observations', l: 'Observations', t: 'long', cache: true }] },
+        { id: 'alertes', titre: 'Alertes', vue: 'alertes' },
+        { id: 'messages', titre: 'Messages aux parents', coll: 'messages', niveaux: ['ECOLE', 'UP', 'ZONE', 'CS'], unique: ['date', 'objet'],
+          lib: (r) => r.objet || '',
+          champs: [
+            { k: 'date', l: 'Date', t: 'date', req: true }, { k: 'objet', l: 'Objet', t: 'txt', req: true }, { k: 'texte', l: 'Message', t: 'long', req: true },
+            { k: 'destinataires', l: 'Destinataires', t: 'txt', def: 'Tous les parents d’élèves' }, { k: 'canal', l: 'Canal', t: 'choix', o: ['WhatsApp', 'SMS', 'Affichage', 'Réunion des parents', 'Crieur public', 'Radio communautaire'], def: 'WhatsApp' },
+            { k: 'envoye', l: 'Envoyé', t: 'oui', def: 'Non' }],
+          actionsLigne: [{ id: 'whatsapp', l: IC('message') + 'WhatsApp' }, { id: 'sms', l: IC('telephone') + 'SMS' }, { id: 'copier', l: IC('presse-papiers') + 'Copier' }] },
+        { id: 'agenda', titre: 'Agenda partagé', coll: 'agenda', niveaux: NIVEAUX, vue: 'agenda', unique: ['date', 'objet'],
+          lib: (r) => r.objet || '',
+          champs: [
+            { k: 'date', l: 'Date', t: 'date', req: true }, { k: 'heureDebut', l: 'Heure de début', t: 'heure' }, { k: 'heureFin', l: 'Heure de fin', t: 'heure' },
+            { k: 'objet', l: 'Objet', t: 'txt', req: true }, { k: 'type', l: 'Type', t: 'choix', o: ['Réunion', 'Formation', 'Animation pédagogique', 'Visite', 'Compétition', 'Examen', 'Cérémonie', 'Autre'], def: 'Réunion' },
+            { k: 'lieu', l: 'Lieu', t: 'txt' }, { k: 'participants', l: 'Participants', t: 'long', cache: true }, { k: 'organisateur', l: 'Organisateur', t: 'txt' }] },
+        { id: 'lectures', titre: 'Accusés de réception', coll: 'lectures', niveaux: NIVEAUX, unique: ['note'],
+          lib: (r, api) => (api ? api.libRef('notes', r.note) : ''),
+          champs: [{ k: 'note', l: 'Note', t: 'ref', o: 'notes', req: true }, { k: 'date', l: 'Date', t: 'date', req: true }, { k: 'lecteur', l: 'Lecteur', t: 'txt' }, { k: 'observations', l: 'Observations', t: 'long', cache: true }] }
+      ]
+    },
+    {
+      id: 'sante', lot: 'B', titre: 'Santé, cantine et inclusion', icone: IC('sante').trim(),
+      desc: 'Visites médicales et aptitude sportive (reportée sur les licences), registre de l’infirmerie et des incidents, cantine scolaire (bénéficiaires, rations, stocks), élèves à besoins spécifiques, scolarisation des filles, absences et alertes de décrochage.',
+      onglets: [
+        { id: 'visites', titre: 'Visites médicales', coll: 'visitesMed', niveaux: ['ECOLE'], unique: ['nom', 'prenoms', 'dateVisite'],
+          lib: (r) => [String(r.nom || '').toUpperCase(), r.prenoms].filter(Boolean).join(' '),
+          champs: [
+            { k: 'nom', l: 'Nom', t: 'txt', req: true }, { k: 'prenoms', l: 'Prénoms', t: 'txt', req: true }, { k: 'sexe', l: 'Sexe', t: 'sexe', req: true },
+            { k: 'dateNaissance', l: 'Date de naissance', t: 'date', cache: true }, { k: 'cours', l: 'Cours', t: 'choix', o: COURS },
+            { k: 'dateVisite', l: 'Date de la visite', t: 'date', req: true }, { k: 'examinateur', l: 'Examinateur (agent de santé)', t: 'txt' },
+            { k: 'poids', l: 'Poids (kg)', t: 'num' }, { k: 'taille', l: 'Taille (cm)', t: 'num' },
+            { k: 'imc', l: 'IMC', t: 'calc', calc: (r) => (+r.poids && +r.taille ? Math.round(10 * r.poids / Math.pow(r.taille / 100, 2)) / 10 : '') },
+            { k: 'vue', l: 'Vue', t: 'choix', o: ['Normale', 'À surveiller', 'Déficiente'] }, { k: 'audition', l: 'Audition', t: 'choix', o: ['Normale', 'À surveiller', 'Déficiente'] },
+            { k: 'dentition', l: 'Dentition', t: 'choix', o: ['Bonne', 'Caries', 'À soigner'], cache: true }, { k: 'vaccination', l: 'Vaccination', t: 'choix', o: ['À jour', 'Incomplète', 'Inconnue'] },
+            { k: 'aptitude', l: 'Aptitude sportive', t: 'choix', o: ['Apte', 'Apte avec réserve', 'Inapte'], req: true },
+            { k: 'reserve', l: 'Réserves / contre-indications', t: 'txt', cache: true }, { k: 'orientation', l: 'Orientation / soins conseillés', t: 'long', cache: true }],
+          docsLigne: [{ type: 'APTITUDE', l: IC('valider-cercle') + 'Certificat d’aptitude sportive' }, { type: 'FICHE_SANTE', l: IC('sante') + 'Fiche de visite médicale' }] },
+        { id: 'infirmerie', titre: 'Infirmerie et incidents', coll: 'infirmerie', niveaux: ['ECOLE'], unique: ['date', 'heure', 'nom', 'prenoms'],
+          lib: (r) => [String(r.nom || '').toUpperCase(), r.prenoms, r.nature].filter(Boolean).join(' — '),
+          champs: [
+            { k: 'date', l: 'Date', t: 'date', req: true }, { k: 'heure', l: 'Heure', t: 'heure' }, { k: 'nom', l: 'Nom', t: 'txt', req: true }, { k: 'prenoms', l: 'Prénoms', t: 'txt' },
+            { k: 'sexe', l: 'Sexe', t: 'sexe' }, { k: 'cours', l: 'Cours', t: 'choix', o: COURS },
+            { k: 'nature', l: 'Nature', t: 'choix', o: ['Maladie', 'Blessure', 'Accident', 'Malaise', 'Morsure / piqûre', 'Conflit / violence', 'Autre'], req: true },
+            { k: 'circonstances', l: 'Circonstances', t: 'long', cache: true }, { k: 'soins', l: 'Premiers soins', t: 'long', cache: true },
+            { k: 'orientation', l: 'Orientation', t: 'choix', o: ['Retour en classe', 'Renvoyé(e) à la maison', 'Centre de santé', 'Hôpital'] },
+            { k: 'parentInforme', l: 'Parent informé', t: 'oui' }, { k: 'suivi', l: 'Suivi', t: 'long', cache: true }] },
+        { id: 'cantine', titre: 'Cantine : journal des repas', coll: 'cantine', niveaux: ['ECOLE'], unique: ['date', 'repas'],
+          lib: (r) => (r.date || '') + ' ' + (r.repas || ''),
+          champs: [
+            { k: 'date', l: 'Date', t: 'date', req: true }, { k: 'repas', l: 'Repas', t: 'choix', o: ['Petit-déjeuner', 'Déjeuner', 'Collation'], def: 'Déjeuner' },
+            { k: 'prevusG', l: 'Bénéficiaires prévus G', t: 'num' }, { k: 'prevusF', l: 'Bénéficiaires prévus F', t: 'num' },
+            { k: 'servisG', l: 'Repas servis G', t: 'num' }, { k: 'servisF', l: 'Repas servis F', t: 'num' },
+            { k: 'servis', l: 'Total servis', t: 'calc', calc: total('servisG', 'servisF') }, { k: 'menu', l: 'Menu', t: 'txt' },
+            { k: 'cuisinieres', l: 'Cuisinières / cuisiniers', t: 'num', cache: true }, { k: 'observations', l: 'Observations', t: 'long', cache: true }],
+          docsLigne: [] },
+        { id: 'stocks', titre: 'Cantine : stocks', coll: 'stocks', niveaux: ['ECOLE'], vue: 'stocks', unique: ['date', 'denree', 'mouvement', 'piece'],
+          lib: (r) => (r.denree || '') + ' ' + (r.mouvement || ''),
+          champs: [
+            { k: 'date', l: 'Date', t: 'date', req: true }, { k: 'denree', l: 'Denrée', t: 'choix', o: ['Riz', 'Maïs', 'Haricot / niébé', 'Huile', 'Sel', 'Sucre', 'Poisson / sardine', 'Farine enrichie', 'Gari', 'Légumes', 'Autre'], req: true },
+            { k: 'mouvement', l: 'Mouvement', t: 'choix', o: ['Entrée', 'Sortie'], req: true }, { k: 'quantite', l: 'Quantité', t: 'num', req: true },
+            { k: 'unite', l: 'Unité', t: 'choix', o: ['kg', 'litre', 'sac de 50 kg', 'sac de 25 kg', 'boîte', 'carton'], def: 'kg' },
+            { k: 'provenance', l: 'Provenance / destination', t: 'txt', aide: 'Ex. : PAM, État, parents, don ; repas du jour' }, { k: 'piece', l: 'N° de bordereau / pièce', t: 'txt' },
+            { k: 'observations', l: 'Observations', t: 'long', cache: true }] },
+        { id: 'besoins', titre: 'Élèves à besoins spécifiques', coll: 'besoinsSpec', niveaux: ['ECOLE'], unique: ['nom', 'prenoms', 'type'],
+          lib: (r) => [String(r.nom || '').toUpperCase(), r.prenoms].filter(Boolean).join(' '),
+          champs: [
+            { k: 'nom', l: 'Nom', t: 'txt', req: true }, { k: 'prenoms', l: 'Prénoms', t: 'txt' }, { k: 'sexe', l: 'Sexe', t: 'sexe' }, { k: 'cours', l: 'Cours', t: 'choix', o: COURS },
+            { k: 'type', l: 'Type de besoin', t: 'choix', o: ['Handicap moteur', 'Handicap visuel', 'Handicap auditif', 'Déficience intellectuelle', 'Troubles des apprentissages', 'Maladie chronique', 'Albinisme', 'Orphelin / vulnérable', 'Autre'], req: true },
+            { k: 'description', l: 'Description', t: 'long', cache: true }, { k: 'amenagements', l: 'Aménagements pédagogiques', t: 'long' },
+            { k: 'partenaire', l: 'Partenaire / prise en charge', t: 'txt' }, { k: 'statut', l: 'Suivi', t: 'choix', o: ['En cours', 'Pris en charge', 'Orienté', 'Clos'], def: 'En cours' }],
+          docsLigne: [{ type: 'INCLUSION', l: IC('accessibilite') + 'Fiche de suivi' }] },
+        { id: 'filles', titre: 'Scolarisation des filles', coll: 'filles', niveaux: ['ECOLE'], unique: [], annee: true,
+          lib: (r) => r.entiteLib || '',
+          champs: [
+            { k: 'inscrites', l: 'Filles inscrites', t: 'num' }, { k: 'garcons', l: 'Garçons inscrits', t: 'num' },
+            { k: 'indice', l: 'Indice de parité (F/G)', t: 'calc', calc: (r) => (+r.garcons ? Math.round(100 * r.inscrites / r.garcons) / 100 : '') },
+            { k: 'nouvellesCI', l: 'Nouvelles inscrites au CI', t: 'num' }, { k: 'abandons', l: 'Abandons de filles', t: 'num' },
+            { k: 'fillesCM2', l: 'Filles au CM2', t: 'num' }, { k: 'admisesCEP', l: 'Filles admises au CEP', t: 'num' },
+            { k: 'mentorat', l: 'Mentorat / marrainage', t: 'oui' }, { k: 'club', l: 'Club des filles', t: 'oui' },
+            { k: 'actions', l: 'Actions menées', t: 'long', cache: true }, { k: 'obstacles', l: 'Obstacles relevés', t: 'long', cache: true }] },
+        { id: 'decrochage', titre: 'Absences et décrochage', coll: 'decrochage', niveaux: ['ECOLE'], vue: 'decrochage', unique: ['nom', 'prenoms', 'dateSignalement'],
+          lib: (r) => [String(r.nom || '').toUpperCase(), r.prenoms].filter(Boolean).join(' '),
+          champs: [
+            { k: 'nom', l: 'Nom', t: 'txt', req: true }, { k: 'prenoms', l: 'Prénoms', t: 'txt' }, { k: 'sexe', l: 'Sexe', t: 'sexe' }, { k: 'cours', l: 'Cours', t: 'choix', o: COURS },
+            { k: 'absences', l: 'Demi-journées d’absence', t: 'num' }, { k: 'periode', l: 'Période', t: 'txt' }, { k: 'dateSignalement', l: 'Date du signalement', t: 'date', req: true },
+            { k: 'motif', l: 'Motif', t: 'choix', o: ['Maladie', 'Travaux domestiques', 'Travail des enfants', 'Mariage / grossesse précoce', 'Migration / déménagement', 'Éloignement de l’école', 'Difficultés scolaires', 'Manque de moyens', 'Inconnu', 'Autre'] },
+            { k: 'actions', l: 'Actions (visite, entretien, médiation…)', t: 'long', cache: true },
+            { k: 'statut', l: 'Statut', t: 'choix', o: ['Signalé', 'En suivi', 'Réintégré', 'Abandon définitif'], def: 'Signalé' }, { k: 'observations', l: 'Observations', t: 'long', cache: true }],
+          docsLigne: [{ type: 'DECROCHAGE', l: IC('alerte') + 'Fiche de signalement' }] }
+      ]
     }
   ];
 
@@ -189,7 +308,16 @@
     QUALIFIES: { lib: 'Liste des qualifiés pour le niveau supérieur', sig: 'président du bureau UASCEP + visa', code: 'QU' },
     DIPLOME: { lib: 'Diplôme d’honneur', sig: 'président du bureau UASCEP + visa de l’autorité', code: 'DI' },
     RECORDS: { lib: 'Tableau des records', sig: 'président du bureau UASCEP + visa', code: 'RE' },
-    TABLEAU: { lib: 'Tableau de bord du pilotage', sig: 'visa de l’autorité de l’entité', code: 'TB' }
+    TABLEAU: { lib: 'Tableau de bord du pilotage', sig: 'visa de l’autorité de l’entité', code: 'TB' },
+    NOTE: { lib: 'Note de service / circulaire / convocation', sig: 'autorité émettrice (visa : signature et cachet de l’entité)', code: 'NS' },
+    ACCUSES: { lib: 'État des accusés de réception', sig: 'autorité émettrice', code: 'AR' },
+    AGENDA: { lib: 'Agenda des activités', sig: 'autorité de l’entité', code: 'AG' },
+    APTITUDE: { lib: 'Certificat d’aptitude à la pratique sportive scolaire', sig: 'examinateur (à la main) + visa du directeur', code: 'AS' },
+    FICHE_SANTE: { lib: 'Fiche de visite médicale scolaire', sig: 'examinateur (à la main) + visa du directeur', code: 'FS' },
+    STOCK: { lib: 'État du stock de la cantine scolaire', sig: 'gestionnaire (à la main) + visa du directeur', code: 'ST' },
+    CANTINE: { lib: 'Journal de la cantine scolaire', sig: 'gestionnaire (à la main) + visa du directeur', code: 'CN' },
+    INCLUSION: { lib: 'Fiche de suivi d’un élève à besoins spécifiques', sig: 'enseignant titulaire (à la main) + visa du directeur', code: 'IN' },
+    DECROCHAGE: { lib: 'Fiche de signalement d’absentéisme / décrochage', sig: 'enseignant titulaire (à la main) + visa du directeur', code: 'SD' }
   };
 
   global.PVS_CATALOGUE = { NIVEAUX, DISCIPLINES, CATEGORIES, GENRES, COURS, FORMULES, PHASES, EPREUVES, UNITE_EPREUVE, DISTINCTIONS, MODULES, INDICATEURS, DOCUMENTS, categorieAge };

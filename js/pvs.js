@@ -63,6 +63,7 @@
   const nomComplet = (m) => [String(m.nom || '').toUpperCase(), m.prenoms || ''].filter(Boolean).join(' ').trim();
   function melanger(t) { const a = t.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   /** Copie sans les champs de suivi (dates de mise à jour, statut d'avancement, renvois ajoutés après coup) : ils ne changent pas le document signé */
+  const I = (n) => (global.Icones ? global.Icones.code(n) + ' ' : '');
   const sansMaj = (r) => { const o = Object.assign({}, r); ['maj', 'statut', 'versCompetition'].forEach(k => delete o[k]); return o; };
 
   /* ---------------- catalogue ---------------- */
@@ -164,7 +165,16 @@
     QUALIFIES: (e, ref) => DOC_CONTENU.PALMARES(e, ref),
     DIPLOME: (e, ref) => { const p = un(e, 'palmares', ref.id); return { p, c: un(e, 'competitions', p.competition) }; },
     RECORDS: (e, ref) => ({ r: parIds(e, 'performances', ref.ids) }),
-    TABLEAU: (e, ref) => ({ s: ref.instantane || null })
+    TABLEAU: (e, ref) => ({ s: ref.instantane || null }),
+    NOTE: (e, ref) => ({ n: un(e, 'notes', ref.id) }),
+    ACCUSES: (e, ref) => ({ n: un(e, 'notes', ref.id), l: (e.lectures || []).filter(x => x.note === ref.id).map(sansMaj).sort((a, b) => String(a.id).localeCompare(String(b.id))) }),
+    AGENDA: (e, ref) => ({ r: parIds(e, 'agenda', ref.ids) }),
+    APTITUDE: (e, ref) => ({ v: un(e, 'visitesMed', ref.id) }),
+    FICHE_SANTE: (e, ref) => ({ v: un(e, 'visitesMed', ref.id) }),
+    STOCK: (e, ref) => ({ r: parIds(e, 'stocks', ref.ids) }),
+    CANTINE: (e, ref) => ({ r: parIds(e, 'cantine', ref.ids) }),
+    INCLUSION: (e, ref) => ({ b: un(e, 'besoinsSpec', ref.id) }),
+    DECROCHAGE: (e, ref) => ({ d: un(e, 'decrochage', ref.id) })
   };
   function contenuDocument(etat, type, ref) {
     const f = DOC_CONTENU[type] || ((e, r) => ({ ref: r }));
@@ -324,7 +334,15 @@
       if (niv === 'CS') { const d = (entites('DDEMP')[0] || {}).cle; return d ? ['DDEMP', d] : null; }
       return null;
     }
-    const lignes = (coll) => (etat[coll] || []).filter(visible);
+    /** Entités destinataires d'une note (vide = toutes celles de ce niveau rattachées à l'émetteur) */
+    function destinatairesDe(r) {
+      const n = r.destNiveau || 'ECOLE';
+      if (Array.isArray(r.destinataires) && r.destinataires.length) return r.destinataires.map(k => [n, String(k)]);
+      return entites(n).filter(e => entite(r.niveau, r.entite) ? dans(n, e.cle, r.niveau, r.entite) : true).map(e => [n, String(e.cle)]);
+    }
+    const recue = (r) => destinatairesDe(r).some(([n, k]) => entite(n, k));
+    const VISIBLE = { notes: (r) => visible(r) || recue(r), lectures: (r) => visible(r) || etat.notes.some(n => n.id === r.note && visible(n)) };
+    const lignes = (coll) => (etat[coll] || []).filter(VISIBLE[coll] || visible);
     const ongletColl = (coll) => ongletDeColl(coll);
     function libRef(coll, id) {
       if (!id) return '';
@@ -340,11 +358,13 @@
 
     /* ---------- valeurs affichées ---------- */
     function valeur(ch, r, texte) {
-      const v = ch.t === 'calc' ? ch.calc(r) : r[ch.k];
+      const v = ch.t === 'calc' ? ch.calc(r, api) : r[ch.k];
       if (ch.t === 'date') return fr(v);
       if (ch.t === 'ref') return libRef(ch.o, v);
       if (ch.t === 'ecole') return r[ch.k + 'Lib'] || ecoleLib(v) || '';
       if (ch.t === 'multi') return Array.isArray(v) ? v.join(', ') : (v || '');
+      if (ch.t === 'choix' && ch.lib) return ch.lib[v] || v || '';
+      if (ch.t === 'entites') { const n = r[ch.dep] || 'ECOLE'; return Array.isArray(v) && v.length ? v.map(k => (entite(n, k) || {}).lib || k).join(' ; ') : 'Toutes (' + (ch.lib || '') + destinatairesDe(r).length + ')'; }
       if (ch.t === 'sexe') return texte ? (v || '') : (v === 'F' ? 'F' : v === 'M' ? 'M' : '');
       return v == null ? '' : v;
     }
@@ -385,7 +405,7 @@
       let v = null; if (A.visa) { try { v = await A.visa(niv, cle); } catch (e) { v = null; } }
       v = v || {};
       const titre = v.titre || VISA_DEFAUT[niv] || 'Le Responsable';
-      return { html: blocSig((prefixe === undefined ? 'Vu — ' : prefixe) + titre, v.nom || '', v.signature || '', v.cachet || ''), nom: v.nom || '', titre };
+      return { html: blocSig((prefixe === undefined ? 'Vu — ' : prefixe) + titre, v.nom || '', v.signature || '', v.cachet || ''), nom: v.nom || '', titre, signature: v.signature || '', cachet: v.cachet || '' };
     }
     /** Logo UASCEP du bureau de l'entité (réglé dans « Bureaux UASCEP »), sinon logo par défaut de l'entité */
     async function logoUas(niv, cle, taille) {
@@ -482,14 +502,14 @@
       const sSaison = selectListe(saisons(), saisonDe(r), null);
       const champsEl = {};
       const form = h('div', { class: 'pvs-form' });
-      const lab = (txt, el, ch) => h('label', { class: (ch && (ch.t === 'long' || ch.t === 'multi') ? 'large' : '') }, h('span', { class: ch && ch.req ? 'req' : '' }, txt), el, ch && ch.aide ? h('span', { class: 'pvs-aide' }, ch.aide) : null);
+      const lab = (txt, el, ch) => h('label', { class: (ch && (ch.t === 'long' || ch.t === 'multi' || ch.t === 'entites') ? 'large' : '') }, h('span', { class: ch && ch.req ? 'req' : '' }, txt), el, ch && ch.aide ? h('span', { class: 'pvs-aide' }, ch.aide) : null);
       if (ew.length > 1 || ew[0][1].length > 1 || (o.niveaux || []).length > 1) form.append(lab('Niveau', sNiv), lab('Entité', sEnt));
       form.append(lab(o.annee ? 'Année scolaire' : 'Saison', sSaison));
       const lire = () => {
         const x = Object.assign({}, r, { niveau: sNiv.value, entite: sEnt.value });
         if (o.annee) x.annee = sSaison.value; else x.saison = sSaison.value;
         o.champs.forEach(c => { const el = champsEl[c.k]; if (!el || c.t === 'calc') return;
-          if (c.t === 'multi') x[c.k] = [...el.querySelectorAll('input:checked')].map(i => i.value);
+          if (c.t === 'multi' || c.t === 'entites') x[c.k] = [...el.querySelectorAll('input:checked')].map(i => i.value);
           else if (c.t === 'num') x[c.k] = el.value === '' ? '' : num(el.value);
           else x[c.k] = el.value;
           if (c.t === 'ecole') x[c.k + 'Lib'] = ecoleLib(el.value); });
@@ -503,7 +523,14 @@
         else if (c.t === 'num') el = h('input', { type: 'number', step: 'any', inputmode: 'decimal', value: vide(v) ? '' : v });
         else if (c.t === 'date') el = h('input', { type: 'date', value: iso(v) });
         else if (c.t === 'heure') el = h('input', { type: 'time', value: v || '' });
-        else if (c.t === 'choix') el = selectListe(c.o.filter(x => x !== ''), v);
+        else if (c.t === 'choix') el = selectListe(c.o.filter(x => x !== '').map(x => c.lib ? [x, c.lib[x] || x] : x), v);
+        else if (c.t === 'entites') {
+          const coches = new Set((Array.isArray(v) ? v : []).map(String));
+          const remplir = (row) => { const n = row[c.dep] || 'ECOLE', l = entites(n).filter(e => !row.entite || !entite(row.niveau, row.entite) || dans(n, e.cle, row.niveau, row.entite));
+            el.replaceChildren(...(l.length ? l.map(e => h('label', {}, h('input', { type: 'checkbox', value: e.cle, checked: coches.has(String(e.cle)) ? true : null }), e.lib)) : [h('span', { class: 'pvs-aide' }, 'Aucune entité de ce niveau dans votre périmètre.')])); };
+          el = h('div', { class: 'pvs-multi' }); remplir(r);
+          el._maj = () => { el.querySelectorAll('input:checked').forEach(i => coches.add(i.value)); el.querySelectorAll('input:not(:checked)').forEach(i => coches.delete(i.value)); remplir(lire()); };
+        }
         else if (c.t === 'oui') el = selectListe(['Oui', 'Non'], v);
         else if (c.t === 'sexe') el = selectListe([['M', 'Masculin (M)'], ['F', 'Féminin (F)']], v);
         else if (c.t === 'ecole') {
@@ -514,15 +541,15 @@
         else if (c.t === 'multi') {
           const sel = new Set(Array.isArray(v) ? v : String(v || '').split(/\s*[,;]\s*/).filter(Boolean));
           el = h('div', { class: 'pvs-multi' }, c.o.map(x => h('label', {}, h('input', { type: 'checkbox', value: x, checked: sel.has(x) ? true : null }), x)));
-        } else if (c.t === 'calc') { el = h('input', { readonly: true, value: c.calc(r), tabindex: '-1' }); calcEls.push([c, el]); }
+        } else if (c.t === 'calc') { el = h('input', { readonly: true, value: c.calc(r, api), tabindex: '-1' }); calcEls.push([c, el]); }
         else el = h('input', { type: 'text', value: v == null ? '' : v });
         el.setAttribute('data-k', c.k);
         champsEl[c.k] = el;
         form.append(lab(c.l, el, c));
       });
-      const maj = () => { const x = lire(); calcEls.forEach(([c, el]) => { el.value = c.calc(x); }); o.champs.forEach(c => { if (champsEl[c.k] && champsEl[c.k]._maj && (c.dep || c.t === 'ecole')) champsEl[c.k]._maj(); }); };
-      form.addEventListener('change', (e) => { if (e.target === sNiv) majEnt(); maj(); });
-      form.addEventListener('input', () => calcEls.forEach(([c, el]) => { el.value = c.calc(lire()); }));
+      const maj = (e) => { const x = lire(); calcEls.forEach(([c, el]) => { el.value = c.calc(x, api); }); o.champs.forEach(c => { if (champsEl[c.k] && champsEl[c.k]._maj && (c.dep || c.t === 'ecole') && !(e && champsEl[c.k].contains(e.target))) champsEl[c.k]._maj(); }); };
+      form.addEventListener('change', (e) => { if (e.target === sNiv) majEnt(); maj(e); });
+      form.addEventListener('input', () => calcEls.forEach(([c, el]) => { el.value = c.calc(lire(), api); }));
       const res = await dialogue((nouveau ? 'Ajouter — ' : 'Modifier — ') + o.titre, h('div', {}, o.aide ? h('p', { class: 'pvs-aide', style: 'margin:0 0 8px' }, o.aide) : null, form), [
         { l: 'Annuler', v: null },
         { l: '\uE007 Enregistrer', p: true, id: 'enregistrer', action: () => {
@@ -553,6 +580,13 @@
         r.nom = String(r.nom || '').toUpperCase();
       },
       performances(r) { r.nom = String(r.nom || '').toUpperCase(); if (!r.categorie && r.licence) { const l = etat.licences.find(x => x.numero === r.licence); if (l) r.categorie = l.categorie; } },
+      visitesMed(r) {
+        r.nom = String(r.nom || '').toUpperCase();
+        const l = etat.licences.find(x => String(x.entite) === String(r.entite) && x.saison === r.saison && norm(x.nom) === norm(r.nom) && norm(x.prenoms) === norm(r.prenoms));
+        if (l) { l.aptitude = r.aptitude; l.dateVisite = r.dateVisite; l.maj = new Date().toISOString(); }
+      },
+      decrochage(r) { r.nom = String(r.nom || '').toUpperCase(); },
+      besoinsSpec(r) { r.nom = String(r.nom || '').toUpperCase(); },
       matchs(r) { if (r.statut === 'Programmé' && ((!vide(r.scoreA) && !vide(r.scoreB)) || r.forfait)) r.statut = 'Joué'; }
     };
 
@@ -586,9 +620,11 @@
         let niv = niveauDe(x.niveau) || (o.niveaux.length === 1 ? o.niveaux[0] : '');
         let e = niv && trouverEntite(niv, x.entite);
         if (!e && !x.entite && ew.length === 1 && ew[0][1].length === 1) { niv = ew[0][0]; e = ew[0][1][0]; }
+        if ((!niv || !e) && o.coll === 'notes' && niv && x.entite) e = { cle: 'ext:' + norm(x.entite), lib: String(x.entite), externe: true };
         if (!niv || !e) { rejets.push(`Ligne ${x._ligne} : niveau ou entité inconnu (« ${x.niveau || ''} » / « ${x.entite || ''} »)`); return; }
         if (!(o.niveaux || []).includes(niv)) { rejets.push(`Ligne ${x._ligne} : niveau « ${LIB_NIVEAU[niv]} » non prévu pour cette rubrique`); return; }
-        if (!peut(niv, e.cle)) { rejets.push(`Ligne ${x._ligne} : « ${e.lib} » hors de votre périmètre`); return; }
+        const recueExt = o.coll === 'notes' && (e.externe || !peut(niv, e.cle));
+        if (!peut(niv, e.cle) && !recueExt) { rejets.push(`Ligne ${x._ligne} : « ${e.lib} » hors de votre périmètre`); return; }
         const r = { niveau: niv, entite: String(e.cle), entiteLib: e.lib };
         const s = String(x[o.annee ? 'annee scolaire' : 'saison'] || '').trim() || (F[o.id] || {}).saison || saisonCourante();
         if (o.annee) r.annee = s; else r.saison = s;
@@ -600,13 +636,15 @@
           else if (c.t === 'num') r[c.k] = t === '' ? '' : num(t);
           else if (c.t === 'sexe') r[c.k] = /^f/i.test(t) ? 'F' : /^(m|g|h)/i.test(t) ? 'M' : '';
           else if (c.t === 'oui') r[c.k] = /^o|^y|^1|^v/i.test(t) ? 'Oui' : t ? 'Non' : '';
-          else if (c.t === 'choix') r[c.k] = (c.o.find(v => norm(v) === norm(t)) || t);
+          else if (c.t === 'choix') r[c.k] = (c.o.find(v => norm(v) === norm(t) || (c.lib && norm(c.lib[v]) === norm(t))) || (c.k === 'destNiveau' ? niveauDe(t) : '') || t);
           else if (c.t === 'multi') r[c.k] = t.split(/\s*[,;]\s*/).filter(Boolean).map(v => c.o.find(z => norm(z) === norm(v)) || v);
+          else if (c.t === 'entites') r[c.k] = /^toutes/i.test(t) ? [] : t.split(/\s*;\s*/).filter(Boolean).map(v => { const e2 = trouverEntite(r[c.dep] || 'ECOLE', v); return e2 ? String(e2.cle) : null; }).filter(Boolean);
           else if (c.t === 'ecole') { const ec = trouverEntite('ECOLE', t); r[c.k] = ec ? String(ec.cle) : ''; r[c.k + 'Lib'] = ec ? ec.lib : t; }
           else if (c.t === 'ref') { const cand = (nouv && c.o === o.coll ? nouv : etat[c.o]).filter(z => visible(z) && norm(libRef(c.o, z.id)) === norm(t)); const pref = cand.find(z => saisonDe(z) === s) || cand[0]; r[c.k] = pref ? pref.id : ''; if (t && !pref) rejets.push(`Ligne ${x._ligne} : « ${t} » introuvable dans « ${(ongletColl(c.o) || {}).titre} » (champ laissé vide)`); }
           else r[c.k] = t;
         });
         const manque = o.champs.filter(c => c.req && (Array.isArray(r[c.k]) ? !r[c.k].length : vide(r[c.k])));
+        if (recueExt) { if (!recue(r)) { rejets.push(`Ligne ${x._ligne} : note de « ${e.lib} » sans destinataire dans votre périmètre`); return; } r.recue = true; }
         if (manque.length) { rejets.push(`Ligne ${x._ligne} : ${manque.map(c => c.l).join(', ')} manquant(s)`); return; }
         if (AVANT[o.coll]) AVANT[o.coll](r, api);
         const cle = (z) => (o.unique || []).map(k => norm(Array.isArray(z[k]) ? z[k].join(',') : z[k])).join('|');
@@ -650,6 +688,7 @@
     }
     function rubrique(o, zone) {
       const box = h('div', {});
+      const apres = () => (o.vue || MOD.id === 'communication' || MOD.id === 'sante' ? dessiner() : dessinerTable());
       const dessinerTable = (garderFocus) => {
         const rows = filtrer(o);
         if (!garderFocus) box.replaceChildren(barreFiltres(o, (g) => dessinerTable(g)));
@@ -660,14 +699,14 @@
         const ew = entitesEcrivables(o).length > 0;
         const outils = (OUTILS[o.coll] ? OUTILS[o.coll](o, rows) : []).filter(Boolean);
         box.append(h('div', { class: 'pvs-actions' },
-          ew ? h('button', { class: 'pvs-btn p', type: 'button', 'data-pvs': 'ajouter', onclick: async () => { if (await formulaire(o)) dessinerTable(); } }, '\uE001 Ajouter') : null,
+          ew ? h('button', { class: 'pvs-btn p', type: 'button', 'data-pvs': 'ajouter', onclick: async () => { if (await formulaire(o)) apres(); } }, '\uE001 Ajouter') : null,
           h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'excel', onclick: () => exporter([feuille(o, rows)], o.coll) }, '\uE015 Excel'),
           ew ? h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'importer', onclick: () => importer(o) }, '\uE00B Importer') : null,
           h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'liste', onclick: () => imprimerListe(o, rows) }, '\uE008 Liste certifiée'),
           ecrireUneLigne ? h('button', { class: 'pvs-btn d', type: 'button', 'data-pvs': 'reinitialiser', onclick: async () => {
             const cibles = rows.filter(r => peut(r.niveau, r.entite));
             if (!(await confirmer('Réinitialiser — ' + o.titre, `Supprimer les ${cibles.length} ligne(s) affichée(s) (filtres en cours) ? Pensez à exporter l’Excel avant.`, '\uE058 Réinitialiser'))) return;
-            const ids = new Set(cibles.map(r => r.id)); etat[o.coll] = etat[o.coll].filter(r => !ids.has(r.id)); await sauver(); dessinerTable();
+            const ids = new Set(cibles.map(r => r.id)); etat[o.coll] = etat[o.coll].filter(r => !ids.has(r.id)); await sauver(); apres();
           } }, '\uE058 Réinitialiser') : null, ...outils));
         if (!rows.length) { box.append(h('p', { class: 'pvs-vide' }, 'Aucune ligne pour ces filtres.' + (ew ? ' Utilisez « \uE001 Ajouter » ou « \uE00B Importer ».' : ''))); return; }
         const rang = o.coll === 'performances' ? rangsPerformances(lignes('performances')) : o.coll === 'resultats' ? rangsPoints(rows) : null;
@@ -679,10 +718,11 @@
             cols.map(c => h('td', { class: c.t === 'num' || c.t === 'calc' ? 'n' : '' }, String(valeur(c, r)))), rang ? h('td', { class: 'c' }, rang[r.id] || '') : null,
             h('td', { class: 'act' },
               (o.docsLigne || []).map(d => h('button', { class: 'pvs-btn s', type: 'button', title: d.l, 'data-pvs': 'doc-' + d.type, onclick: () => DOCS[d.type](r, o) }, d.l.split(' ')[0])),
-              w ? h('button', { class: 'pvs-btn s', type: 'button', title: 'Modifier', 'data-pvs': 'modifier', onclick: async () => { if (await formulaire(o, r)) dessinerTable(); } }, '\uE006') : null,
+              (o.actionsLigne || []).map(a => h('button', { class: 'pvs-btn s', type: 'button', title: a.l, 'data-pvs': 'action-' + a.id, onclick: () => ACTIONS[a.id](r, o) }, a.l.split(' ')[0])),
+              w ? h('button', { class: 'pvs-btn s', type: 'button', title: 'Modifier', 'data-pvs': 'modifier', onclick: async () => { if (await formulaire(o, r)) apres(); } }, '\uE006') : null,
               w ? h('button', { class: 'pvs-btn s d', type: 'button', title: 'Supprimer', 'data-pvs': 'supprimer', onclick: async () => {
                 if (!(await confirmer('Supprimer', `Supprimer « ${(o.lib && o.lib(r, api)) || 'cette ligne'} » ?`, '\uE005 Supprimer'))) return;
-                etat[o.coll] = etat[o.coll].filter(x => x.id !== r.id); await sauver(); dessinerTable();
+                etat[o.coll] = etat[o.coll].filter(x => x.id !== r.id); await sauver(); apres();
               } }, '\uE005') : null)));
         });
         box.append(h('div', { class: 'pvs-tw' }, h('table', { class: 'pvs-t' }, h('thead', {}, h('tr', {}, tete.map(t => h('th', {}, t)))), tb)));
@@ -1166,8 +1206,189 @@
     }
     const agreger = (calc, niv, cle, annee) => agregerEcoles(calc, ecolesDe(niv, cle), niv, cle, annee);
 
+
+    /* ======================================================== lot B ======================================================== */
+    /** Accusés de réception d'une note : « reçus / destinataires » */
+    function accuses(r) { const d = destinatairesDe(r), l = etat.lectures.filter(x => x.note === r.id); const n = d.filter(([nv, k]) => l.some(x => x.niveau === nv && String(x.entite) === k)).length; return n + ' / ' + d.length; }
+    const jours = (d) => { const t = new Date(String(iso(d)) + 'T12:00:00'); return isNaN(t) ? null : Math.round((t - new Date(auj() + 'T12:00:00')) / 864e5); };
+    /** Notes reçues par les entités que le compte dirige (boîte de réception) */
+    function recues() {
+      return lignes('notes').map(n => ({ n, d: destinatairesDe(n).filter(([nv, k]) => entite(nv, k) && peut(nv, k)) })).filter(x => x.d.length && !(x.d.length === 1 && x.d[0][0] === x.n.niveau && x.d[0][1] === String(x.n.entite)));
+    }
+    const lu = (n, nv, k) => etat.lectures.some(x => x.note === n.id && x.niveau === nv && String(x.entite) === String(k));
+    async function accuser(n, nv, k) {
+      if (lu(n, nv, k)) return;
+      const e = entite(nv, k) || {};
+      etat.lectures.push({ id: uid(), cree: auj(), maj: new Date().toISOString(), niveau: nv, entite: String(k), entiteLib: e.lib || '', saison: n.saison || saisonCourante(), note: n.id, date: auj(), lecteur: (A.utilisateur ? A.utilisateur() : '') || A.app || '' });
+      await sauver();
+    }
+    /** Alertes calculées : échéances, notes non lues, convocations, décrochage, licences, stocks */
+    async function alertes() {
+      const out = [];
+      lignes('echeances').filter(r => r.statut !== 'Fait' && peut(r.niveau, r.entite) || (r.statut !== 'Fait' && visible(r))).forEach(r => { const j = jours(r.dateLimite); if (j === null) return;
+        if (j < 0) out.push({ g: 'ko', t: 'Échéance dépassée', d: r.objet + ' — ' + r.entiteLib + ' — date limite ' + fr(r.dateLimite) + ' (' + (-j) + ' j de retard)', o: 'echeances' });
+        else if (j <= (num(r.rappelJours) || 7)) out.push({ g: 'at', t: 'Échéance proche', d: r.objet + ' — ' + r.entiteLib + ' — ' + fr(r.dateLimite) + ' (dans ' + j + ' j)', o: 'echeances' }); });
+      recues().forEach(({ n, d }) => { const nl = d.filter(([nv, k]) => !lu(n, nv, k)); if (nl.length) out.push({ g: 'at', t: 'Note non lue', d: (n.type || 'Note') + ' — ' + n.objet + ' (de ' + n.entiteLib + ', ' + fr(n.date) + ')' + (nl.length > 1 ? ' — ' + nl.length + ' entités' : ''), o: 'boite' });
+        if (n.type === 'Convocation') { const j = jours(n.dateReunion); if (j !== null && j >= 0 && j <= 7) out.push({ g: 'at', t: 'Convocation', d: n.objet + ' — ' + fr(n.dateReunion) + (n.heureReunion ? ' à ' + n.heureReunion : '') + (n.lieuReunion ? ', ' + n.lieuReunion : ''), o: 'boite' }); } });
+      lignes('agenda').forEach(r => { const j = jours(r.date); if (j !== null && j >= 0 && j <= 3) out.push({ g: 'ok', t: 'Agenda', d: r.objet + ' — ' + fr(r.date) + (r.heureDebut ? ' à ' + r.heureDebut : '') + (r.lieu ? ', ' + r.lieu : ''), o: 'agenda' }); });
+      lignes('decrochage').filter(r => r.statut === 'Signalé' || r.statut === 'En suivi').forEach(r => out.push({ g: r.statut === 'Signalé' ? 'ko' : 'at', t: 'Décrochage — ' + r.statut, d: nomComplet(r) + ' (' + (r.cours || '') + ', ' + r.entiteLib + ') — ' + (r.absences || 0) + ' demi-journée(s) d’absence', o: 'sante.decrochage' }));
+      (await alertesAbsences()).forEach(a => out.push({ g: 'ko', t: 'Absences répétées', d: a.nom + ' ' + (a.prenoms || '') + ' (' + (a.cours || '') + ', ' + a.ecoleLib + ') — ' + a.absences + ' demi-journées sur 30 jours, sans fiche de suivi', o: 'sante.decrochage' }));
+      const s = saisonCourante();
+      const nonEx = lignes('licences').filter(l => l.saison === s && (l.aptitude === 'Non examiné' || !l.aptitude)).length, inap = lignes('licences').filter(l => l.saison === s && l.aptitude === 'Inapte').length;
+      if (nonEx) out.push({ g: 'at', t: 'Licences', d: nonEx + ' licencié(s) sans visite médicale (saison ' + s + ')', o: 'sante.visites' });
+      if (inap) out.push({ g: 'ko', t: 'Licences', d: inap + ' licencié(s) inapte(s) : à retirer des listes de joueurs', o: 'sport.licences' });
+      soldes().filter(x => x.solde <= 0).forEach(x => out.push({ g: 'ko', t: 'Stock épuisé', d: x.denree + ' — ' + x.ecoleLib + ' : solde ' + x.solde + ' ' + x.unite, o: 'sante.stocks' }));
+      return out;
+    }
+    let seuilAbs = +(memo.get('pvs.seuilAbs') || 6);
+    async function alertesAbsences() {
+      if (!A.absences) return [];
+      const out = [];
+      for (const e of ecoles().filter(x => peut('ECOLE', x.cle))) {
+        let l = []; try { l = (await A.absences(e.cle)) || []; } catch (x) { l = []; }
+        l.filter(a => num(a.absences) >= seuilAbs && !etat.decrochage.some(d => String(d.entite) === String(e.cle) && norm(d.nom) === norm(a.nom) && norm(d.prenoms) === norm(a.prenoms) && d.statut !== 'Réintégré'))
+          .forEach(a => out.push(Object.assign({ ecole: e.cle, ecoleLib: e.lib }, a)));
+      }
+      return out;
+    }
+    /** Soldes des stocks de cantine par école et denrée */
+    function soldes() {
+      const m = new Map();
+      lignes('stocks').forEach(r => { const k = r.entite + '|' + r.denree + '|' + (r.unite || ''); const x = m.get(k) || { ecole: r.entite, ecoleLib: r.entiteLib, denree: r.denree, unite: r.unite || '', entrees: 0, sorties: 0, ids: [] };
+        if (r.mouvement === 'Sortie') x.sorties += num(r.quantite); else x.entrees += num(r.quantite); x.ids.push(r.id); m.set(k, x); });
+      return [...m.values()].map(x => Object.assign(x, { solde: Math.round(100 * (x.entrees - x.sorties)) / 100 })).sort((a, b) => String(a.ecoleLib).localeCompare(String(b.ecoleLib), 'fr') || String(a.denree).localeCompare(String(b.denree), 'fr'));
+    }
+    async function bandeauAlertes(zone) {
+      const l = await alertes(); if (!l.length) return;
+      const ko = l.filter(x => x.g === 'ko').length;
+      zone.prepend(h('div', { class: 'pvs-carte', 'data-pvs': 'bandeau-alertes', style: 'border-color:' + (ko ? '#FDA29B' : '#FEDF89') + ';background:' + (ko ? '#FEF3F2' : '#FFFAEB') },
+        h('b', {}, I('alerte') + l.length + ' alerte(s)'), ' — ', l.slice(0, 3).map(x => x.t + ' : ' + x.d).join(' · '), l.length > 3 ? ' …' : '',
+        MOD.id === 'communication' ? h('button', { class: 'pvs-btn s', type: 'button', style: 'margin-left:8px', onclick: () => { onglet = 'alertes'; dessiner(); } }, 'Voir') : null));
+    }
+    const texteMessage = (r) => (r.objet ? r.objet + ' — ' : '') + (r.texte || '');
+    const ACTIONS = {
+      whatsapp: (r) => { window.open('https://wa.me/?text=' + encodeURIComponent(texteMessage(r)), '_blank'); },
+      sms: (r) => { location.href = 'sms:?body=' + encodeURIComponent(texteMessage(r)); },
+      copier: async (r) => { try { await navigator.clipboard.writeText(texteMessage(r)); toast('Message copié.'); } catch (e) { toast('Copie impossible : sélectionnez le texte.'); } }
+    };
+    Object.assign(OUTILS, {
+      cantine: (o, rows) => [h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'doc-CANTINE', onclick: () => rows.length ? DOCS.CANTINE(rows) : toast('Aucun repas pour ces filtres.') }, I('imprimer') + 'Journal de la cantine (PDF)')],
+      agenda: (o, rows) => [h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'doc-AGENDA', onclick: () => rows.length ? DOCS.AGENDA(rows) : toast('Aucune activité.') }, I('imprimer') + 'Agenda (PDF)')]
+    });
+    const ecoleVisa = async (cle) => sigVisa('ECOLE', cle);
+    const ficheEleve = (r, champs) => '<div class="pvs-kv">' + champs.map(([k, v]) => '<b>' + esc(k) + '</b><span>' + esc(v == null || v === '' ? '—' : v) + '</span>').join('') + '</div>';
+    Object.assign(DOCS, {
+      NOTE: (r) => document_('NOTE', { id: r.id }, async () => {
+        const v = await sigVisa(r.niveau, r.entite, ''), d = destinatairesDe(r);
+        const dest = Array.isArray(r.destinataires) && r.destinataires.length ? d.map(([n, k]) => (entite(n, k) || {}).lib || k).join(' ; ') : 'Toutes les entités (' + ((ongletColl('notes').champs.find(c => c.k === 'destNiveau').lib || {})[r.destNiveau] || r.destNiveau) + ') — ' + d.length;
+        const conv = r.type === 'Convocation' ? '<p class="j"><b>Date :</b> ' + esc(fr(r.dateReunion) || '…') + (r.heureReunion ? ' à ' + esc(r.heureReunion) : '') + ' — <b>Lieu :</b> ' + esc(r.lieuReunion || '…') + '</p>' : '';
+        return { titre: (r.type || 'Note de service') + (r.reference ? ' n° ' + r.reference : ''), corps: '<p class="c">' + esc(r.entiteLib) + ' — ' + esc(fr(r.date)) + '</p>'
+          + '<p><b>Objet :</b> ' + esc(r.objet) + '</p><p><b>Destinataires :</b> ' + esc(dest) + '</p>' + conv
+          + String(r.texte || '').split(/\n{2,}/).map(x => '<p class="j">' + esc(x).replace(/\n/g, '<br>') + '</p>').join('')
+          + (r.echeance ? '<p><b>Réponse attendue le :</b> ' + esc(fr(r.echeance)) + '</p>' : '') + (r.pieces ? '<p><b>Pièces jointes / ampliations :</b><br>' + esc(r.pieces).replace(/\n/g, '<br>') + '</p>' : ''),
+          sigs: [r.signataire ? blocSig(r.signataire, '', v.signature || '', v.cachet || '') : v], resume: { entite: r.entiteLib, objet: r.objet, mention: (r.type || '') + (r.reference ? ' n° ' + r.reference : ''), signataire: r.signataire || v.nom } };
+      }),
+      ACCUSES: (r) => document_('ACCUSES', { id: r.id }, async () => {
+        const v = await sigVisa(r.niveau, r.entite, ''), d = destinatairesDe(r);
+        return { titre: 'État des accusés de réception', corps: '<p class="c">' + esc((r.type || 'Note') + (r.reference ? ' n° ' + r.reference : '') + ' du ' + fr(r.date) + ' — ' + r.objet) + '</p>'
+          + tableDoc(['N°', 'Destinataire', 'Accusé de réception', 'Date', 'Lecteur'], d.map(([n, k], i) => { const l = etat.lectures.find(x => x.note === r.id && x.niveau === n && String(x.entite) === k); return [i + 1, (entite(n, k) || {}).lib || k, l ? 'Reçu' : 'Non reçu', l ? fr(l.date) : '', l ? l.lecteur : '']; }), ['c', 0, 'c', 'c', 0])
+          + '<p>' + esc(accuses(r)) + ' accusé(s) de réception.</p>', sigs: [v], resume: { entite: r.entiteLib, objet: r.objet, mention: accuses(r), signataire: v.nom } };
+      }),
+      AGENDA: (rows) => document_('AGENDA', { ids: rows.map(r => r.id) }, async () => {
+        const a = ctx.autorite || {}, v = a.niveau ? await sigVisa(a.niveau, a.cle, '') : { html: '', nom: '' };
+        const l = rows.slice().sort((x, y) => String(x.date).localeCompare(String(y.date)) || String(x.heureDebut || '').localeCompare(String(y.heureDebut || '')));
+        return { titre: 'Agenda des activités', corps: tableDoc(['Date', 'Heure', 'Objet', 'Type', 'Lieu', 'Entité', 'Organisateur'], l.map(r => [fr(r.date), [r.heureDebut, r.heureFin].filter(Boolean).join(' – '), r.objet, r.type, r.lieu, r.entiteLib, r.organisateur])),
+          sigs: [v].filter(x => x.html), resume: { entite: a.niveau ? (entite(a.niveau, a.cle) || {}).lib : '', objet: 'Agenda', mention: l.length + ' activité(s)', signataire: v.nom } };
+      }),
+      APTITUDE: (r) => document_('APTITUDE', { id: r.id }, async () => {
+        const v = await ecoleVisa(r.entite);
+        return { titre: 'Certificat d’aptitude à la pratique sportive scolaire', uas: ['ECOLE', r.entite], corps: '<p class="j" style="margin-top:14px">Je soussigné(e) <b>' + esc(r.examinateur || '……………………………') + '</b>, certifie avoir examiné le '
+          + esc(fr(r.dateVisite)) + ' l’élève <b>' + esc(nomComplet(r)) + '</b>' + (r.cours ? ', ' + esc(r.cours) : '') + ', de l’école ' + esc(r.entiteLib) + ', et déclare qu’il / elle est <b>' + esc(String(r.aptitude || '').toLowerCase()) + '</b> à la pratique des activités physiques et sportives scolaires'
+          + (r.reserve ? ' (réserves : ' + esc(r.reserve) + ')' : '') + ' pour la saison ' + esc(r.saison || '') + '.</p><p class="j">Certificat délivré pour servir et valoir ce que de droit.</p>',
+          sigs: [blocSig('L’examinateur', r.examinateur || '', '', ''), v], resume: { entite: r.entiteLib, objet: nomComplet(r), mention: r.aptitude, signataire: r.examinateur || v.nom } };
+      }),
+      FICHE_SANTE: (r) => document_('FICHE_SANTE', { id: r.id }, async () => {
+        const v = await ecoleVisa(r.entite), imc = champsDe('visitesMed').find(c => c.k === 'imc').calc(r);
+        return { titre: 'Fiche de visite médicale scolaire', corps: ficheEleve(r, [['Élève', nomComplet(r)], ['Sexe', r.sexe], ['Né(e) le', fr(r.dateNaissance)], ['Cours', r.cours], ['École', r.entiteLib], ['Date de la visite', fr(r.dateVisite)], ['Examinateur', r.examinateur],
+          ['Poids / taille', (r.poids ? r.poids + ' kg' : '—') + ' / ' + (r.taille ? r.taille + ' cm' : '—')], ['IMC', imc], ['Vue', r.vue], ['Audition', r.audition], ['Dentition', r.dentition], ['Vaccination', r.vaccination], ['Aptitude sportive', r.aptitude + (r.reserve ? ' — ' + r.reserve : '')], ['Orientation / soins', r.orientation]]),
+          sigs: [blocSig('L’examinateur', r.examinateur || '', '', ''), v], resume: { entite: r.entiteLib, objet: nomComplet(r), mention: 'visite du ' + fr(r.dateVisite), signataire: r.examinateur || v.nom } };
+      }),
+      STOCK: (l, niv, cle) => document_('STOCK', { ids: l.flatMap(x => x.ids) }, async () => {
+        const v = niv ? await sigVisa(niv, cle) : { html: '', nom: '' };
+        return { titre: 'État du stock de la cantine scolaire', corps: '<p class="c">Situation au ' + esc(fr(auj())) + '</p>' + tableDoc(['École', 'Denrée', 'Unité', 'Entrées', 'Sorties', 'Solde'], l.map(x => [x.ecoleLib, x.denree, x.unite, x.entrees, x.sorties, { html: '<b>' + x.solde + '</b>' }]), [0, 0, 'c', 'n', 'n', 'n']),
+          sigs: [blocSig('Le gestionnaire de la cantine', '', '', ''), v].filter(x => typeof x === 'string' || x.html), resume: { entite: niv ? (entite(niv, cle) || {}).lib : '', objet: 'Stock de la cantine', mention: l.length + ' denrée(s)', signataire: v.nom } };
+      }),
+      CANTINE: (rows) => document_('CANTINE', { ids: rows.map(r => r.id) }, async () => {
+        const ec = [...new Set(rows.map(r => r.entite))], v = ec.length === 1 ? await ecoleVisa(ec[0]) : { html: '', nom: '' };
+        const t = rows.reduce((a, r) => [a[0] + num(r.prevusG) + num(r.prevusF), a[1] + num(r.servisG), a[2] + num(r.servisF)], [0, 0, 0]);
+        return { titre: 'Journal de la cantine scolaire', corps: tableDoc(['Date', 'Repas', 'École', 'Prévus', 'Servis G', 'Servis F', 'Total', 'Menu'], rows.slice().sort((a, b) => String(a.date).localeCompare(String(b.date))).map(r => [fr(r.date), r.repas, r.entiteLib, num(r.prevusG) + num(r.prevusF), r.servisG, r.servisF, num(r.servisG) + num(r.servisF), r.menu]).concat([['Total', '', '', t[0], t[1], t[2], t[1] + t[2], '']]), [0, 0, 0, 'n', 'n', 'n', 'n', 0]),
+          sigs: [blocSig('Le gestionnaire de la cantine', '', '', ''), v].filter(x => typeof x === 'string' || x.html), resume: { entite: ec.length === 1 ? rows[0].entiteLib : ec.length + ' école(s)', objet: 'Journal de la cantine', mention: rows.length + ' repas', signataire: v.nom } };
+      }),
+      INCLUSION: (r) => document_('INCLUSION', { id: r.id }, async () => {
+        const v = await ecoleVisa(r.entite);
+        return { titre: 'Fiche de suivi d’un élève à besoins spécifiques', corps: ficheEleve(r, [['Élève', nomComplet(r)], ['Sexe', r.sexe], ['Cours', r.cours], ['École', r.entiteLib], ['Type de besoin', r.type], ['Description', r.description], ['Aménagements pédagogiques', r.amenagements], ['Partenaire / prise en charge', r.partenaire], ['Suivi', r.statut]]),
+          sigs: [blocSig('L’enseignant(e) titulaire', '', '', ''), v], resume: { entite: r.entiteLib, objet: nomComplet(r), mention: r.type, signataire: v.nom } };
+      }),
+      DECROCHAGE: (r) => document_('DECROCHAGE', { id: r.id }, async () => {
+        const v = await ecoleVisa(r.entite);
+        return { titre: 'Fiche de signalement d’absentéisme / décrochage scolaire', corps: ficheEleve(r, [['Élève', nomComplet(r)], ['Sexe', r.sexe], ['Cours', r.cours], ['École', r.entiteLib], ['Absences', (r.absences || 0) + ' demi-journée(s)' + (r.periode ? ' — ' + r.periode : '')], ['Signalé le', fr(r.dateSignalement)], ['Motif', r.motif], ['Actions', r.actions], ['Statut', r.statut], ['Observations', r.observations]]),
+          sigs: [blocSig('L’enseignant(e) titulaire', '', '', ''), v], resume: { entite: r.entiteLib, objet: nomComplet(r), mention: r.statut, signataire: v.nom } };
+      })
+    });
+    Object.assign(VUES, {
+      boite(zone) {
+        const l = recues().sort((a, b) => String(b.n.date).localeCompare(String(a.n.date)));
+        zone.append(h('p', { class: 'pvs-aide' }, 'Notes de service, circulaires et convocations adressées aux entités que vous dirigez. « Accuser réception » prévient l’émetteur (état des accusés).'));
+        if (!l.length) { zone.append(h('p', { class: 'pvs-vide' }, 'Aucune note reçue. Les notes d’une autre application arrivent par l’import Excel de la rubrique « Notes, circulaires et convocations ».')); return; }
+        zone.append(h('div', { class: 'pvs-tw' }, h('table', { class: 'pvs-t' }, h('thead', {}, h('tr', {}, ['Date', 'Type', 'Objet', 'De', 'Pour', 'Échéance', 'État', ''].map(t => h('th', {}, t)))),
+          h('tbody', {}, l.flatMap(({ n, d }) => d.map(([nv, k]) => h('tr', { 'data-id': n.id }, h('td', {}, fr(n.date)), h('td', {}, n.type || ''), h('td', {}, n.objet), h('td', {}, n.entiteLib || ''), h('td', {}, (entite(nv, k) || {}).lib || k),
+            h('td', {}, fr(n.echeance)), h('td', {}, h('span', { class: 'pvs-badge ' + (lu(n, nv, k) ? 'ok' : 'at') }, lu(n, nv, k) ? 'Lu' : 'Non lu')),
+            h('td', { class: 'act' }, h('button', { class: 'pvs-btn s', type: 'button', title: 'Lire', 'data-pvs': 'lire', onclick: () => dialogue((n.type || 'Note') + ' — ' + n.objet, h('div', {}, h('p', {}, h('b', {}, 'De : '), n.entiteLib + ' — ' + fr(n.date)), String(n.texte || '').split(/\n{2,}/).map(x => h('p', {}, x)))) }, I('voir') + 'Lire'),
+              !lu(n, nv, k) ? h('button', { class: 'pvs-btn s p', type: 'button', 'data-pvs': 'accuser', onclick: async () => { await accuser(n, nv, k); toast('Accusé de réception enregistré.'); dessiner(); } }, I('valider') + 'Accuser réception') : null,
+              h('button', { class: 'pvs-btn s', type: 'button', title: 'Imprimer', onclick: () => DOCS.NOTE(n) }, I('imprimer'))))))))));
+      },
+      alertes(zone) {
+        const box = h('div', {}); zone.append(box);
+        alertes().then(l => {
+          box.append(h('p', { class: 'pvs-aide' }, 'Échéances, notes non lues, convocations et activités proches, décrochage, licences sans visite médicale, stocks de cantine épuisés.'));
+          if (!l.length) { box.append(h('p', { class: 'pvs-vide' }, 'Aucune alerte.')); return; }
+          box.append(h('div', { class: 'pvs-tw' }, h('table', { class: 'pvs-t', 'data-pvs': 'table-alertes' }, h('thead', {}, h('tr', {}, ['Niveau', 'Alerte', 'Détail'].map(t => h('th', {}, t)))),
+            h('tbody', {}, l.map(a => h('tr', {}, h('td', {}, h('span', { class: 'pvs-badge ' + a.g }, a.g === 'ko' ? 'Urgent' : a.g === 'at' ? 'À traiter' : 'Info')), h('td', {}, a.t), h('td', {}, a.d)))))));
+        });
+      },
+      agenda(zone) {
+        const l = lignes('agenda').filter(r => jours(r.date) !== null && jours(r.date) >= -1).sort((a, b) => String(a.date).localeCompare(String(b.date)) || String(a.heureDebut || '').localeCompare(String(b.heureDebut || ''))).slice(0, 60);
+        const mois = {}; l.forEach(r => { const m = String(r.date).slice(0, 7); (mois[m] = mois[m] || []).push(r); });
+        zone.append(h('div', { class: 'pvs-carte' }, h('h3', {}, I('calendrier') + 'Prochaines activités'), l.length ? Object.entries(mois).map(([m, rs]) => h('div', {},
+          h('b', {}, new Date(m + '-15T12:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })),
+          h('ul', { style: 'margin:4px 0 10px;padding-left:18px' }, rs.map(r => h('li', {}, fr(r.date) + (r.heureDebut ? ' ' + r.heureDebut : '') + ' — ' + r.objet + (r.lieu ? ' (' + r.lieu + ')' : '') + ' — ' + (r.entiteLib || '')))))) : h('p', { class: 'pvs-vide' }, 'Rien de prévu.')));
+      },
+      stocks(zone) {
+        const l = soldes(), a = ctx.autorite || {};
+        zone.append(h('div', { class: 'pvs-carte' }, h('h3', {}, I('colis') + 'Soldes des stocks'), l.length ? h('div', { class: 'pvs-tw' }, h('table', { class: 'pvs-t', 'data-pvs': 'table-soldes' }, h('thead', {}, h('tr', {}, ['École', 'Denrée', 'Unité', 'Entrées', 'Sorties', 'Solde'].map(t => h('th', {}, t)))),
+          h('tbody', {}, l.map(x => h('tr', { class: x.solde <= 0 ? 'q' : '' }, h('td', {}, x.ecoleLib), h('td', {}, x.denree), h('td', {}, x.unite), h('td', { class: 'n' }, x.entrees), h('td', { class: 'n' }, x.sorties), h('td', { class: 'n' }, h('b', {}, x.solde)))))))
+          : h('p', { class: 'pvs-vide' }, 'Aucun mouvement de stock.'),
+          l.length ? h('div', { class: 'pvs-actions' }, h('button', { class: 'pvs-btn p', type: 'button', 'data-pvs': 'doc-STOCK', onclick: () => { const ec = [...new Set(l.map(x => x.ecole))]; DOCS.STOCK(l, ec.length === 1 ? 'ECOLE' : a.niveau, ec.length === 1 ? ec[0] : a.cle); } }, I('imprimer') + 'État du stock (PDF signé)'),
+            h('button', { class: 'pvs-btn', type: 'button', onclick: () => exporter([{ nom: 'Soldes des stocks', lignes: [['École', 'Denrée', 'Unité', 'Entrées', 'Sorties', 'Solde']].concat(l.map(x => [x.ecoleLib, x.denree, x.unite, x.entrees, x.sorties, x.solde])), entete: 0 }], 'soldes-stocks') }, I('graphique') + 'Excel')) : null));
+      },
+      decrochage(zone) {
+        const box = h('div', { class: 'pvs-carte' }); zone.append(box);
+        const seuil = h('input', { type: 'number', min: 1, value: seuilAbs, class: 'pvs-in', style: 'max-width:90px' });
+        seuil.onchange = () => { seuilAbs = Math.max(1, num(seuil.value)); memo.set('pvs.seuilAbs', seuilAbs); dessiner(); };
+        box.append(h('h3', {}, I('alerte') + 'Alertes d’absentéisme'), h('label', { class: 'pvs-aide' }, 'Seuil (demi-journées d’absence sur 30 jours) ', seuil));
+        if (!A.absences) { box.append(h('p', { class: 'pvs-aide' }, 'Cette application ne tient pas le registre d’appel des élèves : saisissez les signalements ci-dessous.')); return; }
+        alertesAbsences().then(l => {
+          if (!l.length) { box.append(h('p', { class: 'pvs-vide' }, 'Aucun élève au-dessus du seuil sans fiche de suivi.')); return; }
+          box.append(h('div', { class: 'pvs-tw' }, h('table', { class: 'pvs-t', 'data-pvs': 'table-absences' }, h('thead', {}, h('tr', {}, ['École', 'Élève', 'Cours', 'Absences', ''].map(t => h('th', {}, t)))),
+            h('tbody', {}, l.map(a => h('tr', {}, h('td', {}, a.ecoleLib), h('td', {}, String(a.nom || '').toUpperCase() + ' ' + (a.prenoms || '')), h('td', {}, a.cours || ''), h('td', { class: 'n' }, a.absences),
+              h('td', {}, h('button', { class: 'pvs-btn s p', type: 'button', 'data-pvs': 'creer-fiche', onclick: async () => {
+                const r = { id: uid(), cree: auj(), maj: new Date().toISOString(), niveau: 'ECOLE', entite: String(a.ecole), entiteLib: a.ecoleLib, saison: saisonCourante(), nom: String(a.nom || '').toUpperCase(), prenoms: a.prenoms || '', sexe: a.sexe || '', cours: a.cours || '', absences: a.absences, periode: '30 derniers jours', dateSignalement: auj(), statut: 'Signalé' };
+                etat.decrochage.push(r); await sauver(); toast('Fiche de suivi créée.'); dessiner(); } }, I('ajouter') + 'Créer la fiche'))))))));
+        });
+      }
+    });
     /* ---------- dessin du module ---------- */
-    const api = { etat: () => etat, ctx: () => ctx, libRef, entite, peut, lignes, sauver, toast, dialogue, confirmer, h, esc, fr, iso, num, uid, auj, nomComplet, saisonCourante,
+    const api = { accuses, etat: () => etat, ctx: () => ctx, libRef, entite, peut, lignes, sauver, toast, dialogue, confirmer, h, esc, fr, iso, num, uid, auj, nomComplet, saisonCourante,
       ecolesDe, superieure, dans, sigUascep, sigVisa, blocSig, document_, tableDoc, exporter, feuille, formulaire, valeur, classement, scoreMatch, vainqueur, proposerPalmares, DOCS };
     function dessiner() {
       racine.replaceChildren();
@@ -1181,6 +1402,7 @@
       z.append(zone); racine.append(z);
       try {
         if (o.vue === 'pilotage') { pilotage(zone).catch(e => { console.error(e); zone.append(h('p', { class: 'pvs-vide' }, 'Erreur : ' + e.message)); }); return; }
+        if ((MOD.id === 'communication' && o.id !== 'alertes') || MOD.id === 'sante') bandeauAlertes(zone).catch(e => console.error(e));
         if (o.vue && VUES[o.vue]) VUES[o.vue](zone, o);
         if (o.coll) rubrique(o, zone);
       } catch (e) { console.error(e); zone.append(h('p', { class: 'pvs-vide' }, 'Erreur : ' + e.message)); }

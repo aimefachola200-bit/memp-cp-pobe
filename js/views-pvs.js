@@ -14,9 +14,11 @@ import * as INF from './views-infra.js';
 import * as E from './effectifs-schema.js';
 
 const I = (n) => (window.Icones ? window.Icones.code(n) + ' ' : '');
-export const MODULES = { sport: 'sport', pilotage: 'pilotage' };
+export const MODULES = { sport: 'sport', pilotage: 'pilotage', communication: 'communication', sante: 'sante' };
 const TITRES = { sport: ['Sport scolaire', 'Licences, compétitions, calendrier, feuilles de match, classements, palmarès et qualifiés'],
-  pilotage: ['Tableau de bord du pilotage', 'Indicateurs par école, UP, zone, circonscription et département'] };
+  pilotage: ['Tableau de bord du pilotage', 'Indicateurs par école, UP, zone, circonscription et département'],
+  communication: ['Communication et alertes', 'Notes de service, circulaires, convocations, accusés de réception, échéances, messages aux parents, agenda'],
+  sante: ['Santé, cantine et inclusion', 'Visites médicales, infirmerie, cantine et stocks, besoins spécifiques, filles, décrochage'] };
 
 /** Pièce PVS signée : registre « docs » (store pvs), empreinte SHA-256 du contenu vérifiable */
 export async function signerPvs(doc, u) {
@@ -74,7 +76,8 @@ export async function adaptateurPvs(u) {
     uascep: () => ({ charger: base.charger, enregistrer: base.enregistrer }),
     memo: { get: (k) => { try { return localStorage.getItem('pvs.' + k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem('pvs.' + k, v); } catch (e) { /* indisponible */ } } },
     ouvrir: (route) => { location.hash = '#/' + route; },
-    liens: { sport: [{ l: I('insigne') + 'Bureaux UASCEP', route: 'uascep' }], pilotage: [{ l: I('eleve') + 'Effectifs des apprenants', route: 'effectifs' }, { l: I('diplome') + 'CEP : candidats et réussite', route: 'cep' }, { l: I('chantier') + 'Infrastructures et mobilier', route: 'infra' }] }
+    utilisateur: () => [u.prenoms, u.nom].filter(Boolean).join(' ') || u.username,
+    liens: { communication: [{ l: I('message') + 'Groupe WhatsApp des directeurs', route: 'whatsapp' }], sport: [{ l: I('insigne') + 'Bureaux UASCEP', route: 'uascep' }], pilotage: [{ l: I('eleve') + 'Effectifs des apprenants', route: 'effectifs' }, { l: I('diplome') + 'CEP : candidats et réussite', route: 'cep' }, { l: I('chantier') + 'Infrastructures et mobilier', route: 'infra' }] }
   });
 }
 
