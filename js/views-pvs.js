@@ -80,7 +80,7 @@ export async function adaptateurPvs(u) {
     memo: { get: (k) => { try { return localStorage.getItem('pvs.' + k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem('pvs.' + k, v); } catch (e) { /* indisponible */ } } },
     ouvrir: (route) => { location.hash = '#/' + route; },
     utilisateur: () => [u.prenoms, u.nom].filter(Boolean).join(' ') || u.username,
-    liens: { patrimoine: [{ l: I('chantier') + 'Infrastructures et mobilier (fiches)', route: 'infra' }], examens: [{ l: I('stade') + 'Examen blanc du CEP', route: 'examenblanc' }, { l: I('diplome') + 'CEP : candidats et réussite (fiches)', route: 'cep' }], inspection: [{ l: I('calendrier') + 'Activités pédagogiques', route: 'activites' }],
+    liens: { patrimoine: [{ l: I('chantier') + 'Infrastructures et mobilier (fiches)', route: 'infra' }], examens: [{ l: I('livres') + 'Pédagogie : épreuves et corrigés', route: 'pedagogie/epreuves' }, { l: I('stade') + 'Examen blanc du CEP', route: 'examenblanc' }, { l: I('diplome') + 'CEP : candidats et réussite (fiches)', route: 'cep' }], inspection: [{ l: I('calendrier') + 'Activités pédagogiques', route: 'activites' }, { l: I('livres') + 'Pédagogie : fiches, guides et programmes', route: 'pedagogie/fiches' }],
       communication: [{ l: I('message') + 'Groupe WhatsApp des directeurs', route: 'whatsapp' }], sport: [{ l: I('insigne') + 'Bureaux UASCEP', route: 'uascep' }], pilotage: [{ l: I('stade') + 'Examen blanc du CEP', route: 'examenblanc' }, { l: I('eleve') + 'Effectifs des apprenants', route: 'effectifs' }, { l: I('diplome') + 'CEP : candidats et réussite', route: 'cep' }, { l: I('chantier') + 'Infrastructures et mobilier', route: 'infra' }] }
   });
 }

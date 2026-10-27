@@ -80,6 +80,26 @@ function imprimer(titre, html) {
   document.body.append(ov);
 }
 
+/** Sujets de l'examen blanc retenus dans le module « Pédagogie » (épreuves et corrigés d'une période, CM2) */
+async function carteSujets(u) {
+  const s = await db.setting('examenBlancSujets');
+  const ouvrir = () => { location.hash = '#/pedagogie/epreuves/' + ((s && s.cours) || 'CM2'); };
+  const imprimerJeu = async (corrige) => {
+    if (!window.Pedagogie) return;
+    const { adaptateurPedagogie } = await import('./views-pedagogie.js');
+    const ok = await window.Pedagogie.imprimerJeu(await adaptateurPedagogie(u), s.cours, s.periode, corrige);
+    if (!ok) toast('Sujets introuvables (contenu pédagogique non chargé).', 'err');
+  };
+  return h('div', { class: 'card', 'data-eb': 'sujets', style: { margin: '0 0 12px' } },
+    h('h3', { style: { marginTop: 0 } }, I('examen') + 'Sujets de l’examen blanc'),
+    s && s.periode ? h('p', {}, h('b', `${s.cours} — ${s.periode_lib}`), ` : ${(s.disciplines || []).length} épreuve(s) retenue(s) dans le module « Pédagogie » (${(s.disciplines || []).join(', ')}).`)
+      : h('p', { class: 'notes' }, 'Aucun sujet retenu : ouvrez « Pédagogie » › Épreuves (CM2, examens blancs du CEP ou évaluation trimestrielle) et choisissez « Retenir comme sujets de l’examen blanc ».'),
+    h('div', { style: { display: 'flex', gap: '6px', flexWrap: 'wrap' } },
+      s && s.periode ? h('button', { class: 'btn primary', type: 'button', onclick: () => imprimerJeu(false) }, I('imprimer') + 'Imprimer les sujets') : null,
+      s && s.periode ? h('button', { class: 'btn', type: 'button', onclick: () => imprimerJeu(true) }, I('valider') + 'Corrigés et grilles') : null,
+      h('button', { class: 'btn', type: 'button', onclick: ouvrir }, I('livres') + (s && s.periode ? 'Changer de sujets' : 'Choisir les sujets'))));
+}
+
 export async function render(id, ctx) {
   const u = ctx.user;
   if (!E()) { ctx.el.append(h('p', 'Module indisponible : rechargez l’application.')); return; }
@@ -110,6 +130,7 @@ export async function render(id, ctx) {
   }
   let centreId = (() => { try { return localStorage.getItem('eb.centre') || ''; } catch (e) { return ''; } })();
   let recherche = '';
+  ctx.el.append(await carteSujets(u));
   const racine = h('div'); ctx.el.append(racine);
   const centreCourant = () => visibles().find(c => c.id === centreId) || visibles()[0] || null;
   const candidatsDe = (id) => etat.candidats.filter(c => c.centreId === id);

@@ -13,7 +13,7 @@ const files = [];
     if (SKIP.has(n) && dir === root) continue;
     const p = join(dir, n);
     const rel = relative(root, p).split(sep).join('/');
-    if (rel === 'docs/reference') continue;   // gros documents de référence : mis en cache à la première ouverture
+    if (rel === 'docs/reference' || rel === 'data/pedagogie') continue;   // data/pedagogie : chargé et mis en cache par le module Pédagogie   // gros documents de référence : mis en cache à la première ouverture
     if (statSync(p).isDirectory()) walk(p); else files.push(rel);
   }
 })(root);

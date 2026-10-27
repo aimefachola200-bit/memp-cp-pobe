@@ -1,5 +1,5 @@
 {
- "version": "489745d12d9f",
+ "version": "a1856ff98a98",
  "files": [
   "./",
   "NOTICE.txt",
@@ -71,6 +71,7 @@
   "js/officiel-cs.js",
   "js/pdf-canvas.js",
   "js/pdf.js",
+  "js/pedagogie.js",
   "js/pvs-modules.js",
   "js/pvs.js",
   "js/qr.js",
@@ -97,6 +98,7 @@
   "js/views-infra.js",
   "js/views-more.js",
   "js/views-officiel.js",
+  "js/views-pedagogie.js",
   "js/views-planning.js",
   "js/views-pvs.js",
   "js/views-recensement.js",

@@ -76,7 +76,8 @@ const NAV = [
   { id: 'capacites', ic: '\uE020', t: 'Renforcement des capacités', seul: 'dosp' },
   { id: 'plandosp', ic: '\uE02E', t: "Attributions et plan d'action", seul: 'dosp' },
   { id: 'docsdosp', ic: '\uE04B', t: 'Documents officiels de la DOSP', seul: 'dosp' },
-  { g: 'Pédagogie', id: 'activites', ic: '\uE017', t: 'Activités pédagogiques' },
+  { g: 'Pédagogie', id: 'pedagogie', ic: '\uE031', t: 'Fiches, résumés, épreuves et guides' },
+  { id: 'activites', ic: '\uE017', t: 'Activités pédagogiques' },
   { id: 'planningcp', ic: '\uE017', t: 'Planification des activités (CP)', pasDosp: true },
   { id: 'bilans', ic: '\uE016', t: 'Bilans trimestriel / annuel' },
   { id: 'themes', ic: '\uE02E', t: 'Thèmes 2026-2027' },
@@ -95,7 +96,7 @@ const NAV = [
   { id: 'utilisateurs', ic: '\uE01C', t: 'Utilisateurs', roles: ['ADMIN'], horsIntegre: true },
   { id: 'parametres', ic: '\uE051', t: 'Paramètres & à propos' },
 ];
-const ROUTES = { zonesup: 'views-zonesup', uascep: 'views-uascep', pvssport: 'views-pvs', pvspilotage: 'views-pvs', pvscommunication: 'views-pvs', pvssante: 'views-pvs', pvsinspection: 'views-pvs', pvspatrimoine: 'views-pvs', pvsexamens: 'views-pvs', examenblanc: 'views-examen', accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles', cep: 'views-cep',
+const ROUTES = { zonesup: 'views-zonesup', uascep: 'views-uascep', pvssport: 'views-pvs', pvspilotage: 'views-pvs', pvscommunication: 'views-pvs', pvssante: 'views-pvs', pvsinspection: 'views-pvs', pvspatrimoine: 'views-pvs', pvsexamens: 'views-pvs', examenblanc: 'views-examen', pedagogie: 'views-pedagogie', accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles', cep: 'views-cep',
   synoptique: 'views-more', activites: 'views-more', planningcp: 'views-planning', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', synocp: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', carriere: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
   saisie: 'views-saisie', recensement: 'views-recensement', recfiche: 'views-recensement', synodosp: 'views-synodosp', whatsapp: 'views-whatsapp', espacedosp: 'views-dosp', envois: 'views-dosp', prevision: 'views-dosp', besoins: 'views-dosp', suivieval: 'views-dosp', capacites: 'views-dosp', plandosp: 'views-dosp', docsdosp: 'views-dosp', identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
 

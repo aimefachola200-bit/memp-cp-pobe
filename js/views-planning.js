@@ -149,6 +149,7 @@ async function planning(ctx) {
       { label: '\uE009 PDF', kind: 'primary', onClick: () => exporter('pdf', false) }, { label: '\uE009 Excel', onClick: () => exporter('xlsx', false) },
       { label: '\uE009 Vierge (PDF)', title: 'Grille vierge à remplir à la main', onClick: () => exporter('pdf', true) }, { label: '\uE009 Vierge (Excel)', onClick: () => exporter('xlsx', true) },
       { label: '\uE008 Imprimer', onClick: () => window.print() },
+      { label: '\uE031 Fiches et guides des enseignants', title: 'Module Pédagogie : programmes, fiches, résumés, épreuves, planification des classes', onClick: () => { location.hash = '#/pedagogie'; } },
       { label: '\uE058 Réinitialiser', title: "Efface toute la planification de l'année de ce CP", onClick: async () => { if (!(await confirmBox(`Effacer toute la planification ${ANNEE} de ${enTete()} ?`, 'Effacer', true))) return; P = { plages: P.plages, cellules: {}, jours: {} }; await enregistrer(); await addLog(u, { action: 'Planification CP réinitialisée', target: cp.username }); draw(); } }]);
   }
   function plages() {
