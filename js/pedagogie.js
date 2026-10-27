@@ -136,17 +136,24 @@
   function imprimerDefaut(titre, html) {
     dialogue(titre, h('div', { class: 'ped-doc', html }), [{ l: 'Fermer' }, { l: 'Imprimer / PDF', icone: 'imprimer', p: true, action: () => { imprimerDirect(html); return false; } }]);
   }
-  function imprimer(A, titre, corps) {
-    const html = '<div class="ped-doc">' + (A.entete ? A.entete() : '') + corps
-      + '<p class="mention">' + esc(A.app || '') + ' — module Pédagogie. Contenus de SCOLARIS conçus selon l\'APC, à valider par le conseiller pédagogique.</p></div>';
-    if (A.imprimer) return A.imprimer(titre, CSS_DOC + html);
+  /** o.epreuve : épreuve (sujet ou corrigé) — elle porte son propre en-tête, l'en-tête administratif de l'application est omis */
+  function imprimer(A, titre, corps, o) {
+    o = o || {};
+    const html = '<div class="ped-doc">' + (A.entete && !o.epreuve ? A.entete() : '') + corps
+      + (o.epreuve ? '' : '<p class="mention">' + esc(A.app || '') + ' — module Pédagogie. Contenus de SCOLARIS conçus selon l\'APC, à valider par le conseiller pédagogique.</p>') + '</div>';
+    if (A.imprimer) return A.imprimer(titre, CSS_DOC + html, o);
     return imprimerDefaut(titre, CSS_DOC + html);
   }
   const CSS_DOC = '<style>.ped-doc{font:10.5pt/1.45 Arial,sans-serif;color:#111}.ped-doc h1{font-size:14pt;text-align:center;margin:6px 0}.ped-doc h2{font-size:12.5pt;margin:12px 0 4px;color:#1F4E79}'
     + '.ped-doc h3{font-size:11pt;margin:8px 0 3px}.ped-doc table{border-collapse:collapse;width:100%;margin:4px 0}.ped-doc td,.ped-doc th{border:1px solid #777;padding:3px 5px;vertical-align:top;text-align:left}'
     + '.ped-doc th{background:#EEF1F5}.ped-doc .saut{break-before:page;page-break-before:always}.ped-doc .mention{font-size:8.5pt;color:#555;font-style:italic}.ped-doc .ligne{border-bottom:1px dotted #999;height:1.6em}'
     + '.ped-doc .ped-retiens{background:#EEF4FB;border:1px solid #1F4E79;border-radius:6px;padding:6px 8px;margin:6px 0}.ped-doc .ped-engage{border:1px dashed #067647;border-radius:6px;padding:6px 8px;margin:6px 0}'
-    + '.ped-doc .ped-rep{color:#067647;font-style:italic}</style>';
+    + '.ped-doc .ped-rep{color:#067647;font-style:italic}'
+    + '.ped-ep{font-family:"Times New Roman",Times,"Liberation Serif",serif;font-size:14pt;line-height:1.35;color:#000}.ped-ep h2{font-size:15pt;font-weight:bold;color:#000;text-align:center;margin:4px 0 6px}'
+    + '.ped-ep h3,.ped-ep b,.ped-ep th,.ped-ep .ped-titre-item{font-weight:bold}.ped-ep h3{font-size:14pt;color:#000}.ped-ep p{margin:4px 0}.ped-ep ol{margin:2px 0 4px;padding-left:28px}'
+    + '.ped-ep table td,.ped-ep table th{font-size:13pt}.ped-ep .ped-item,.ped-ep table,.ped-ep tr,.ped-ep li{break-inside:avoid;page-break-inside:avoid}'
+    + '.ped-doc .ped-ep-tete{width:100%;border-collapse:collapse;margin:0 0 6px}.ped-doc .ped-ep-tete td{border:0;padding:1px 0;font-size:13pt}'
+    + '.ped-demi{break-inside:avoid;page-break-inside:avoid}.ped-coupe{border-top:1.5px dashed #444;margin:9mm 0 7mm;text-align:center;font:9pt Arial,sans-serif;color:#444;padding-top:2px}</style>';
 
   /** Guides : HTML du corpus nettoyé (aucun script, aucun attribut d'évènement, aucun lien javascript:) */
   function nettoyer(html) {
@@ -195,8 +202,10 @@
     if (!CHARGES[cle]) CHARGES[cle] = lireJSON(b + nom + '?v=' + ix.version, nomCache(A, ix), false).catch(e => { delete CHARGES[cle]; throw e; });
     return CHARGES[cle];
   }
+  const CHARGES_COURS = {};
   async function cours(A, c) {
     const d = await fichier(A, c + '.json');
+    CHARGES_COURS[c] = d;
     if (!d._idx) {
       d._fiche = Object.fromEntries(d.fiches.map(f => [f.id, f]));
       d._resume = Object.fromEntries(d.resumes.map(r => [r.id, r]));
@@ -232,6 +241,7 @@
   function resumeHtml(r, ix, eleve) {
     let s = '<h2>' + esc(r.titre) + '</h2><p><b>' + esc(r.cours) + '</b> · ' + esc(nomMat(ix, r.matiere)) + ' · ' + esc(r.domaine || '')
       + (r.etape ? ' · ' + esc(r.etape) : '') + (r.trimestre ? ' · trimestre ' + esc(r.trimestre) : '') + (r.mois ? ' · ' + esc(r.mois) : '') + '</p>';
+    if (r.a_verifier) s += '<p class="mention"><b>À vérifier :</b> titre de la séance ou de la SA conçu faute de programme détaillé — à confirmer par le conseiller pédagogique.</p>';
     if (r.ancres && r.ancres.length) s += '<p class="mention">Progression : ' + r.ancres.map(a => esc(a.libelle || '')).filter(Boolean).join(' ; ') + '</p>';
     if (r.je_retiens) {
       if (r.situation) s += '<h3>Situation de la vie courante</h3><p>' + txt(r.situation) + '</p>';
@@ -251,22 +261,29 @@
     return s;
   }
   const pts = (x) => x ? ' (' + String(x).replace('.0', '').replace('.', ',') + ' pt' + (x > 1 ? 's' : '') + ')' : '';
+  const pointille = '……………………………';
+  function enteteEpreuve(d) {
+    const e = d.entete || {};
+    return '<table class="ped-ep-tete"><tr><td><b>École :</b> ' + (e.ecole ? esc(e.ecole) : pointille) + '</td><td style="text-align:right"><b>Année scolaire :</b> ' + (e.annee ? esc(e.annee) : '…………') + '</td></tr>'
+      + '<tr><td><b>Nom et prénoms :</b> ' + pointille + '</td><td style="text-align:right"><b>Date :</b> ' + (e.date ? esc(e.date) : '…………') + '</td></tr></table>';
+  }
   function epreuveSujetHtml(d) {
-    let s = '<h2>Épreuve de ' + esc(d.discipline) + '</h2><p><b>COURS :</b> ' + esc(d.cours) + ' · <b>PÉRIODE :</b> ' + esc(d.periode_lib)
-      + ' · <b>DURÉE :</b> ' + esc(d.duree) + ' · <b>Barème :</b> ' + esc(d.bareme || 20) + ' points</p>';
+    const e = d.entete || {};
+    let s = '<div class="ped-ep">' + enteteEpreuve(d) + '<h2>' + esc(e.titre || ('Épreuve de ' + d.discipline)) + '</h2><p><b>COURS :</b> ' + esc(e.classe || d.cours) + ' · <b>PÉRIODE :</b> ' + esc(d.periode_lib)
+      + ' · <b>DURÉE :</b> ' + esc(e.duree || d.duree) + ' · <b>Barème :</b> ' + esc(d.bareme || 20) + ' points</p>';
     if (d.contexte) s += '<p><i>' + txt(d.contexte) + '</i></p>';
     if (d.support && d.code !== 'dictee') s += '<p><b>' + (['ea', 'eps'].includes(d.code) ? 'Support' : 'Texte') + ' : ' + esc(d.support_titre) + '</b></p><p>' + txt(d.support) + '</p>';
     if (d.tache) s += '<p><b>Tâche :</b> ' + txt(d.tache) + '</p>';
     s += '<p><b>Consigne :</b></p>';
     (d.consignes || []).forEach(it => {
       if (it.titre === 'Présentation') return;
-      if (it.titre !== 'Consigne') s += '<p><b>' + esc(it.titre) + '</b></p>';
-      s += '<ol type="a">' + (it.questions || []).map(x => '<li>' + esc(x.q) + '<span class="mention">' + esc(pts(x.pts)) + '</span></li>').join('') + '</ol>';
+      s += '<div class="ped-item">' + (it.titre !== 'Consigne' ? '<p class="ped-titre-item">' + esc(it.titre) + '</p>' : '')
+        + '<ol type="a">' + (it.questions || []).map(x => '<li>' + esc(String(x.q || '').replace(/^\s*\d+\s*[-.)]\s*/, '')) + esc(pts(x.pts)) + '</li>').join('') + '</ol></div>';
     });
-    return s;
+    return s + '</div>';
   }
   function epreuveCorrigeHtml(d) {
-    let s = '<h2>Corrigé type — ' + esc(d.discipline) + '</h2><p>' + esc(d.cours) + ' · ' + esc(d.periode_lib) + '</p>';
+    let s = '<div class="ped-ep"><h2>Corrigé type — ' + esc(d.discipline) + '</h2><p>' + esc(d.cours) + ' · ' + esc(d.periode_lib) + '</p>';
     if (d.code === 'dictee') s += '<p><b>' + esc(d.support_titre) + '</b> — ' + txt(d.support) + '</p>';
     const lignes = [];
     (d.consignes || []).forEach(it => (it.questions || []).forEach(x => { if (x.r) lignes.push('<tr><td>' + esc(it.titre) + '</td><td>' + esc(x.q) + '</td><td>' + esc(x.r) + '</td><td>' + esc(x.pts || '') + '</td></tr>'); }));
@@ -276,9 +293,44 @@
       + d.grille.map(g => '<tr><td>' + esc(g.critere) + '</td><td>' + (g.indicateurs || []).map(esc).join(' ; ') + '</td><td>' + esc(g.points) + '</td></tr>').join('') + '</tbody></table>';
     const prog = (d.progression || []).filter(Boolean);
     if (prog.length) s += '<p class="mention"><b>Progression prise en compte :</b> ' + prog.map(p => esc(typeof p === 'string' ? p : (Array.isArray(p) ? p.join(' ') : JSON.stringify(p)))).join(' · ') + '</p>';
-    s += '<p class="mention">' + esc(d.mention || '') + ' — ' + esc(d.source || '') + '</p>';
-    return s;
+    s += '<p class="mention">' + esc(d.mention || '') + ' — ' + esc(d.source || '') + (d._version ? ' — version modifiée le ' + esc(String(d._version.date || '').slice(0, 10).split('-').reverse().join('/')) : '') + '</p>';
+    return s + '</div>';
   }
+  /* ---------- mise en page compacte : deux épreuves (ou deux exemplaires) par feuille A4 quand elles tiennent ---------- */
+  const DEMI_MM = 122;   // moitié de la zone imprimable A4 (≈ 270 mm), moins le trait de coupe
+  function hauteurMm(html) {
+    const d = document.createElement('div'); d.className = 'ped-doc';
+    d.style.cssText = 'position:absolute;left:-10000px;top:0;width:182mm;visibility:hidden';
+    d.innerHTML = CSS_DOC + html; document.body.append(d);
+    const px = d.getBoundingClientRect().height; d.remove();
+    return px * 25.4 / 96;
+  }
+  /** blocs : [{ html, nature }] ; mode « auto » (2 par page quand c'est possible) ou « 1 » (une par page) */
+  function miseEnPage(blocs, mode) {
+    const pages = [];
+    const court = (b) => mode !== '1' && hauteurMm(b.html) <= DEMI_MM;
+    const coupe = '<div class="ped-coupe">découper ici</div>';
+    for (let i = 0; i < blocs.length; i++) {
+      const b = blocs[i];
+      if (court(b)) {
+        const n = blocs[i + 1];
+        if (n && n.nature === b.nature && b.nature !== 'copie' && court(n)) { pages.push('<div class="ped-demi">' + b.html + '</div>' + coupe + '<div class="ped-demi">' + n.html + '</div>'); i++; }
+        else pages.push('<div class="ped-demi">' + b.html + '</div>' + coupe + '<div class="ped-demi">' + b.html + '</div>');
+      } else pages.push(b.html);
+    }
+    return pages.map((x, i) => (i ? '<div class="saut"></div>' : '') + x).join('');
+  }
+  /* ---------- versions modifiées (gardées dans l'application) et copies ---------- */
+  const idDe = (type, x) => (type === 'epreuve' ? x.cle : x.id);
+  const cleV = (type, id) => 'version:' + type + ':' + id;
+  function eff(notes, type, x) {
+    if (!x) return x;
+    const v = notes[cleV(type, idDe(type, x))] || [];
+    if (!v.length) return x;
+    const der = v[v.length - 1];
+    return Object.assign({}, x, der.data, { _version: { n: v.length, date: der.date, auteur: der.auteur } });
+  }
+  const copiesDe = (notes, type, c) => (notes.copies || []).filter(k => k.type === type && k.cours === c).map(k => Object.assign({}, k.data, { _copie: true }));
   function programmeHtml(p, ix) {
     let s = '<h2>' + esc(p.titre) + '</h2><p>' + esc(p.cours) + ' · ' + esc(nomMat(ix, p.matiere)) + ' · ' + (p.type === 'unite' ? 'Unité' : "Situation d'apprentissage") + ' ' + esc(p.num || '')
       + (p.duree ? ' · ' + esc(p.duree) : '') + (p.periode ? ' · ' + esc(p.periode) : '') + '</p><table>';
@@ -337,7 +389,10 @@
     if (!ONGLETS.some(o => o[0] === onglet)) onglet = 'planification';
     let page = 0;
     let notes = {};
-    try { notes = (A.notes && (await A.notes.charger())) || {}; } catch (e) { notes = {}; }
+    if (!A.notes) A.notes = { charger: () => { try { return JSON.parse(memo.get('notes') || '{}'); } catch (e) { return {}; } }, enregistrer: (o) => memo.set('notes', JSON.stringify(o)) };
+    try { notes = (await A.notes.charger()) || {}; } catch (e) { notes = {}; }
+    const E_ = (type, x) => eff(notes, type, x);
+    const peutModifier = A.peutModifier !== false;
     const sauverF = () => memo.set('filtres', JSON.stringify(F));
 
     racine.innerHTML = '';
@@ -384,23 +439,131 @@
     }
     const notesHtml = (cle) => (notes[cle] || []).map(n => '<p class="ped-note"><b>Note' + (n.auteur ? ' de ' + esc(n.auteur) : '') + ' :</b> ' + esc(n.texte) + '</p>').join('');
 
+    /* --- modifier : version gardée dans l'application, rétablir l'original, dupliquer --- */
+    const CH_FICHE = [['titre', 'Titre de la séance'], ...CHAMPS_FICHE, ...CHAMPS_FIN];
+    const CH_RESUME = [['titre', 'Titre'], ['situation', 'Situation de la vie courante'], ['regle', 'Je retiens / notions essentielles'], ['je_retiens', 'Je retiens (ES / EST)'], ['engagement', 'Je m’engage'], ['methode', 'Méthode'], ['exemple', 'Exemple']];
+    const CH_EP = [['contexte', 'Contexte'], ['support_titre', 'Titre du texte / support'], ['support', 'Texte / support'], ['tache', 'Tâche'], ['corrige_note', 'Note du corrigé']];
+    const champ = (lib, val, attrs) => { const t = h('textarea', Object.assign({ rows: String(Math.min(8, Math.max(1, Math.ceil(String(val || '').length / 70)))), 'data-geo': 'aucun' }, attrs || {})); t.value = val == null ? '' : String(val); return [h('label', { class: 'ped-aide', style: 'display:block;margin-top:6px;font-weight:600' }, lib), t]; };
+    async function sauverNotes() { await A.notes.enregistrer(notes); }
+    function modifier(type, x, apres) {
+      const lecture = [];
+      const form = h('div', { 'data-ped': 'form-modifier' });
+      const simples = type === 'fiche' ? CH_FICHE : type === 'resume' ? CH_RESUME : CH_EP;
+      if (type === 'epreuve') {
+        const e = x.entete || {};
+        form.append(h('h4', {}, 'En-tête'));
+        [['ecole', 'École', e.ecole], ['classe', 'Classe / cours', e.classe || x.cours], ['annee', 'Année scolaire', e.annee], ['date', 'Date', e.date], ['duree', 'Durée', e.duree || x.duree], ['titre', 'Titre de l’épreuve', e.titre || ('Épreuve de ' + x.discipline)]]
+          .forEach(([k, l, v]) => { const [lab, t] = champ(l, v, { 'data-ent': k, rows: '1' }); form.append(lab, t); lecture.push(() => ['entete.' + k, t.value]); });
+        const b = h('input', { type: 'number', min: '1', max: '200', value: String(x.bareme || 20), 'data-ped': 'bareme', style: 'max-width:120px' });
+        form.append(h('label', { class: 'ped-aide', style: 'display:block;margin-top:6px;font-weight:600' }, 'Barème (points)'), b); lecture.push(() => ['bareme', +b.value || 20]);
+        form.append(h('h4', {}, 'Énoncé'));
+      }
+      simples.forEach(([k, l]) => { if (type !== 'epreuve' && !(k in x) && !['titre', 'regle', 'methode', 'exemple'].includes(k)) return; const [lab, t] = champ(l, x[k], { 'data-k': k }); form.append(lab, t); lecture.push(() => [k, t.value]); });
+      if (type === 'fiche') {
+        const lignes = (x.deroulement || []).map(r => r.slice());
+        form.append(h('h4', {}, 'Déroulement'));
+        lignes.forEach((r, i) => { const z = [0, 1, 2].map(j => champ(['Phase', 'Activités enseignant / apprenants', 'Résultats attendus'][j] + ' — ligne ' + (i + 1), r[j] || '')); z.forEach(([lab, t]) => form.append(lab, t)); lecture.push(() => ['deroulement.' + i, z.map(q => q[1].value)]); });
+      }
+      if (type === 'resume' && x.exercices) {
+        form.append(h('h4', {}, 'Exercices et réponses'));
+        x.exercices.forEach((q, i) => { const [l1, t1] = champ('Exercice ' + (i + 1), q.q), [l2, t2] = champ('Réponse ' + (i + 1), q.r); form.append(l1, t1, l2, t2); lecture.push(() => ['exercices.' + i, { q: t1.value, r: t2.value }]); });
+      }
+      if (type === 'epreuve') {
+        form.append(h('h4', {}, 'Consignes, corrigé type et barème'));
+        (x.consignes || []).forEach((it, i) => {
+          const [lt, tt] = champ('Item ' + (i + 1) + ' — titre', it.titre, { rows: '1' }); form.append(lt, tt);
+          const qs = (it.questions || []).map((qq, j) => {
+            const [a, ta] = champ('Question ' + (j + 1), qq.q, { 'data-q': i + '.' + j }), [b, tb] = champ('Corrigé', qq.r, { 'data-r': i + '.' + j });
+            const pp = h('input', { type: 'number', step: '0.25', min: '0', value: qq.pts == null ? '' : String(qq.pts), 'aria-label': 'Points', 'data-pts': i + '.' + j, style: 'max-width:120px' });
+            form.append(a, ta, b, tb, h('label', { class: 'ped-aide', style: 'display:block;margin-top:4px' }, 'Points'), pp);
+            return () => ({ q: ta.value, r: tb.value, pts: pp.value === '' ? null : +pp.value });
+          });
+          lecture.push(() => ['consignes.' + i, { titre: tt.value, questions: qs.map(f => f()) }]);
+        });
+      }
+      const lire = () => {
+        const out = {};
+        lecture.forEach(f => { const [k, v] = f();
+          if (k.startsWith('entete.')) { (out.entete = out.entete || {})[k.slice(7)] = v; return; }
+          const m = /^(deroulement|exercices|consignes)\.(\d+)$/.exec(k);
+          if (m) { (out[m[1]] = out[m[1]] || [])[+m[2]] = v; return; }
+          out[k] = v; });
+        return out;
+      };
+      dialogue('Modifier — ' + (x.titre || x.discipline || ''), form, [{ l: 'Annuler' }, { l: 'Enregistrer la version', icone: 'enregistrer', p: true, action: async () => {
+        const data = lire();
+        if (x._copie) { const c = (notes.copies || []).find(k => idDe(type, k.data) === idDe(type, x)); if (c) c.data = Object.assign({}, c.data, data, { _version: undefined }); }
+        else (notes[cleV(type, idDe(type, x))] = notes[cleV(type, idDe(type, x))] || []).push({ date: new Date().toISOString(), auteur: A.auteur || '', data });
+        await sauverNotes(); apres && apres(); } }]);
+    }
+    async function retablir(type, x, apres) {
+      if (!confirm('Rétablir le texte d’origine ? Les versions modifiées de cet élément seront effacées.')) return;
+      delete notes[cleV(type, idDe(type, x))]; await sauverNotes(); apres && apres();
+    }
+    async function dupliquer(type, x, apres) {
+      const id = 'copie-' + Date.now().toString(36);
+      const data = Object.assign({}, x, { _version: undefined, _copie: undefined });
+      if (type === 'epreuve') { data.cle = id; data.discipline = x.discipline + ' (copie)'; } else { data.id = id; data.titre = (x.titre || '') + ' (copie)'; }
+      (notes.copies = notes.copies || []).push({ type, cours: x.cours, data, date: new Date().toISOString(), auteur: A.auteur || '' });
+      await sauverNotes(); apres && apres(Object.assign({}, data, { _copie: true }));
+    }
+    async function supprimerCopie(type, x, apres) {
+      if (!confirm('Supprimer cette copie ?')) return;
+      notes.copies = (notes.copies || []).filter(k => !(k.type === type && idDe(type, k.data) === idDe(type, x))); await sauverNotes(); apres && apres();
+    }
+    /** Barre « Modifier » d'un élément ouvert */
+    function barreEdition(type, x, rouvrir, fermer) {
+      if (!peutModifier) return null;
+      const fin = (nouveau) => { fermer(); rendre(); if (nouveau) rouvrir(nouveau); };
+      const relire = () => { fermer(); rendre(); const n = x._copie ? copiesDe(notes, type, x.cours).find(k => idDe(type, k) === idDe(type, x)) : E_(type, base(type, x)); if (n) rouvrir(n); };
+      return h('div', { class: 'ped-actions', 'data-ped': 'barre-edition' },
+        x._version ? h('span', { class: 'ped-badge ok', style: 'align-self:center' }, `version modifiée (${x._version.n}) — ${String(x._version.date || '').slice(0, 10).split('-').reverse().join('/')}`) : null,
+        x._copie ? h('span', { class: 'ped-badge src', style: 'align-self:center' }, 'copie') : null,
+        btn('modifier', 'Modifier', () => modifier(type, x, relire), 's', { 'data-ped': 'modifier' }),
+        btn('presse-papiers', 'Dupliquer', () => dupliquer(type, x, fin), 's', { 'data-ped': 'dupliquer' }),
+        x._version ? btn('actualiser', 'Rétablir l’original', () => retablir(type, x, () => { fermer(); rendre(); rouvrir(base(type, x)); }), 's d', { 'data-ped': 'retablir' }) : null,
+        x._copie ? btn('supprimer', 'Supprimer la copie', () => supprimerCopie(type, x, () => { fermer(); rendre(); }), 's d', { 'data-ped': 'supprimer-copie' }) : null);
+    }
+    /** Élément d'origine (sans version) */
+    function base(type, x) {
+      const d = CHARGES_COURS[x.cours]; if (!d) return x;
+      const o = type === 'fiche' ? d._fiche[x.id] : type === 'resume' ? d._resume[x.id] : d.epreuves.find(e => e.cle === x.cle);
+      return o || x;
+    }
+
     /* --- ouverture d'un élément (fenêtre) --- */
     function ouvrirFiche(f) {
-      const corps = h('div', {}, h('div', { class: 'ped-doc', html: ficheHtml(f, ix) }), blocNotes('fiche:' + f.id));
-      dialogue(f.titre, corps, [{ l: 'Fermer' }, { l: 'Imprimer / PDF', icone: 'imprimer', p: true, action: () => { imprimer(A, f.titre, ficheHtml(f, ix) + notesHtml('fiche:' + f.id)); } }]);
+      const d = CHARGES_COURS[f.cours];
+      const lies = d ? d.resumes.filter(r => (r.fiches || []).indexOf(f.id) >= 0) : [];
+      let fermer = () => {};
+      const corps = h('div', {}, h('div', { 'data-ped': 'zone-edition' }), h('div', { class: 'ped-doc', html: ficheHtml(f, ix) }),
+        lies.length ? h('div', { class: 'ped-carte', 'data-ped': 'resumes-seance' }, h('h3', {}, 'Résumé' + (lies.length > 1 ? 's' : '') + ' de la séance'), h('ul', { class: 'ped-liste' }, lies.map(r => h('li', {}, lien({ onclick: () => ouvrirResume(r) }, r.titre))))) : null,
+        blocNotes('fiche:' + f.id));
+      fermer = dialogue(f.titre, corps, [{ l: 'Fermer' }, { l: 'Imprimer / PDF', icone: 'imprimer', p: true, action: () => { imprimer(A, f.titre, ficheHtml(f, ix) + notesHtml('fiche:' + f.id)); } }]);
+      const b = barreEdition('fiche', f, ouvrirFiche, () => fermer()); if (b) corps.firstChild.append(b);
     }
     function ouvrirResume(r) {
       let eleve = false;
       const doc = h('div', { class: 'ped-doc', html: resumeHtml(r, ix, false) });
       const bascule = btn('eleve', 'Version élève (sans les réponses)', () => { eleve = !eleve; doc.innerHTML = resumeHtml(r, ix, eleve); bascule.lastChild.textContent = eleve ? 'Version enseignant (avec les réponses)' : 'Version élève (sans les réponses)'; }, 's');
-      dialogue(r.titre, h('div', {}, h('div', { class: 'ped-actions' }, bascule), doc, blocNotes('resume:' + r.id)),
+      const barre = h('div', { class: 'ped-actions' }, bascule);
+      const fermer = dialogue(r.titre, h('div', {}, barre, doc, blocNotes('resume:' + r.id)),
         [{ l: 'Fermer' }, { l: 'Imprimer / PDF', icone: 'imprimer', p: true, action: () => { imprimer(A, r.titre, resumeHtml(r, ix, eleve) + (eleve ? '' : notesHtml('resume:' + r.id))); } }]);
+      const b = barreEdition('resume', r, ouvrirResume, () => fermer()); if (b) barre.after(b);
+    }
+    const mep = () => (F.mep === '1' ? '1' : 'auto');
+    function choixMiseEnPage() {
+      const s = h('select', { 'aria-label': 'Mise en page', 'data-ped': 'mise-en-page', onchange: () => { F.mep = s.value; sauverF(); } },
+        h('option', { value: 'auto' }, '2 par page quand l’épreuve est courte'), h('option', { value: '1' }, '1 par page'));
+      s.value = mep(); return h('label', { class: 'ped-aide', style: 'display:flex;gap:6px;align-items:center' }, 'Mise en page', s);
     }
     function ouvrirEpreuve(e) {
       const doc = h('div', { class: 'ped-doc', html: epreuveSujetHtml(e) + '<div class="saut"></div>' + epreuveCorrigeHtml(e) });
-      dialogue(e.discipline + ' — ' + e.cours, h('div', {}, doc, blocNotes('epreuve:' + e.cle)), [{ l: 'Fermer' },
-        { l: 'Corrigé et grille', icone: 'valider', action: () => { imprimer(A, 'Corrigé — ' + e.discipline, epreuveCorrigeHtml(e)); } },
-        { l: 'Sujet', icone: 'imprimer', p: true, action: () => { imprimer(A, 'Sujet — ' + e.discipline, epreuveSujetHtml(e)); } }]);
+      const barre = h('div', { class: 'ped-actions' }, choixMiseEnPage());
+      const fermer = dialogue(e.discipline + ' — ' + e.cours, h('div', {}, barre, doc, blocNotes('epreuve:' + e.cle)), [{ l: 'Fermer' },
+        { l: 'Corrigé et grille', icone: 'valider', action: () => { imprimer(A, 'Corrigé — ' + e.discipline, miseEnPage([{ html: epreuveCorrigeHtml(e), nature: 'corrige' }], mep()), { epreuve: true }); } },
+        { l: 'Sujet', icone: 'imprimer', p: true, action: () => { imprimer(A, 'Sujet — ' + e.discipline, miseEnPage([{ html: epreuveSujetHtml(e), nature: e.code }], mep()), { epreuve: true }); } }]);
+      const b = barreEdition('epreuve', e, ouvrirEpreuve, () => fermer()); if (b) barre.after(b);
     }
     async function ouvrirProgramme(p) {
       const d = await cours(A, p.cours);
@@ -444,9 +607,10 @@
 
     /* --- fiches --- */
     function vueFiches(d) {
-      const mats = uniq(d.fiches.map(f => f.matiere));
+      const toutes = d.fiches.concat(copiesDe(notes, 'fiche', F.cours)).map(f => E_('fiche', f));
+      const mats = uniq(toutes.map(f => f.matiere));
       zoneFiltres.append(sel('Matière', 'matiere', optMatieres(true, mats)));
-      const base = d.fiches.filter(f => !F.matiere || f.matiere === F.matiere);
+      const base = toutes.filter(f => !F.matiere || f.matiere === F.matiere);
       zoneFiltres.append(sel('Sous-matière / domaine', 'smat', [['', 'Toutes']].concat(uniq(base.map(f => f.sous_matiere)).sort().map(x => [x, x]))));
       const b2 = base.filter(f => !F.smat || f.sous_matiere === F.smat);
       zoneFiltres.append(sel('SA / leçon', 'sa', [['', 'Toutes']].concat(uniq(b2.map(f => f.sa)).sort((a, b) => a - b).map(x => [String(x), 'SA ' + x]))));
@@ -479,19 +643,21 @@
 
     /* --- résumés --- */
     function vueResumes(d) {
-      const mats = uniq(d.resumes.map(r => r.matiere));
+      const tous = d.resumes.concat(copiesDe(notes, 'resume', F.cours)).map(r => E_('resume', r));
+      const mats = uniq(tous.map(r => r.matiere));
       zoneFiltres.append(sel('Matière', 'matiere', optMatieres(true, mats)));
-      const base = d.resumes.filter(r => !F.matiere || r.matiere === F.matiere);
+      const base = tous.filter(r => !F.matiere || r.matiere === F.matiere);
       zoneFiltres.append(sel('Outil de la langue / domaine', 'dom', [['', 'Tous']].concat(uniq(base.map(domaineResume)).sort().map(x => [x, x]))));
       const b2 = base.filter(r => !F.dom || domaineResume(r) === F.dom);
       zoneFiltres.append(sel('SA', 'rsa', [['', 'Toutes']].concat(uniq(b2.flatMap(r => r.sa || [])).sort((a, b) => a - b).map(x => [String(x), 'SA ' + x]))));
+      zoneFiltres.append(sel('Type', 'rtype', [['', 'Tous les résumés'], ['seance', 'Résumés de séance'], ['sa', 'Résumés de SA / de leçon']]));
       zoneFiltres.append(sel('Mois', 'rmois', [['', 'Toute l’année']].concat(MOIS.filter(m => b2.some(r => r.mois === m)).map(m => [m, m]))));
       zoneFiltres.append(champRecherche());
       const liste = h('div', {});
       zone.append(liste);
       rendreListe = () => {
         liste.innerHTML = '';
-        const l = b2.filter(r => (!F.rsa || (r.sa || []).map(String).includes(String(F.rsa))) && (!F.rmois || r.mois === F.rmois) && contient(r, ['titre', 'domaine', 'outil', 'regle', 'etape']));
+        const l = b2.filter(r => (!F.rsa || (r.sa || []).map(String).includes(String(F.rsa))) && (!F.rmois || r.mois === F.rmois) && (!F.rtype || (F.rtype === 'seance') === !!r.seance_resume) && contient(r, ['titre', 'domaine', 'outil', 'regle', 'etape']));
         const cahier = (eleve) => imprimer(A, 'Cahier de résumés — ' + F.cours, '<h1>Cahier de résumés — ' + esc(F.cours) + (F.matiere ? ' — ' + esc(nomMat(ix, F.matiere)) : '') + (eleve ? ' (version élève)' : '') + '</h1>'
           + '<p class="mention">' + l.length + ' résumé(s), dans l’ordre de la progression annuelle.</p>' + l.slice(0, MAX_LIVRET * 2).map((r, i) => (i ? '<div class="saut"></div>' : '') + resumeHtml(r, ix, eleve)).join(''));
         liste.append(h('div', { class: 'ped-actions' }, h('span', { class: 'ped-aide', style: 'align-self:center' }, `${l.length} résumé(s)`),
@@ -504,7 +670,7 @@
           h('tbody', {}, l.slice(page * PAR_PAGE, (page + 1) * PAR_PAGE).map(r => h('tr', { class: 'lien', tabindex: '0', onclick: () => ouvrirResume(r), onkeydown: (e) => { if (e.key === 'Enter') ouvrirResume(r); } },
             h('td', {}, nomMat(ix, r.matiere)), h('td', {}, domaineResume(r)),
             h('td', { class: 'n' }, [r.trimestre ? 'T' + r.trimestre : '', r.mois || '', (r.ancres && r.ancres[0] && r.ancres[0].libelle) || r.etape || ''].filter(Boolean).join(' · ')),
-            h('td', {}, h('b', {}, r.titre))))))));
+            h('td', {}, h('b', {}, r.titre), r.seance_resume ? h('span', { class: 'ped-badge src' }, ' séance') : null, r.a_verifier ? h('span', { class: 'ped-badge' }, ' à vérifier') : null)))))));
         if (nbp > 1) liste.append(h('div', { class: 'ped-pages' }, btn('precedent', 'Précédente', () => { page--; rendreListe(); }, 's', { disabled: page === 0 }),
           h('span', { class: 'ped-aide' }, `Page ${page + 1} / ${nbp}`), btn('suivant', 'Suivante', () => { page++; rendreListe(); }, 's', { disabled: page >= nbp - 1 })));
       };
@@ -518,10 +684,9 @@
       const pers = uniq(d.epreuves.filter(e => e.type === F.etype).map(e => e.periode));
       const libPer = (p) => (d.epreuves.find(e => e.periode === p) || {}).periode_lib || p;
       zoneFiltres.append(sel('Période', 'eper', pers.map(p => [p, libPer(p)])));
-      const l = d.epreuves.filter(e => e.periode === F.eper).sort((a, b) => (a.ordre || 0) - (b.ordre || 0));
-      const jeu = (corrige) => imprimer(A, (corrige ? 'Corrigés — ' : 'Sujets — ') + libPer(F.eper), '<h1>' + esc(F.cours) + ' — ' + esc(libPer(F.eper)) + (corrige ? ' — corrigés types et grilles' : '') + '</h1>'
-        + l.map((e, i) => (i ? '<div class="saut"></div>' : '') + (corrige ? epreuveCorrigeHtml(e) : epreuveSujetHtml(e))).join(''));
-      const act = h('div', { class: 'ped-actions' }, h('span', { class: 'ped-aide', style: 'align-self:center' }, `${l.length} épreuve(s)`),
+      const l = d.epreuves.concat(copiesDe(notes, 'epreuve', F.cours)).map(e => E_('epreuve', e)).filter(e => e.periode === F.eper).sort((a, b) => (a.ordre || 0) - (b.ordre || 0));
+      const jeu = (corrige) => imprimer(A, (corrige ? 'Corrigés — ' : 'Sujets — ') + libPer(F.eper), miseEnPage(l.map(e => ({ html: corrige ? epreuveCorrigeHtml(e) : epreuveSujetHtml(e), nature: corrige ? 'corrige' : e.code })), mep()), { epreuve: true });
+      const act = h('div', { class: 'ped-actions' }, h('span', { class: 'ped-aide', style: 'align-self:center' }, `${l.length} épreuve(s)`), choixMiseEnPage(),
         btn('imprimer', 'Toutes les épreuves (sujets)', () => l.length && jeu(false), 's', { 'data-ped': 'jeu-sujets' }),
         btn('valider', 'Tous les corrigés et grilles', () => l.length && jeu(true), 's', { 'data-ped': 'jeu-corriges' }));
       if (A.examenBlanc && l.length) {
@@ -537,7 +702,7 @@
       zone.append(h('div', { class: 'ped-tw' }, h('table', { class: 'ped-t', 'data-ped': 'table-epreuves' },
         h('thead', {}, h('tr', {}, ['Ordre', 'Épreuve', 'Durée', 'Barème', 'Origine'].map(x => h('th', {}, x)))),
         h('tbody', {}, l.map(e => h('tr', { class: 'lien', tabindex: '0', onclick: () => ouvrirEpreuve(e), onkeydown: (ev) => { if (ev.key === 'Enter') ouvrirEpreuve(e); } },
-          h('td', { class: 'n' }, e.ordre || ''), h('td', {}, h('b', {}, e.discipline)), h('td', { class: 'n' }, e.duree || ''), h('td', { class: 'n' }, (e.total || e.bareme || 20) + ' pts'),
+          h('td', { class: 'n' }, e.ordre || ''), h('td', {}, h('b', {}, e.discipline), e._version ? h('span', { class: 'ped-badge ok' }, ' modifiée') : null), h('td', { class: 'n' }, e.duree || ''), h('td', { class: 'n' }, (e.total || e.total_bareme || e.bareme || 20) + ' pts'),
           h('td', {}, h('span', { class: 'ped-badge ' + (e.infre ? 'src' : 'ok') }, e.infre ? 'd’après INFRE' : 'conçue (APC)'))))))));
     }
 
@@ -610,8 +775,8 @@
       const M = d.plan[F.pmois]; if (!M) { zone.append(h('p', { class: 'ped-vide' }, 'Pas de planification pour ce mois.')); return; }
       const k = (+F.psem || 1) - 1;
       const W = (M.semaines || [])[k] || { fiches: {}, resumes: {} };
-      const fichesDe = (ids) => (ids || []).map(i => d._fiche[i]).filter(Boolean);
-      const resumesDe = (ids) => (ids || []).map(i => d._resume[i]).filter(Boolean);
+      const fichesDe = (ids) => (ids || []).map(i => E_('fiche', d._fiche[i])).filter(Boolean);
+      const resumesDe = (ids) => (ids || []).map(i => E_('resume', d._resume[i])).filter(Boolean);
       const lienF = (f) => lien({ onclick: () => ouvrirFiche(f) }, f.titre);
       const lienR = (r) => lien({ onclick: () => ouvrirResume(r) }, r.titre);
       const cleNote = 'plan:' + F.cours + ':' + F.pmois + (F.pvue === 'mois' ? '' : ':S' + (k + 1));
@@ -621,7 +786,7 @@
 
       if (F.pvue === 'jour') {
         const ji = +F.pjour || 0;
-        const cr = journee(d, F.pmois, k, ji);
+        const cr = journee(d, F.pmois, k, ji).map(c => (c.fiche ? Object.assign(c, { fiche: E_('fiche', c.fiche) }) : c));
         const fj = uniq(cr.map(c => c.fiche).filter(Boolean));
         const fjm = {}; fj.forEach(f => { (fjm[f.matiere] = fjm[f.matiere] || []).push(f); });
         const rj = uniq(Object.entries(W.resumes || {}).flatMap(([m, ids]) => fjm[m] ? resumesDe(ids) : []));
@@ -649,7 +814,7 @@
         });
         zone.append(h('div', { class: 'ped-grille' }, cartes));
       } else {
-        const fsMois = uniq((M.semaines || []).flatMap(w => ORDRE_MAT.flatMap(m => (w.fiches || {})[m] || []))).map(i => d._fiche[i]).filter(Boolean);
+        const fsMois = uniq((M.semaines || []).flatMap(w => ORDRE_MAT.flatMap(m => (w.fiches || {})[m] || []))).map(i => E_('fiche', d._fiche[i])).filter(Boolean);
         const rsMois = uniq(ORDRE_MAT.flatMap(m => resumesDe((M.resumes || {})[m])).concat((M.semaines || []).flatMap(w => ORDRE_MAT.flatMap(m => resumesDe((w.resumes || {})[m])))));
         const ligne = d.progression.find(l => l.mois === F.pmois) || {};
         const cols = COLS_PROG.filter(([c]) => ligne[c]);
@@ -676,12 +841,13 @@
   async function imprimerJeu(A, c, periode, corrige) {
     styles();
     const d = await cours(A, c);
-    const l = d.epreuves.filter(e => e.periode === periode).sort((a, b) => (a.ordre || 0) - (b.ordre || 0));
+    let notes = {}; try { notes = (A.notes && (await A.notes.charger())) || {}; } catch (e) { notes = {}; }
+    const l = d.epreuves.concat(copiesDe(notes, 'epreuve', c)).map(e => eff(notes, 'epreuve', e)).filter(e => e.periode === periode).sort((a, b) => (a.ordre || 0) - (b.ordre || 0));
     if (!l.length) return false;
-    imprimer(A, (corrige ? 'Corrigés — ' : 'Sujets — ') + l[0].periode_lib, '<h1>' + esc(c) + ' — ' + esc(l[0].periode_lib) + (corrige ? ' — corrigés types et grilles' : '') + '</h1>'
-      + l.map((e, i) => (i ? '<div class="saut"></div>' : '') + (corrige ? epreuveCorrigeHtml(e) : epreuveSujetHtml(e))).join(''));
+    let mode = 'auto'; try { mode = (JSON.parse((A.memo ? A.memo.get('filtres') : localStorage.getItem('ped.filtres')) || '{}').mep) === '1' ? '1' : 'auto'; } catch (e) { mode = 'auto'; }
+    imprimer(A, (corrige ? 'Corrigés — ' : 'Sujets — ') + l[0].periode_lib, miseEnPage(l.map(e => ({ html: corrige ? epreuveCorrigeHtml(e) : epreuveSujetHtml(e), nature: corrige ? 'corrige' : e.code })), mode), { epreuve: true });
     return true;
   }
 
-  global.Pedagogie = { monter, imprimerJeu, index, cours, toutHorsLigne, journee, _int: { ficheHtml, resumeHtml, epreuveSujetHtml, epreuveCorrigeHtml, nettoyer } };
+  global.Pedagogie = { monter, imprimerJeu, index, cours, toutHorsLigne, journee, imprimerSimple: imprimerDefaut, _int: { ficheHtml, resumeHtml, epreuveSujetHtml, epreuveCorrigeHtml, nettoyer, miseEnPage, hauteurMm, eff } };
 })(window);
