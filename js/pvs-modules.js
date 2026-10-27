@@ -24,6 +24,17 @@
   const UNITE_EPREUVE = (e) => /saut|lancer/i.test(e || '') ? 'm' : /course en sac|relais trad/i.test(e || '') ? 's' : 's';
   const DISTINCTIONS = ['Médaille d’or', 'Médaille d’argent', 'Médaille de bronze', 'Coupe', 'Trophée', 'Prix spécial', 'Prix du fair-play', 'Meilleur buteur / marqueur', 'Meilleur joueur / joueuse', 'Mention', 'Participation'];
 
+  const MATIERES = ['Français', 'Mathématiques', 'Éducation scientifique et technologique', 'Éducation sociale', 'Éducation artistique', 'Éducation physique et sportive', 'Anglais', 'Langue nationale', 'Autre'];
+  /** Grille APC d'observation de classe : 10 critères notés de 0 à 4 (total /40 ramené sur 20) */
+  const GRILLE_APC = [['c1', 'Préparation et fiche pédagogique'], ['c2', 'Situation de départ et motivation'], ['c3', 'Clarté des consignes'],
+    ['c4', 'Démarche APC (travail individuel, en groupe, collectif)'], ['c5', 'Exploitation des productions des apprenants'], ['c6', 'Objectivation et retour réflexif'],
+    ['c7', 'Évaluation formative et remédiation'], ['c8', 'Gestion du temps et de la classe'], ['c9', 'Tenue des documents (cahier de préparation, registres)'], ['c10', 'Climat de classe et inclusion']];
+  function noteGrille(r) { const v = GRILLE_APC.map(([k]) => r[k]).filter(x => x !== '' && x != null && !isNaN(+x)); return v.length ? Math.round(10 * v.reduce((a, x) => a + Math.min(4, Math.max(0, +x)), 0) * 20 / (4 * v.length)) / 10 : ''; }
+  const appreciation = (n) => (n === '' ? '' : n >= 16 ? 'Très bien' : n >= 14 ? 'Bien' : n >= 12 ? 'Assez bien' : n >= 10 ? 'Passable' : 'Insuffisant');
+  /** Session d'examen par défaut : « CEP AAAA » (année de fin de l'année scolaire en cours) */
+  const SESSION = () => { const d = new Date(); return 'CEP ' + (d.getMonth() >= 8 ? d.getFullYear() + 1 : d.getFullYear()); };
+  const EPREUVES_CEP = [['Communication écrite (rédaction)', 1, 20], ['Lecture', 1, 20], ['Mathématiques', 1, 20], ['Éducation scientifique et technologique', 1, 20], ['Éducation sociale', 1, 20], ['Éducation physique et sportive', 1, 20], ['Éducation artistique', 1, 20]];
+
   /** Catégorie d'âge d'un élève pour une saison « AAAA-AAAA » : âge atteint au 31 décembre de la première année */
   function categorieAge(dateNaissance, saison) {
     const y = parseInt(String(dateNaissance || '').slice(0, 4), 10), s = parseInt(String(saison || '').slice(0, 4), 10);
@@ -264,6 +275,137 @@
             { k: 'statut', l: 'Statut', t: 'choix', o: ['Signalé', 'En suivi', 'Réintégré', 'Abandon définitif'], def: 'Signalé' }, { k: 'observations', l: 'Observations', t: 'long', cache: true }],
           docsLigne: [{ type: 'DECROCHAGE', l: IC('alerte') + 'Fiche de signalement' }] }
       ]
+    },
+    /* ===================================================== LOT C ===================================================== */
+    {
+      id: 'inspection', lot: 'C', titre: 'Inspection et formation', icone: IC('inspection').trim(),
+      desc: 'Visites de classe avec grille APC notée, comptes rendus signés, suivi des recommandations, plans de formation, animations pédagogiques d’UP et de zone (présences, thèmes, comptes rendus), attestations de participation signées avec QR.',
+      onglets: [
+        { id: 'visites', titre: 'Visites de classe (grille APC)', coll: 'visitesClasse', niveaux: ['ECOLE'], unique: ['enseignant', 'date'],
+          lib: (r) => (r.enseignant || '') + (r.date ? ' — ' + r.date : ''),
+          champs: [
+            { k: 'enseignant', l: 'Enseignant(e)', t: 'txt', req: true }, { k: 'sexeEns', l: 'Sexe de l’enseignant(e)', t: 'sexe', cache: true }, { k: 'cours', l: 'Cours', t: 'choix', o: COURS },
+            { k: 'date', l: 'Date de la visite', t: 'date', req: true }, { k: 'visiteur', l: 'Visiteur', t: 'txt', req: true },
+            { k: 'qualiteVisiteur', l: 'Qualité du visiteur', t: 'choix', o: ['Directeur / Directrice', 'Conseiller pédagogique', 'Chef de circonscription', 'Inspecteur', 'Autre'], def: 'Conseiller pédagogique' },
+            { k: 'typeVisite', l: 'Type de visite', t: 'choix', o: ['Visite de classe', 'Visite conseil', 'Inspection', 'Contre-visite'], def: 'Visite de classe' },
+            { k: 'discipline', l: 'Discipline', t: 'choix', o: MATIERES }, { k: 'seance', l: 'Séance / situation d’apprentissage', t: 'txt', cache: true },
+            ...GRILLE_APC.map(([k, l]) => ({ k, l, t: 'num', cache: true, aide: 'Note de 0 à 4' })),
+            { k: 'note', l: 'Note (/20)', t: 'calc', calc: noteGrille }, { k: 'appreciation', l: 'Appréciation', t: 'calc', calc: (r) => appreciation(noteGrille(r)) },
+            { k: 'pointsForts', l: 'Points forts', t: 'long', cache: true }, { k: 'insuffisances', l: 'Insuffisances', t: 'long', cache: true },
+            { k: 'recommandations', l: 'Recommandations', t: 'long', cache: true }],
+          docsLigne: [{ type: 'CR_VISITE', l: IC('document') + 'Compte rendu de visite' }] },
+        { id: 'recommandations', titre: 'Suivi des recommandations', coll: 'recommandations', niveaux: NIVEAUX, vue: 'suiviReco', unique: ['recommandation', 'destinataire'],
+          lib: (r) => String(r.recommandation || '').slice(0, 60),
+          champs: [
+            { k: 'visite', l: 'Visite de classe', t: 'ref', o: 'visitesClasse' }, { k: 'destinataire', l: 'Destinataire', t: 'txt', req: true },
+            { k: 'recommandation', l: 'Recommandation', t: 'long', req: true }, { k: 'echeance', l: 'Échéance', t: 'date' }, { k: 'responsable', l: 'Responsable du suivi', t: 'txt' },
+            { k: 'statut', l: 'Statut', t: 'choix', o: ['Non commencée', 'En cours', 'Réalisée', 'Abandonnée'], def: 'Non commencée' },
+            { k: 'dateVerification', l: 'Date de vérification', t: 'date', cache: true }, { k: 'observations', l: 'Observations', t: 'long', cache: true }] },
+        { id: 'plans', titre: 'Plans de formation', coll: 'plansFormation', niveaux: NIVEAUX, unique: ['theme', 'dateDebut'],
+          lib: (r) => r.theme || '',
+          champs: [
+            { k: 'theme', l: 'Thème', t: 'txt', req: true }, { k: 'publicCible', l: 'Public cible', t: 'choix', o: ['Directeurs', 'Enseignants', 'Enseignants du CI / CP', 'Enseignants du CE', 'Enseignants du CM', 'Éducatrices / éducateurs (maternelle)', 'Conseillers pédagogiques', 'Tous'], def: 'Enseignants' },
+            { k: 'objectifs', l: 'Objectifs', t: 'long', cache: true }, { k: 'dateDebut', l: 'Date de début', t: 'date' }, { k: 'dateFin', l: 'Date de fin', t: 'date' },
+            { k: 'formateur', l: 'Formateur(s)', t: 'txt' }, { k: 'lieu', l: 'Lieu', t: 'txt' }, { k: 'modalite', l: 'Modalité', t: 'choix', o: ['Présentiel', 'À distance', 'Mixte'], def: 'Présentiel' },
+            { k: 'participantsPrevus', l: 'Participants prévus', t: 'num' }, { k: 'cout', l: 'Coût prévu (FCFA)', t: 'num' }, { k: 'financement', l: 'Financement', t: 'txt', cache: true },
+            { k: 'statut', l: 'Statut', t: 'choix', o: ['Prévue', 'En cours', 'Réalisée', 'Reportée', 'Annulée'], def: 'Prévue' }] },
+        { id: 'animations', titre: 'Animations pédagogiques', coll: 'animations', niveaux: NIVEAUX, unique: ['date', 'theme'],
+          lib: (r) => (r.type || '') + ' — ' + (r.theme || ''),
+          champs: [
+            { k: 'type', l: 'Type', t: 'choix', o: ['Animation pédagogique d’UP', 'Animation de zone', 'Journée pédagogique', 'Formation', 'Atelier', 'Conférence pédagogique'], def: 'Animation pédagogique d’UP', req: true },
+            { k: 'date', l: 'Date', t: 'date', req: true }, { k: 'theme', l: 'Thème', t: 'txt', req: true }, { k: 'animateur', l: 'Animateur / animatrice', t: 'txt' }, { k: 'lieu', l: 'Lieu', t: 'txt' },
+            { k: 'presentsH', l: 'Présents (hommes)', t: 'num' }, { k: 'presentsF', l: 'Présentes (femmes)', t: 'num' }, { k: 'presents', l: 'Total présents', t: 'calc', calc: total('presentsH', 'presentsF') },
+            { k: 'participants', l: 'Liste des participants', t: 'long', cache: true, aide: 'Une personne par ligne : NOM Prénoms — école / fonction' },
+            { k: 'compteRendu', l: 'Compte rendu', t: 'long', cache: true }],
+          docsLigne: [{ type: 'CR_ANIMATION', l: IC('document') + 'Compte rendu et liste de présence' }, { type: 'ATTEST_FORMATION', l: IC('attestation') + 'Attestations de participation' }] }
+      ]
+    },
+    {
+      id: 'patrimoine', lot: 'C', titre: 'Patrimoine et matériel', icone: IC('patrimoine').trim(),
+      desc: 'Bâtiments et salles (état), tables-bancs et besoins, manuels par cours et matière, matériel didactique et sportif, besoins exprimés, dotations reçues avec procès-verbal de réception signé.',
+      onglets: [
+        { id: 'batiments', titre: 'Bâtiments et salles', coll: 'batiments', niveaux: ['ECOLE'], unique: ['designation'],
+          lib: (r) => r.designation || '',
+          champs: [
+            { k: 'designation', l: 'Désignation', t: 'txt', req: true, aide: 'Ex. : Module de 3 classes, salle du CM1' },
+            { k: 'nature', l: 'Nature', t: 'choix', o: ['Salle de classe', 'Bureau', 'Magasin', 'Bibliothèque', 'Cantine / cuisine', 'Latrines', 'Logement', 'Clôture', 'Point d’eau', 'Autre'], def: 'Salle de classe', req: true },
+            { k: 'nombre', l: 'Nombre', t: 'num', def: 1 }, { k: 'materiaux', l: 'Matériaux', t: 'choix', o: ['Définitif', 'Semi-dur', 'Provisoire / paillote'], def: 'Définitif' },
+            { k: 'annee', l: 'Année de construction', t: 'num' }, { k: 'etat', l: 'État', t: 'choix', o: ['Bon', 'Passable', 'Mauvais', 'À réhabiliter', 'Inutilisable'], def: 'Bon', req: true },
+            { k: 'financement', l: 'Financement', t: 'txt' }, { k: 'observations', l: 'Observations', t: 'long', cache: true }] },
+        { id: 'tables', titre: 'Tables-bancs', coll: 'tablesBancs', niveaux: ['ECOLE'], unique: ['cours'], annee: true,
+          lib: (r) => r.cours || '',
+          champs: [
+            { k: 'cours', l: 'Cours', t: 'choix', o: COURS.concat(['Toute l’école']), req: true }, { k: 'eleves', l: 'Élèves', t: 'num' },
+            { k: 'tablesBon', l: 'Tables-bancs en bon état', t: 'num' }, { k: 'tablesMauvais', l: 'Tables-bancs en mauvais état', t: 'num' }, { k: 'places', l: 'Places par table-banc', t: 'num', def: 2 },
+            { k: 'besoin', l: 'Besoin en tables-bancs', t: 'calc', calc: (r) => (+r.eleves ? Math.max(0, Math.ceil(r.eleves / (+r.places || 2)) - (+r.tablesBon || 0)) : '') }] },
+        { id: 'manuels', titre: 'Manuels scolaires', coll: 'manuels', niveaux: ['ECOLE'], unique: ['cours', 'matiere', 'titre'], annee: true,
+          lib: (r) => (r.cours || '') + ' — ' + (r.matiere || ''),
+          champs: [
+            { k: 'cours', l: 'Cours', t: 'choix', o: COURS, req: true }, { k: 'matiere', l: 'Matière', t: 'choix', o: MATIERES, req: true }, { k: 'titre', l: 'Titre du manuel', t: 'txt' },
+            { k: 'nombre', l: 'Exemplaires', t: 'num' }, { k: 'bonEtat', l: 'En bon état', t: 'num' }, { k: 'eleves', l: 'Élèves du cours', t: 'num' },
+            { k: 'ratio', l: 'Manuels par élève', t: 'calc', calc: (r) => (+r.eleves ? Math.round(100 * (+r.bonEtat || 0) / r.eleves) / 100 : '') }] },
+        { id: 'materiel', titre: 'Matériel didactique et sportif', coll: 'materielEcole', niveaux: NIVEAUX, unique: ['designation', 'categorie'],
+          lib: (r) => r.designation || '',
+          champs: [
+            { k: 'designation', l: 'Désignation', t: 'txt', req: true }, { k: 'categorie', l: 'Catégorie', t: 'choix', o: ['Didactique', 'Sportif', 'Informatique', 'Mobilier', 'Hygiène', 'Autre'], def: 'Didactique' },
+            { k: 'quantite', l: 'Quantité', t: 'num', req: true }, { k: 'etat', l: 'État', t: 'choix', o: ['Bon', 'Usagé', 'À réparer', 'Hors d’usage'], def: 'Bon' },
+            { k: 'origine', l: 'Origine', t: 'choix', o: ['Achat', 'Don', 'Dotation', 'Prêt'] }, { k: 'date', l: 'Date d’acquisition', t: 'date', cache: true },
+            { k: 'valeur', l: 'Valeur (FCFA)', t: 'num', cache: true }, { k: 'observations', l: 'Observations', t: 'long', cache: true }] },
+        { id: 'besoins', titre: 'Besoins exprimés', coll: 'besoinsMat', niveaux: NIVEAUX, unique: ['designation'],
+          lib: (r) => r.designation || '',
+          champs: [
+            { k: 'designation', l: 'Désignation', t: 'txt', req: true }, { k: 'categorie', l: 'Catégorie', t: 'choix', o: ['Construction', 'Réhabilitation', 'Mobilier', 'Manuels', 'Matériel didactique', 'Matériel sportif', 'Équipement', 'Personnel', 'Autre'], def: 'Mobilier' },
+            { k: 'quantite', l: 'Quantité', t: 'num' }, { k: 'priorite', l: 'Priorité', t: 'choix', o: ['Haute', 'Moyenne', 'Basse'], def: 'Moyenne' },
+            { k: 'coutEstime', l: 'Coût estimé (FCFA)', t: 'num' }, { k: 'justification', l: 'Justification', t: 'long', cache: true },
+            { k: 'statut', l: 'Statut', t: 'choix', o: ['Exprimé', 'Transmis', 'Satisfait partiellement', 'Satisfait'], def: 'Exprimé' }] },
+        { id: 'dotations', titre: 'Dotations reçues', coll: 'dotations', niveaux: NIVEAUX, unique: ['date', 'designation'],
+          lib: (r) => (r.designation || '') + (r.date ? ' — ' + r.date : ''),
+          champs: [
+            { k: 'date', l: 'Date de réception', t: 'date', req: true }, { k: 'designation', l: 'Désignation', t: 'txt', req: true }, { k: 'quantite', l: 'Quantité', t: 'num', req: true },
+            { k: 'unite', l: 'Unité', t: 'txt', def: 'unité' }, { k: 'source', l: 'Source', t: 'choix', o: ['État', 'Commune', 'Partenaire / ONG', 'Parents d’élèves', 'Don privé'], def: 'État' },
+            { k: 'beneficiaire', l: 'École bénéficiaire', t: 'ecole' }, { k: 'pvNumero', l: 'N° du PV de réception', t: 'txt' },
+            { k: 'receptionnaire', l: 'Réceptionnaire', t: 'txt' }, { k: 'etatReception', l: 'État à la réception', t: 'choix', o: ['Conforme', 'Non conforme', 'Incomplet'], def: 'Conforme' },
+            { k: 'observations', l: 'Observations', t: 'long', cache: true }],
+          docsLigne: [{ type: 'PV_RECEPTION', l: IC('attestation') + 'PV de réception' }] }
+      ]
+    },
+    {
+      id: 'examens', lot: 'C', titre: 'Examens et concours', icone: IC('examen').trim(),
+      desc: 'CEP de bout en bout : épreuves, centres, jurys, candidats, numéros de table et salles, saisie des notes, délibération, résultats et statistiques, relevés de notes, convocations, listes d’admis ; concours scolaires (dictée, calcul mental, culture générale, génies en herbe, dessin, chant) et palmarès.',
+      onglets: [
+        { id: 'epreuves', titre: 'Épreuves', coll: 'epreuves', niveaux: ['CS', 'ZONE', 'DDEMP', 'ECOLE', 'UP'], vue: 'epreuvesDefaut', unique: ['session', 'epreuve'],
+          lib: (r) => r.epreuve || '',
+          champs: [{ k: 'session', l: 'Session', t: 'txt', req: true, def: SESSION() }, { k: 'epreuve', l: 'Épreuve', t: 'txt', req: true }, { k: 'coefficient', l: 'Coefficient', t: 'num', def: 1 },
+            { k: 'bareme', l: 'Noté sur', t: 'num', def: 20 }, { k: 'ordre', l: 'Ordre', t: 'num' }] },
+        { id: 'centres', titre: 'Centres', coll: 'centres', niveaux: NIVEAUX, unique: ['session', 'centre'],
+          lib: (r) => r.centre || '',
+          champs: [{ k: 'session', l: 'Session', t: 'txt', req: true, def: SESSION() }, { k: 'centre', l: 'Centre', t: 'txt', req: true }, { k: 'code', l: 'Code du centre', t: 'txt', aide: 'Préfixe des numéros de table (ex. POB1)' },
+            { k: 'ecoleSiege', l: 'École siège', t: 'ecole' }, { k: 'chefCentre', l: 'Chef de centre', t: 'txt' }, { k: 'salles', l: 'Salles', t: 'num', def: 1 }, { k: 'capacite', l: 'Places par salle', t: 'num', def: 30 }] },
+        { id: 'jurys', titre: 'Jurys', coll: 'jurys', niveaux: NIVEAUX, unique: ['session', 'centre'],
+          lib: (r, api) => 'Jury — ' + (api ? api.libRef('centres', r.centre) : ''),
+          champs: [{ k: 'session', l: 'Session', t: 'txt', req: true, def: SESSION() }, { k: 'centre', l: 'Centre', t: 'ref', o: 'centres', req: true }, { k: 'president', l: 'Président(e) du jury', t: 'txt', req: true },
+            { k: 'vicePresident', l: 'Vice-président(e)', t: 'txt' }, { k: 'secretaire', l: 'Secrétaire', t: 'txt' }, { k: 'membres', l: 'Membres (un par ligne)', t: 'long', cache: true }, { k: 'date', l: 'Date de délibération', t: 'date' }] },
+        { id: 'candidats', titre: 'Candidats', coll: 'candidats', niveaux: ['ECOLE'], unique: ['session', 'nom', 'prenoms', 'dateNaissance'],
+          lib: (r) => [r.numeroTable, String(r.nom || '').toUpperCase(), r.prenoms].filter(Boolean).join(' '),
+          champs: [{ k: 'session', l: 'Session', t: 'txt', req: true, def: SESSION() }, { k: 'numeroTable', l: 'N° de table', t: 'txt' }, { k: 'nom', l: 'Nom', t: 'txt', req: true }, { k: 'prenoms', l: 'Prénoms', t: 'txt', req: true },
+            { k: 'sexe', l: 'Sexe', t: 'sexe', req: true }, { k: 'dateNaissance', l: 'Date de naissance', t: 'date' }, { k: 'lieuNaissance', l: 'Lieu de naissance', t: 'txt', cache: true },
+            { k: 'centre', l: 'Centre', t: 'ref', o: 'centres' }, { k: 'salle', l: 'Salle', t: 'txt' }, { k: 'statut', l: 'Statut', t: 'choix', o: ['Inscrit', 'Absent', 'Abandon', 'Exclu'], def: 'Inscrit' },
+            { k: 'moyenne', l: 'Moyenne', t: 'calc', calc: (r) => (r.moyenne == null ? '' : r.moyenne) }, { k: 'decision', l: 'Décision', t: 'calc', calc: (r) => r.decision || '' }],
+          docsLigne: [{ type: 'CONVOCATION_CAND', l: IC('carte-identite') + 'Convocation du candidat' }, { type: 'RELEVE', l: IC('document') + 'Relevé de notes' }] },
+        { id: 'notes', titre: 'Saisie des notes', vue: 'notesCep' },
+        { id: 'deliberation', titre: 'Délibération et résultats', vue: 'deliberation' },
+        { id: 'concours', titre: 'Concours scolaires', coll: 'concours', niveaux: NIVEAUX, unique: ['intitule'],
+          lib: (r) => r.intitule || '',
+          champs: [{ k: 'intitule', l: 'Intitulé', t: 'txt', req: true }, { k: 'type', l: 'Type', t: 'choix', o: ['Dictée', 'Calcul mental', 'Culture générale', 'Génies en herbe', 'Lecture', 'Dessin', 'Chant / poésie', 'Rédaction', 'Autre'], def: 'Dictée', req: true },
+            { k: 'cours', l: 'Cours / catégorie', t: 'txt' }, { k: 'date', l: 'Date', t: 'date' }, { k: 'lieu', l: 'Lieu', t: 'txt' }, { k: 'organisateur', l: 'Organisateur', t: 'txt', cache: true },
+            { k: 'bareme', l: 'Noté sur', t: 'num', def: 20 }, { k: 'statut', l: 'Statut', t: 'choix', o: ['Programmé', 'Réalisé', 'Annulé'], def: 'Programmé' }],
+          docsLigne: [{ type: 'PALMARES_CONCOURS', l: IC('trophee') + 'Palmarès du concours' }] },
+        { id: 'participants', titre: 'Participants et notes', coll: 'participants', niveaux: NIVEAUX, unique: ['concours', 'nom', 'prenoms'],
+          lib: (r) => [String(r.nom || '').toUpperCase(), r.prenoms].filter(Boolean).join(' '),
+          champs: [{ k: 'concours', l: 'Concours', t: 'ref', o: 'concours', req: true }, { k: 'nom', l: 'Nom', t: 'txt', req: true }, { k: 'prenoms', l: 'Prénoms', t: 'txt' }, { k: 'sexe', l: 'Sexe', t: 'sexe' },
+            { k: 'ecole', l: 'École', t: 'ecole' }, { k: 'cours', l: 'Cours', t: 'choix', o: COURS }, { k: 'points', l: 'Note / points', t: 'num' }, { k: 'rang', l: 'Rang', t: 'num', aide: 'Calculé d’après la note s’il est laissé vide' }],
+          docsLigne: [{ type: 'PRIX', l: IC('medaille') + 'Diplôme / prix' }] }
+      ]
     }
   ];
 
@@ -317,8 +459,18 @@
     STOCK: { lib: 'État du stock de la cantine scolaire', sig: 'gestionnaire (à la main) + visa du directeur', code: 'ST' },
     CANTINE: { lib: 'Journal de la cantine scolaire', sig: 'gestionnaire (à la main) + visa du directeur', code: 'CN' },
     INCLUSION: { lib: 'Fiche de suivi d’un élève à besoins spécifiques', sig: 'enseignant titulaire (à la main) + visa du directeur', code: 'IN' },
-    DECROCHAGE: { lib: 'Fiche de signalement d’absentéisme / décrochage', sig: 'enseignant titulaire (à la main) + visa du directeur', code: 'SD' }
+    DECROCHAGE: { lib: 'Fiche de signalement d’absentéisme / décrochage', sig: 'enseignant titulaire (à la main) + visa du directeur', code: 'SD' },
+    CR_VISITE: { lib: 'Compte rendu de visite de classe', sig: 'visiteur + enseignant(e) visité(e) (à la main) + visa du directeur', code: 'VC' },
+    CR_ANIMATION: { lib: 'Compte rendu d’animation pédagogique et liste de présence', sig: 'animateur + autorité de l’entité', code: 'AN' },
+    ATTEST_FORMATION: { lib: 'Attestation de participation à une formation / animation', sig: 'autorité de l’entité organisatrice', code: 'AF' },
+    PV_RECEPTION: { lib: 'Procès-verbal de réception de dotation', sig: 'réceptionnaire + livreur (à la main) + visa de l’autorité', code: 'PR' },
+    CONVOCATION_CAND: { lib: 'Convocation du candidat', sig: 'chef de centre + visa de l’autorité', code: 'CC' },
+    RELEVE: { lib: 'Relevé de notes', sig: 'président du jury + visa de l’autorité', code: 'RN' },
+    PV_DELIBERATION: { lib: 'Procès-verbal de délibération', sig: 'président, vice-président, secrétaire du jury + visa de l’autorité', code: 'PD' },
+    LISTE_ADMIS: { lib: 'Liste des candidats admis', sig: 'président du jury + visa de l’autorité', code: 'LA' },
+    PALMARES_CONCOURS: { lib: 'Palmarès du concours', sig: 'organisateur + autorité de l’entité', code: 'PC' },
+    PRIX: { lib: 'Diplôme de lauréat (concours)', sig: 'autorité de l’entité organisatrice', code: 'PX' }
   };
 
-  global.PVS_CATALOGUE = { NIVEAUX, DISCIPLINES, CATEGORIES, GENRES, COURS, FORMULES, PHASES, EPREUVES, UNITE_EPREUVE, DISTINCTIONS, MODULES, INDICATEURS, DOCUMENTS, categorieAge };
+  global.PVS_CATALOGUE = { MATIERES, GRILLE_APC, noteGrille, appreciation, SESSION, EPREUVES_CEP, NIVEAUX, DISCIPLINES, CATEGORIES, GENRES, COURS, FORMULES, PHASES, EPREUVES, UNITE_EPREUVE, DISTINCTIONS, MODULES, INDICATEURS, DOCUMENTS, categorieAge };
 })(typeof window !== 'undefined' ? window : globalThis);

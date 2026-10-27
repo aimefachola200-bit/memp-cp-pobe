@@ -14,11 +14,14 @@ import * as INF from './views-infra.js';
 import * as E from './effectifs-schema.js';
 
 const I = (n) => (window.Icones ? window.Icones.code(n) + ' ' : '');
-export const MODULES = { sport: 'sport', pilotage: 'pilotage', communication: 'communication', sante: 'sante' };
+export const MODULES = { sport: 'sport', pilotage: 'pilotage', communication: 'communication', sante: 'sante', inspection: 'inspection', patrimoine: 'patrimoine', examens: 'examens' };
 const TITRES = { sport: ['Sport scolaire', 'Licences, compétitions, calendrier, feuilles de match, classements, palmarès et qualifiés'],
   pilotage: ['Tableau de bord du pilotage', 'Indicateurs par école, UP, zone, circonscription et département'],
   communication: ['Communication et alertes', 'Notes de service, circulaires, convocations, accusés de réception, échéances, messages aux parents, agenda'],
-  sante: ['Santé, cantine et inclusion', 'Visites médicales, infirmerie, cantine et stocks, besoins spécifiques, filles, décrochage'] };
+  sante: ['Santé, cantine et inclusion', 'Visites médicales, infirmerie, cantine et stocks, besoins spécifiques, filles, décrochage'],
+  inspection: ['Inspection et formation', 'Visites de classe (grille APC), recommandations, plans de formation, animations pédagogiques'],
+  patrimoine: ['Patrimoine et matériel', 'Bâtiments, tables-bancs, manuels, matériel, besoins, dotations et PV de réception'],
+  examens: ['Examens et concours', 'CEP : épreuves, centres, jurys, candidats, notes, délibération, résultats ; concours scolaires'] };
 
 /** Pièce PVS signée : registre « docs » (store pvs), empreinte SHA-256 du contenu vérifiable */
 export async function signerPvs(doc, u) {
@@ -77,7 +80,8 @@ export async function adaptateurPvs(u) {
     memo: { get: (k) => { try { return localStorage.getItem('pvs.' + k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem('pvs.' + k, v); } catch (e) { /* indisponible */ } } },
     ouvrir: (route) => { location.hash = '#/' + route; },
     utilisateur: () => [u.prenoms, u.nom].filter(Boolean).join(' ') || u.username,
-    liens: { communication: [{ l: I('message') + 'Groupe WhatsApp des directeurs', route: 'whatsapp' }], sport: [{ l: I('insigne') + 'Bureaux UASCEP', route: 'uascep' }], pilotage: [{ l: I('eleve') + 'Effectifs des apprenants', route: 'effectifs' }, { l: I('diplome') + 'CEP : candidats et réussite', route: 'cep' }, { l: I('chantier') + 'Infrastructures et mobilier', route: 'infra' }] }
+    liens: { patrimoine: [{ l: I('chantier') + 'Infrastructures et mobilier (fiches)', route: 'infra' }], examens: [{ l: I('diplome') + 'CEP : candidats et réussite (fiches)', route: 'cep' }], inspection: [{ l: I('calendrier') + 'Activités pédagogiques', route: 'activites' }],
+      communication: [{ l: I('message') + 'Groupe WhatsApp des directeurs', route: 'whatsapp' }], sport: [{ l: I('insigne') + 'Bureaux UASCEP', route: 'uascep' }], pilotage: [{ l: I('eleve') + 'Effectifs des apprenants', route: 'effectifs' }, { l: I('diplome') + 'CEP : candidats et réussite', route: 'cep' }, { l: I('chantier') + 'Infrastructures et mobilier', route: 'infra' }] }
   });
 }
 

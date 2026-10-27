@@ -150,6 +150,23 @@
     return rang;
   }
 
+  /** Résultats du CEP d'une session (et d'un centre) : moyennes, rangs, décisions (calcul pur) */
+  function resultatsCep(etat, session, centre, seuil, repechage) {
+    const ep = (etat.epreuves || []).filter(e => e.session === session).sort((a, b) => (num(a.ordre) || 99) - (num(b.ordre) || 99) || String(a.epreuve).localeCompare(String(b.epreuve), 'fr'));
+    const cands = (etat.candidats || []).filter(c => c.session === session && (!centre || c.centre === centre));
+    const S = vide(seuil) ? 10 : num(seuil), R = vide(repechage) ? null : num(repechage);
+    const l = cands.map(c => {
+      const n = c.notes || {}; let tot = 0, max = 0, nb = 0;
+      ep.forEach(e => { const v = n[e.id]; if (v === '' || v == null || String(v).toUpperCase() === 'ABS') return; const coef = num(e.coefficient) || 1; tot += num(v) * coef; max += (num(e.bareme) || 20) * coef; nb++; });
+      const absent = c.statut === 'Absent' || c.statut === 'Abandon' || c.statut === 'Exclu' || !nb;
+      const moy = !absent && max ? Math.round(100 * tot * 20 / max) / 100 : null;
+      const decision = absent ? (c.statut && c.statut !== 'Inscrit' ? c.statut : 'Absent') : moy >= S ? 'Admis' : (R !== null && moy >= R ? 'Admis (repêché)' : 'Ajourné');
+      return { id: c.id, total: Math.round(100 * tot) / 100, moyenne: moy, decision };
+    });
+    const tri = l.filter(x => x.moyenne !== null).sort((a, b) => b.moyenne - a.moyenne);
+    tri.forEach((x, i) => { x.rang = i && x.moyenne === tri[i - 1].moyenne ? tri[i - 1].rang : i + 1; });
+    return { epreuves: ep, candidats: cands, res: Object.fromEntries(l.map(x => [x.id, x])), seuil: S, repechage: R };
+  }
   /* ---------------- documents : contenu vérifiable (pur, même calcul à l'édition et à la vérification) ---------------- */
   const parIds = (etat, coll, ids) => { const s = new Set(ids || []); return (etat[coll] || []).filter(r => s.has(r.id)).map(sansMaj).sort((a, b) => String(a.id).localeCompare(String(b.id))); };
   const un = (etat, coll, id) => sansMaj((etat[coll] || []).find(r => r.id === id) || {});
@@ -174,7 +191,17 @@
     STOCK: (e, ref) => ({ r: parIds(e, 'stocks', ref.ids) }),
     CANTINE: (e, ref) => ({ r: parIds(e, 'cantine', ref.ids) }),
     INCLUSION: (e, ref) => ({ b: un(e, 'besoinsSpec', ref.id) }),
-    DECROCHAGE: (e, ref) => ({ d: un(e, 'decrochage', ref.id) })
+    DECROCHAGE: (e, ref) => ({ d: un(e, 'decrochage', ref.id) }),
+    CR_VISITE: (e, ref) => ({ v: un(e, 'visitesClasse', ref.id) }),
+    CR_ANIMATION: (e, ref) => ({ a: un(e, 'animations', ref.id) }),
+    ATTEST_FORMATION: (e, ref) => ({ a: un(e, 'animations', ref.id), p: ref.participant || '' }),
+    PV_RECEPTION: (e, ref) => ({ d: un(e, 'dotations', ref.id) }),
+    CONVOCATION_CAND: (e, ref) => { const c = un(e, 'candidats', ref.id); delete c.notes; delete c.moyenne; delete c.rang; delete c.decision; return { c, ce: un(e, 'centres', c.centre) }; },
+    RELEVE: (e, ref) => { const c = un(e, 'candidats', ref.id); return { c, ep: (e.epreuves || []).filter(x => x.session === c.session).map(sansMaj).sort((a, b) => String(a.id).localeCompare(String(b.id))) }; },
+    PV_DELIBERATION: (e, ref) => { const r = resultatsCep(e, ref.session, ref.centre, ref.seuil, ref.repechage); return { s: ref.session, ce: ref.centre || '', r: r.res, j: un(e, 'jurys', ref.jury) }; },
+    LISTE_ADMIS: (e, ref) => { const r = resultatsCep(e, ref.session, ref.centre, ref.seuil, ref.repechage); return { s: ref.session, ce: ref.centre || '', r: Object.values(r.res).filter(x => /^Admis/.test(x.decision)) }; },
+    PALMARES_CONCOURS: (e, ref) => ({ c: un(e, 'concours', ref.id), p: (e.participants || []).filter(x => x.concours === ref.id).map(sansMaj).sort((a, b) => String(a.id).localeCompare(String(b.id))) }),
+    PRIX: (e, ref) => { const p = un(e, 'participants', ref.id); return { p, c: un(e, 'concours', p.concours) }; }
   };
   function contenuDocument(etat, type, ref) {
     const f = DOC_CONTENU[type] || ((e, r) => ({ ref: r }));
@@ -422,7 +449,7 @@
     const CSS_DOC = '<style>.pvs-doc{font:10.5pt/1.45 Arial,sans-serif;color:#111}.pvs-doc h2{font:bold 13pt Arial,sans-serif;text-align:center;margin:10px 0 4px;text-transform:uppercase}'
       + '.pvs-doc h3{font:bold 11pt Arial,sans-serif;margin:12px 0 4px}.pvs-doc p.c{text-align:center;margin:2px 0}.pvs-doc p.j{text-align:justify;margin:8px 0}'
       + '.pvs-imp{border-collapse:collapse;width:100%;font:8.8pt Arial,sans-serif;margin:6px 0}.pvs-imp th,.pvs-imp td{border:1px solid #555;padding:3px 4px;text-align:left;vertical-align:top;overflow-wrap:break-word}'
-      + '.pvs-imp th{background:#E8EEF5!important;font-weight:700;position:static}.pvs-imp td.n{text-align:right}.pvs-imp td.c,.pvs-imp th.c{text-align:center}'
+      + '.pvs-imp th{background:#E8EEF5!important;color:#1D2939!important;font-weight:700;position:static;text-transform:none;letter-spacing:0}.pvs-imp td.n{text-align:right}.pvs-imp td.c,.pvs-imp th.c{text-align:center}'
       + '.pvs-sigs{display:flex;flex-wrap:wrap;justify-content:space-between;gap:14px 18px;margin-top:18px;page-break-inside:avoid;break-inside:avoid}'
       + '.pvs-sb{flex:1 1 160px;text-align:center;font:10pt Arial,sans-serif}.pvs-sb-l{font-weight:700}.pvs-sb-z{position:relative;height:112px;display:flex;align-items:center;justify-content:center}'
       + '.pvs-sb-c{position:absolute;left:50%;top:50%;transform:translate(-72%,-50%);opacity:.88}.pvs-sb-c svg{height:100px;width:auto;max-width:210px}.pvs-sb-c svg.rond{width:104px;height:104px}.pvs-sb-c img{max-width:150px;max-height:104px}'
@@ -709,7 +736,8 @@
             const ids = new Set(cibles.map(r => r.id)); etat[o.coll] = etat[o.coll].filter(r => !ids.has(r.id)); await sauver(); apres();
           } }, '\uE058 Réinitialiser') : null, ...outils));
         if (!rows.length) { box.append(h('p', { class: 'pvs-vide' }, 'Aucune ligne pour ces filtres.' + (ew ? ' Utilisez « \uE001 Ajouter » ou « \uE00B Importer ».' : ''))); return; }
-        const rang = o.coll === 'performances' ? rangsPerformances(lignes('performances')) : o.coll === 'resultats' ? rangsPoints(rows) : null;
+        const parGroupe = (l, k) => { const g = {}; l.forEach(x => (g[x[k]] = g[x[k]] || []).push(x)); return Object.assign({}, ...Object.values(g).map(rangsPoints)); };
+        const rang = o.coll === 'performances' ? rangsPerformances(lignes('performances')) : o.coll === 'resultats' ? parGroupe(lignes('resultats'), 'competition') : o.coll === 'participants' ? parGroupe(lignes('participants'), 'concours') : null;
         const tete = ['N°'].concat(colsN ? ['Niveau'] : [], ['Entité'], cols.map(c => c.l), rang ? ['Rang'] : [], ['']);
         const tb = h('tbody', {});
         rows.slice(0, 1500).forEach((r, i) => {
@@ -1387,6 +1415,203 @@
         });
       }
     });
+
+    /* ======================================================== lot C ======================================================== */
+    const sessions = () => { const l = new Set([CAT().SESSION()]); ['epreuves', 'centres', 'candidats', 'jurys'].forEach(c => (etat[c] || []).forEach(r => r.session && l.add(r.session))); return [...l].sort().reverse(); };
+    const etatC = F._cep = F._cep || { session: memo.get('cep.session') || CAT().SESSION(), centre: memo.get('cep.centre') || '', seuil: memo.get('cep.seuil') || '10', rep: memo.get('cep.rep') || '' };
+    function barreCep(zone, avecSeuils) {
+      const sS = selectListe(sessions(), etatC.session, null), cs = lignes('centres').filter(c => c.session === etatC.session);
+      const sC = selectListe(cs.map(c => [c.id, c.centre]), etatC.centre, 'Tous les centres');
+      sS.onchange = () => { etatC.session = sS.value; memo.set('cep.session', sS.value); etatC.centre = ''; dessiner(); };
+      sC.onchange = () => { etatC.centre = sC.value; memo.set('cep.centre', sC.value); dessiner(); };
+      const iS = h('input', { type: 'number', step: '0.01', value: etatC.seuil, class: 'pvs-in', 'data-pvs': 'seuil' }), iR = h('input', { type: 'number', step: '0.01', value: etatC.rep, class: 'pvs-in', placeholder: 'aucun' });
+      iS.onchange = () => { etatC.seuil = iS.value; memo.set('cep.seuil', iS.value); dessiner(); }; iR.onchange = () => { etatC.rep = iR.value; memo.set('cep.rep', iR.value); dessiner(); };
+      zone.append(h('div', { class: 'pvs-barre' }, h('label', {}, 'Session', sS), h('label', {}, 'Centre', sC), avecSeuils ? h('label', {}, 'Moyenne d’admission', iS) : null, avecSeuils ? h('label', {}, 'Repêchage à partir de', iR) : null));
+    }
+    const candidatsCep = () => lignes('candidats').filter(c => c.session === etatC.session && (!etatC.centre || c.centre === etatC.centre))
+      .sort((a, b) => String(a.numeroTable || '~').localeCompare(String(b.numeroTable || '~'), 'fr', { numeric: true }) || String(a.entiteLib).localeCompare(String(b.entiteLib), 'fr') || String(a.nom).localeCompare(String(b.nom), 'fr'));
+    const epreuvesCep = () => (etat.epreuves || []).filter(e => e.session === etatC.session && visible(e)).sort((a, b) => (num(a.ordre) || 99) - (num(b.ordre) || 99) || String(a.epreuve).localeCompare(String(b.epreuve), 'fr'));
+    const autoriteCep = () => { const c = etat.centres.find(x => x.id === etatC.centre); return c ? [c.niveau, c.entite] : [(ctx.autorite || {}).niveau, (ctx.autorite || {}).cle]; };
+    Object.assign(OUTILS, {
+      candidats: (o) => {
+        const w = entitesEcrivables(o).length > 0;
+        return [w && A.cepCandidats ? h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'depuis-cep', onclick: async () => {
+          let l = []; try { l = (await A.cepCandidats()) || []; } catch (e) { l = []; }
+          const s2 = (F[o.id] || {}).session || CAT().SESSION(), deja = new Set(etat.candidats.map(c => c.entite + '|' + norm(c.nom + ' ' + c.prenoms)));
+          const nv = l.filter(c => c.ecole && entite('ECOLE', c.ecole) && peut('ECOLE', c.ecole) && !deja.has(c.ecole + '|' + norm(c.nom + ' ' + c.prenoms)));
+          if (!(await confirmer('Candidats du module CEP', nv.length + ' candidat(s) de l’application à reprendre pour la session ' + s2 + '.', 'Reprendre', false))) return;
+          nv.forEach(c => etat.candidats.push({ id: uid(), cree: auj(), maj: new Date().toISOString(), niveau: 'ECOLE', entite: String(c.ecole), entiteLib: (entite('ECOLE', c.ecole) || {}).lib, saison: saisonCourante(), session: s2, nom: String(c.nom || '').toUpperCase(), prenoms: c.prenoms || '', sexe: c.sexe || '', dateNaissance: iso(c.dateNaissance), lieuNaissance: c.lieuNaissance || '', statut: 'Inscrit' }));
+          await sauver(); toast(nv.length + ' candidat(s) repris.'); dessiner(); } }, I('importer') + 'Depuis le module CEP de l’application') : null,
+        w ? h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'numeros', onclick: async () => {
+          const s2 = (F[o.id] || {}).session || etatC.session; let n = 0, sans = 0;
+          lignes('centres').filter(c => c.session === s2).forEach(ce => {
+            const l = etat.candidats.filter(c => c.session === s2 && c.centre === ce.id && peut(c.niveau, c.entite)).sort((a, b) => String(a.entiteLib).localeCompare(String(b.entiteLib), 'fr') || String(a.nom).localeCompare(String(b.nom), 'fr') || String(a.prenoms).localeCompare(String(b.prenoms), 'fr'));
+            const cap = Math.max(1, num(ce.capacite) || 30);
+            l.forEach((c, i) => { c.numeroTable = (ce.code || String(ce.centre).replace(/[^A-Za-z0-9]/g, '').slice(0, 4).toUpperCase()) + '-' + String(i + 1).padStart(4, '0'); c.salle = 'Salle ' + (Math.floor(i / cap) + 1); c.maj = new Date().toISOString(); n++; });
+          });
+          sans = etat.candidats.filter(c => c.session === s2 && !c.centre).length;
+          await sauver(); toast(n + ' numéro(s) de table attribué(s)' + (sans ? ' ; ' + sans + ' candidat(s) sans centre' : '') + '.'); dessiner(); } }, I('calcul') + 'Numéros de table et salles') : null];
+      },
+      visitesClasse: (o, rows) => [rows.some(r => r.recommandations && peut(r.niveau, r.entite)) ? h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'creer-reco', onclick: async () => {
+        let n = 0;
+        rows.filter(r => r.recommandations && peut(r.niveau, r.entite)).forEach(v => String(v.recommandations).split(/\n+/).map(x => x.replace(/^[-–•\d.)\s]+/, '').trim()).filter(Boolean).forEach(t => {
+          if (etat.recommandations.some(x => x.visite === v.id && norm(x.recommandation) === norm(t))) return;
+          etat.recommandations.push({ id: uid(), cree: auj(), maj: new Date().toISOString(), niveau: v.niveau, entite: v.entite, entiteLib: v.entiteLib, saison: v.saison, visite: v.id, destinataire: v.enseignant, recommandation: t, responsable: v.visiteur, statut: 'Non commencée' }); n++; }));
+        await sauver(); toast(n + ' recommandation(s) ajoutée(s) au suivi.'); } }, I('ajouter') + 'Créer les recommandations à suivre') : null]
+    });
+    Object.assign(DOCS, {
+      CR_VISITE: (r) => document_('CR_VISITE', { id: r.id }, async () => {
+        const v = await sigVisa('ECOLE', r.entite), G = CAT().GRILLE_APC, n = CAT().noteGrille(r);
+        return { titre: 'Compte rendu de ' + String(r.typeVisite || 'visite de classe').toLowerCase(), corps: ficheEleve(r, [['Enseignant(e)', r.enseignant], ['École', r.entiteLib], ['Cours', r.cours], ['Date', fr(r.date)], ['Discipline', r.discipline], ['Séance', r.seance], ['Visiteur', r.visiteur + (r.qualiteVisiteur ? ' (' + r.qualiteVisiteur + ')' : '')]])
+          + '<h3>Grille d’observation (APC)</h3>' + tableDoc(['Critère', 'Note /4'], G.map(([k, l]) => [l, vide(r[k]) ? '—' : r[k]]).concat([[{ html: '<b>Note globale /20 — ' + esc(CAT().appreciation(n)) + '</b>' }, { html: '<b>' + esc(n) + '</b>' }]]), [0, 'c'])
+          + '<h3>Points forts</h3><p class="j">' + esc(r.pointsForts || '—').replace(/\n/g, '<br>') + '</p><h3>Insuffisances</h3><p class="j">' + esc(r.insuffisances || '—').replace(/\n/g, '<br>') + '</p>'
+          + '<h3>Recommandations</h3><p class="j">' + esc(r.recommandations || '—').replace(/\n/g, '<br>') + '</p>',
+          sigs: [blocSig('L’enseignant(e) visité(e)', r.enseignant, '', ''), blocSig('Le visiteur', r.visiteur, '', ''), v], resume: { entite: r.entiteLib, objet: r.enseignant, mention: 'note ' + n + '/20 — ' + fr(r.date), signataire: r.visiteur } };
+      }),
+      CR_ANIMATION: (r) => document_('CR_ANIMATION', { id: r.id }, async () => {
+        const v = await sigVisa(r.niveau, r.entite), pl = String(r.participants || '').split(/\n+/).map(x => x.trim()).filter(Boolean);
+        return { titre: 'Compte rendu — ' + (r.type || 'animation pédagogique'), corps: ficheEleve(r, [['Thème', r.theme], ['Date', fr(r.date)], ['Lieu', r.lieu], ['Animateur / animatrice', r.animateur], ['Entité', r.entiteLib], ['Présents', (num(r.presentsH) + num(r.presentsF)) + ' (H ' + num(r.presentsH) + ', F ' + num(r.presentsF) + ')']])
+          + '<h3>Compte rendu</h3><p class="j">' + esc(r.compteRendu || '—').replace(/\n/g, '<br>') + '</p><h3>Liste de présence</h3>' + tableDoc(['N°', 'Nom et prénoms — école / fonction', 'Émargement'], pl.map((x, i) => [i + 1, x, '']), ['c', 0, 0]),
+          sigs: [blocSig('L’animateur / l’animatrice', r.animateur || '', '', ''), v], resume: { entite: r.entiteLib, objet: r.theme, mention: fr(r.date) + ' — ' + pl.length + ' participant(s)', signataire: v.nom || r.animateur } };
+      }),
+      ATTEST_FORMATION: async (r) => {
+        const pl = String(r.participants || '').split(/\n+/).map(x => x.trim()).filter(Boolean);
+        if (!pl.length) { toast('Renseignez la liste des participants (une personne par ligne).'); return; }
+        const sel = selectListe(pl, pl[0], null);
+        const choix = await dialogue('Attestation de participation', h('div', { class: 'pvs-form' }, h('label', { class: 'large' }, 'Participant(e)', sel)), [{ l: 'Annuler', v: null }, { l: I('imprimer') + 'Éditer', p: true, id: 'editer', action: () => sel.value }]);
+        if (!choix) return;
+        const [nom, compl] = choix.split(/\s+[—-]\s+/);
+        document_('ATTEST_FORMATION', { id: r.id, participant: choix }, async () => {
+          const v = await sigVisa(r.niveau, r.entite, '');
+          return { titre: 'Attestation de participation', uas: null, corps: '<p class="j" style="margin-top:18px">' + esc(v.titre) + ' atteste que <b>' + esc(nom) + '</b>' + (compl ? ' (' + esc(compl) + ')' : '') + ' a participé à l’activité « <b>' + esc(r.theme) + '</b> » ('
+            + esc(String(r.type || '').toLowerCase()) + ') organisée le ' + esc(fr(r.date)) + (r.lieu ? ' à ' + esc(r.lieu) : '') + (r.animateur ? ', animée par ' + esc(r.animateur) : '') + ' — ' + esc(r.entiteLib) + '.</p><p class="j">En foi de quoi la présente attestation lui est délivrée pour servir et valoir ce que de droit.</p>',
+            sigs: [v], resume: { entite: r.entiteLib, objet: nom, mention: r.theme, signataire: v.nom } };
+        });
+      },
+      PV_RECEPTION: (r) => document_('PV_RECEPTION', { id: r.id }, async () => {
+        const v = await sigVisa(r.niveau, r.entite);
+        return { titre: 'Procès-verbal de réception' + (r.pvNumero ? ' n° ' + r.pvNumero : ''), corps: '<p class="j" style="margin-top:12px">L’an ' + esc(String(iso(r.date)).slice(0, 4)) + ', le ' + esc(fr(r.date)) + ', il a été procédé à la réception de la dotation ci-après au profit de '
+          + esc(r.beneficiaireLib || r.entiteLib) + ' :</p>' + tableDoc(['Désignation', 'Quantité', 'Unité', 'Source', 'État à la réception'], [[r.designation, r.quantite, r.unite, r.source, r.etatReception]], [0, 'n', 'c', 0, 0])
+          + (r.observations ? '<p><b>Observations :</b> ' + esc(r.observations) + '</p>' : '') + '<p class="j">En foi de quoi le présent procès-verbal est établi pour servir et valoir ce que de droit.</p>',
+          sigs: [blocSig('Le livreur', '', '', ''), blocSig('Le réceptionnaire', r.receptionnaire || '', '', ''), v], resume: { entite: r.entiteLib, objet: r.designation, mention: r.quantite + ' ' + (r.unite || ''), signataire: r.receptionnaire || v.nom } };
+      }),
+      CONVOCATION_CAND: (c) => document_('CONVOCATION_CAND', { id: c.id }, async () => {
+        const ce = etat.centres.find(x => x.id === c.centre) || {}, v = ce.niveau ? await sigVisa(ce.niveau, ce.entite) : await sigVisa('ECOLE', c.entite);
+        return { titre: 'Convocation — ' + (c.session || 'CEP'), corps: '<div class="pvs-cadre">' + ficheEleve(c, [['N° de table', c.numeroTable], ['Nom et prénoms', nomComplet(c)], ['Sexe', c.sexe], ['Né(e) le', fr(c.dateNaissance) + (c.lieuNaissance ? ' à ' + c.lieuNaissance : '')], ['École', c.entiteLib], ['Centre', ce.centre], ['Salle', c.salle]]) + '</div>'
+          + '<p class="j">Le candidat se présentera au centre muni de cette convocation et d’une pièce d’identité, trente minutes avant le début des épreuves.</p>',
+          sigs: [blocSig('Le chef de centre', ce.chefCentre || '', '', ''), v], resume: { entite: ce.centre || c.entiteLib, objet: nomComplet(c), mention: c.numeroTable || c.session, signataire: ce.chefCentre || v.nom } };
+      }),
+      RELEVE: (c) => document_('RELEVE', { id: c.id }, async () => {
+        const R = resultatsCep(etat, c.session, c.centre, etatC.seuil, etatC.rep), x = R.res[c.id] || {}, ce = etat.centres.find(y => y.id === c.centre) || {}, j = etat.jurys.find(y => y.centre === c.centre && y.session === c.session) || {};
+        const v = ce.niveau ? await sigVisa(ce.niveau, ce.entite) : await sigVisa('ECOLE', c.entite);
+        return { titre: 'Relevé de notes — ' + c.session, corps: ficheEleve(c, [['N° de table', c.numeroTable], ['Nom et prénoms', nomComplet(c)], ['École', c.entiteLib], ['Centre', ce.centre]])
+          + tableDoc(['Épreuve', 'Coefficient', 'Note', 'Sur'], R.epreuves.map(e => [e.epreuve, e.coefficient || 1, ((c.notes || {})[e.id] === undefined || (c.notes || {})[e.id] === '') ? '—' : c.notes[e.id], e.bareme || 20]).concat([[{ html: '<b>Total pondéré</b>' }, '', { html: '<b>' + (x.total == null ? '—' : x.total) + '</b>' }, ''], [{ html: '<b>Moyenne /20</b>' }, '', { html: '<b>' + (x.moyenne == null ? '—' : x.moyenne) + '</b>' }, ''], [{ html: '<b>Décision</b>' }, '', { html: '<b>' + esc(x.decision || '') + '</b>' }, x.rang ? 'rang ' + x.rang : '']]), [0, 'c', 'c', 'c']),
+          sigs: [blocSig('Le président du jury', j.president || '', '', ''), v], resume: { entite: ce.centre || c.entiteLib, objet: nomComplet(c), mention: (x.decision || '') + (x.moyenne != null ? ' ' + x.moyenne + '/20' : ''), signataire: j.president || v.nom } };
+      }),
+      PV_DELIBERATION: (ref) => document_('PV_DELIBERATION', ref, async () => {
+        const R = resultatsCep(etat, ref.session, ref.centre, ref.seuil, ref.repechage), j = etat.jurys.find(y => y.id === ref.jury) || {}, ce = etat.centres.find(y => y.id === ref.centre) || {};
+        const [n, k] = autoriteCep(), v = n ? await sigVisa(n, k) : { html: '', nom: '' };
+        const l = R.candidats.slice().sort((a, b) => (R.res[a.id].rang || 9999) - (R.res[b.id].rang || 9999) || String(a.numeroTable).localeCompare(String(b.numeroTable)));
+        const st = { i: l.length, p: l.filter(c => R.res[c.id].moyenne !== null).length, a: l.filter(c => /^Admis/.test(R.res[c.id].decision)).length };
+        return { titre: 'Procès-verbal de délibération — ' + ref.session, corps: '<p class="c">' + esc(ce.centre ? 'Centre : ' + ce.centre : 'Tous les centres') + ' — moyenne d’admission ' + R.seuil + (R.repechage !== null ? ', repêchage à partir de ' + R.repechage : '') + '</p>'
+          + '<p class="j">Le jury, présidé par ' + esc(j.president || '……………') + (j.vicePresident ? ', assisté de ' + esc(j.vicePresident) : '') + (j.secretaire ? ' (secrétaire : ' + esc(j.secretaire) + ')' : '') + ', s’est réuni le ' + esc(fr(j.date) || fr(auj())) + ' et a arrêté les résultats suivants : '
+          + st.i + ' inscrit(s), ' + st.p + ' présent(s), ' + st.a + ' admis, soit un taux de réussite de ' + (st.p ? Math.round(1000 * st.a / st.p) / 10 : 0) + ' %.</p>'
+          + tableDoc(['Rang', 'N° de table', 'Nom et prénoms', 'Sexe', 'École', 'Total', 'Moyenne', 'Décision'], l.map(c => { const x = R.res[c.id]; return [x.rang || '—', c.numeroTable || '', nomComplet(c), c.sexe, c.entiteLib, x.total, x.moyenne == null ? '—' : x.moyenne, x.decision]; }), ['c', 0, 0, 'c', 0, 'n', 'n', 0]),
+          sigs: [blocSig('Le secrétaire du jury', j.secretaire || '', '', ''), blocSig('Le vice-président', j.vicePresident || '', '', ''), blocSig('Le président du jury', j.president || '', '', ''), v],
+          resume: { entite: ce.centre || 'CEP', objet: ref.session, mention: st.a + ' admis / ' + st.p + ' présents', signataire: j.president || v.nom } };
+      }),
+      LISTE_ADMIS: (ref) => document_('LISTE_ADMIS', ref, async () => {
+        const R = resultatsCep(etat, ref.session, ref.centre, ref.seuil, ref.repechage), j = etat.jurys.find(y => y.id === ref.jury) || {}, ce = etat.centres.find(y => y.id === ref.centre) || {};
+        const [n, k] = autoriteCep(), v = n ? await sigVisa(n, k) : { html: '', nom: '' };
+        const l = R.candidats.filter(c => /^Admis/.test(R.res[c.id].decision)).sort((a, b) => String(a.entiteLib).localeCompare(String(b.entiteLib), 'fr') || String(a.nom).localeCompare(String(b.nom), 'fr'));
+        return { titre: 'Liste des candidats admis — ' + ref.session, corps: '<p class="c">' + esc(ce.centre ? 'Centre : ' + ce.centre : 'Tous les centres') + ' — ' + l.length + ' admis</p>'
+          + tableDoc(['N°', 'N° de table', 'Nom et prénoms', 'Sexe', 'École', 'Moyenne'], l.map((c, i) => [i + 1, c.numeroTable || '', nomComplet(c), c.sexe, c.entiteLib, R.res[c.id].moyenne]), ['c', 0, 0, 'c', 0, 'n']),
+          sigs: [blocSig('Le président du jury', j.president || '', '', ''), v], resume: { entite: ce.centre || 'CEP', objet: ref.session, mention: l.length + ' admis', signataire: j.president || v.nom } };
+      }),
+      PALMARES_CONCOURS: (c) => document_('PALMARES_CONCOURS', { id: c.id }, async () => {
+        const v = await sigVisa(c.niveau, c.entite), l = etat.participants.filter(p => p.concours === c.id), rg = rangsPoints(l);
+        return { titre: 'Palmarès — ' + c.intitule, uas: [c.niveau, c.entite], corps: '<p class="c">' + esc([c.type, c.cours, fr(c.date), c.lieu].filter(Boolean).join(' — ')) + '</p>'
+          + tableDoc(['Rang', 'Nom et prénoms', 'Sexe', 'École', 'Cours', 'Note'], l.slice().sort((a, b) => (rg[a.id] || 999) - (rg[b.id] || 999)).map(p => [rg[p.id] || '—', nomComplet(p), p.sexe, p.ecoleLib || '', p.cours, vide(p.points) ? '—' : p.points + ' / ' + (c.bareme || 20)]), ['c', 0, 'c', 0, 'c', 'n']),
+          sigs: [blocSig('L’organisateur', c.organisateur || '', '', ''), v], resume: { entite: c.entiteLib, objet: c.intitule, mention: l.length + ' participant(s)', signataire: v.nom } };
+      }),
+      PRIX: (p) => document_('PRIX', { id: p.id }, async () => {
+        const c = etat.concours.find(x => x.id === p.concours) || {}, rg = rangsPoints(etat.participants.filter(x => x.concours === p.concours))[p.id];
+        const v = await sigVisa(c.niveau || p.niveau, c.entite || p.entite), lg = await logoUas(c.niveau || p.niveau, c.entite || p.entite, 120);
+        return { sansTitre: true, titre: 'Diplôme de lauréat', corps: '<div class="pvs-cadre pvs-dip">' + (lg ? '<div class="pvs-gl">' + lg + '</div>' : '') + '<div class="gt">DIPLÔME DE LAURÉAT</div><p>décerné à</p><div class="nm">' + esc(nomComplet(p)) + '</div>'
+          + (p.ecoleLib ? '<p>' + esc(p.ecoleLib) + (p.cours ? ' — ' + esc(p.cours) : '') + '</p>' : '') + '<p>' + (rg ? (rg === 1 ? '1<sup>er</sup> prix' : rg + '<sup>e</sup> prix') : 'participation') + ' au concours « <b>' + esc(c.intitule || '') + '</b> »</p><p>' + esc([fr(c.date), c.lieu].filter(Boolean).join(' — ')) + '</p></div>',
+          sigs: [v], resume: { entite: c.entiteLib || p.entiteLib, objet: nomComplet(p), mention: (rg ? rg + (rg === 1 ? 'er' : 'e') + ' prix — ' : '') + (c.intitule || ''), signataire: v.nom } };
+      })
+    });
+    Object.assign(VUES, {
+      suiviReco(zone) {
+        const l = lignes('recommandations'), par = {}; l.forEach(r => { par[r.statut || '—'] = (par[r.statut || '—'] || 0) + 1; });
+        const echues = l.filter(r => r.statut !== 'Réalisée' && r.statut !== 'Abandonnée' && jours(r.echeance) !== null && jours(r.echeance) < 0);
+        zone.append(h('div', { class: 'pvs-kpis' }, Object.entries(par).map(([k, v]) => h('div', { class: 'pvs-kpi' }, h('b', {}, v), h('span', {}, k))), h('div', { class: 'pvs-kpi' }, h('b', {}, echues.length), h('span', {}, 'Échues non réalisées'))));
+      },
+      epreuvesDefaut(zone) {
+        const o = ongletColl('epreuves'), ew = entitesEcrivables(o), s2 = (F.epreuves || {}).saisonEpreuve || CAT().SESSION();
+        if (!ew.length) return;
+        zone.append(h('div', { class: 'pvs-actions' }, h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'epreuves-defaut', onclick: async () => {
+          const sess = CAT().SESSION(); if (etat.epreuves.some(e => e.session === sess && visible(e))) { toast('La session ' + sess + ' a déjà ses épreuves.'); return; }
+          const [n, list] = ew.find(x => x[0] === (ctx.autorite || {}).niveau) || ew[0], e = list.find(x => String(x.cle) === String((ctx.autorite || {}).cle)) || list[0];
+          CAT().EPREUVES_CEP.forEach(([ep, coef, bar], i) => etat.epreuves.push({ id: uid(), cree: auj(), maj: new Date().toISOString(), niveau: n, entite: String(e.cle), entiteLib: e.lib, saison: saisonCourante(), session: sess, epreuve: ep, coefficient: coef, bareme: bar, ordre: i + 1 }));
+          await sauver(); toast('Épreuves de la session ' + sess + ' créées (à adapter).'); dessiner(); } }, I('ajouter') + 'Épreuves par défaut de la session ' + CAT().SESSION())));
+      },
+      notesCep(zone) {
+        barreCep(zone, false);
+        const ep = epreuvesCep(), l = candidatsCep();
+        if (!ep.length) { zone.append(h('p', { class: 'pvs-vide' }, 'Aucune épreuve pour cette session : rubrique « Épreuves ».')); return; }
+        if (!l.length) { zone.append(h('p', { class: 'pvs-vide' }, 'Aucun candidat pour cette session / ce centre.')); return; }
+        const tb = h('tbody', {});
+        l.forEach(c => { const w = peut(c.niveau, c.entite);
+          tb.append(h('tr', { 'data-id': c.id }, h('td', {}, c.numeroTable || ''), h('td', {}, nomComplet(c)), h('td', {}, c.entiteLib),
+            ep.map(e => h('td', {}, h('input', { class: 'pvs-in', style: 'width:64px', inputmode: 'decimal', 'data-ep': e.id, value: (c.notes || {})[e.id] == null ? '' : c.notes[e.id], disabled: w ? null : true, 'aria-label': e.epreuve + ' — ' + nomComplet(c) }))))); });
+        zone.append(h('div', { class: 'pvs-tw' }, h('table', { class: 'pvs-t', 'data-pvs': 'grille-notes' }, h('thead', {}, h('tr', {}, ['N° de table', 'Candidat', 'École'].concat(ep.map(e => e.epreuve + ' (/' + (e.bareme || 20) + ', coef ' + (e.coefficient || 1) + ')')).map(t => h('th', {}, t)))), tb)));
+        const lire = () => { let n = 0, err = 0; tb.querySelectorAll('tr').forEach(tr => { const c = etat.candidats.find(x => x.id === tr.dataset.id); if (!c || !peut(c.niveau, c.entite)) return; c.notes = c.notes || {};
+          tr.querySelectorAll('input[data-ep]').forEach(i => { const t = i.value.trim().replace(',', '.'), e = ep.find(x => x.id === i.dataset.ep);
+            if (t === '') delete c.notes[i.dataset.ep]; else if (/^abs/i.test(t)) c.notes[i.dataset.ep] = 'ABS'; else if (!isNaN(+t) && +t >= 0 && +t <= (num(e.bareme) || 20)) c.notes[i.dataset.ep] = +t; else { err++; i.style.borderColor = '#B42318'; return; }
+            n++; }); c.maj = new Date().toISOString(); }); return [n, err]; };
+        zone.append(h('div', { class: 'pvs-actions' },
+          h('button', { class: 'pvs-btn p', type: 'button', 'data-pvs': 'enregistrer-notes', onclick: async () => { const [n, err] = lire(); await sauver(); toast(n + ' note(s) enregistrée(s)' + (err ? ' ; ' + err + ' note(s) hors barème ignorée(s)' : '') + '.'); } }, I('enregistrer') + 'Enregistrer les notes'),
+          h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'excel-notes', onclick: () => exporter([{ nom: 'Notes', lignes: [['N° de table', 'Nom', 'Prénoms', 'Sexe', 'École'].concat(ep.map(e => e.epreuve))].concat(l.map(c => [c.numeroTable || '', c.nom, c.prenoms, c.sexe, c.entiteLib].concat(ep.map(e => { const v = (c.notes || {})[e.id]; return v == null ? '' : v; })))), entete: 0 }], 'notes-' + norm(etatC.session).replace(/\s+/g, '-')) }, I('graphique') + 'Excel (grille de saisie)'),
+          h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'importer-notes', onclick: async () => {
+            const f = await choisirFichier('.xlsx,.xls'); if (!f) return; let fs; try { fs = await A.xlsxLire(f); } catch (e) { toast('Fichier illisible.'); return; }
+            const L2 = (fs.find(x => norm(x.nom) === 'notes') || fs[0]).lignes || [], i0 = L2.findIndex(x => (x || []).map(norm).includes('n de table'));
+            if (i0 < 0) { toast('Colonne « N° de table » introuvable.'); return; }
+            const tete = L2[i0].map(norm), iT = tete.indexOf('n de table'), iN = tete.indexOf('nom'), iP = tete.indexOf('prenoms'); let n = 0, rej = 0;
+            L2.slice(i0 + 1).forEach(x => { if (!x) return; const c = l.find(y => (y.numeroTable && String(y.numeroTable) === String(x[iT] || '').trim()) || (!y.numeroTable && norm(y.nom) === norm(x[iN]) && norm(y.prenoms) === norm(x[iP])));
+              if (!c || !peut(c.niveau, c.entite)) { if (x.some(v => v !== '' && v != null)) rej++; return; } c.notes = c.notes || {};
+              ep.forEach(e => { const j = tete.indexOf(norm(e.epreuve)); if (j < 0) return; const t = String(x[j] == null ? '' : x[j]).trim().replace(',', '.'); if (t === '') return; c.notes[e.id] = /^abs/i.test(t) ? 'ABS' : Math.min(num(e.bareme) || 20, Math.max(0, num(t))); n++; }); });
+            await sauver(); toast(n + ' note(s) importée(s)' + (rej ? ', ' + rej + ' ligne(s) sans candidat correspondant' : '') + '.'); dessiner(); } }, I('importer') + 'Importer la grille')));
+      },
+      deliberation(zone) {
+        barreCep(zone, true);
+        const R = resultatsCep(Object.assign({}, etat, { candidats: lignes('candidats'), epreuves: epreuvesCep() }), etatC.session, etatC.centre, etatC.seuil, etatC.rep);
+        if (!R.candidats.length) { zone.append(h('p', { class: 'pvs-vide' }, 'Aucun candidat pour cette session / ce centre.')); return; }
+        const l = R.candidats.slice().sort((a, b) => (R.res[a.id].rang || 9999) - (R.res[b.id].rang || 9999));
+        const st = {}; l.forEach(c => { const k = c.entiteLib || '—', x = R.res[c.id], sx = c.sexe === 'F' ? 'F' : 'G'; const o = st[k] = st[k] || { iG: 0, iF: 0, pG: 0, pF: 0, aG: 0, aF: 0 }; o['i' + sx]++; if (x.moyenne !== null) o['p' + sx]++; if (/^Admis/.test(x.decision)) o['a' + sx]++; });
+        const tx = (a, p) => (p ? Math.round(1000 * a / p) / 10 + ' %' : '—');
+        const tot = Object.values(st).reduce((a, o) => { Object.keys(o).forEach(k => { a[k] = (a[k] || 0) + o[k]; }); return a; }, {});
+        zone.append(h('div', { class: 'pvs-kpis' }, [['Inscrits', tot.iG + tot.iF], ['Présents', tot.pG + tot.pF], ['Admis', tot.aG + tot.aF], ['Taux de réussite', tx(tot.aG + tot.aF, tot.pG + tot.pF)], ['Réussite des filles', tx(tot.aF, tot.pF)], ['Réussite des garçons', tx(tot.aG, tot.pG)]].map(([k, v]) => h('div', { class: 'pvs-kpi' }, h('b', {}, v), h('span', {}, k)))));
+        const jury = etat.jurys.find(j => j.session === etatC.session && (!etatC.centre || j.centre === etatC.centre));
+        const ref = { session: etatC.session, centre: etatC.centre || '', seuil: etatC.seuil, repechage: etatC.rep, jury: jury ? jury.id : '' };
+        const w = R.candidats.some(c => peut(c.niveau, c.entite));
+        zone.append(h('div', { class: 'pvs-actions' },
+          w ? h('button', { class: 'pvs-btn p', type: 'button', 'data-pvs': 'valider-deliberation', onclick: async () => {
+            if (!(await confirmer('Valider la délibération', 'Écrire la moyenne, le rang et la décision sur les ' + R.candidats.length + ' candidat(s) ?', 'Valider', false))) return;
+            R.candidats.forEach(c => { const x = R.res[c.id], cc = etat.candidats.find(y => y.id === c.id); if (cc && peut(cc.niveau, cc.entite)) Object.assign(cc, { moyenne: x.moyenne, rang: x.rang || '', decision: x.decision, maj: new Date().toISOString() }); });
+            await sauver(); toast('Délibération validée.'); dessiner(); } }, I('valider') + 'Valider la délibération') : null,
+          h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'doc-PV_DELIBERATION', onclick: () => DOCS.PV_DELIBERATION(ref) }, I('imprimer') + 'PV de délibération'),
+          h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'doc-LISTE_ADMIS', onclick: () => DOCS.LISTE_ADMIS(ref) }, I('imprimer') + 'Liste des admis'),
+          h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'excel-resultats', onclick: () => exporter([
+            { nom: 'Résultats', lignes: [['Rang', 'N° de table', 'Nom', 'Prénoms', 'Sexe', 'École'].concat(R.epreuves.map(e => e.epreuve), ['Total', 'Moyenne', 'Décision'])].concat(l.map(c => { const x = R.res[c.id]; return [x.rang || '', c.numeroTable || '', c.nom, c.prenoms, c.sexe, c.entiteLib].concat(R.epreuves.map(e => { const v = (c.notes || {})[e.id]; return v == null ? '' : v; }), [x.total, x.moyenne == null ? '' : x.moyenne, x.decision]); })), entete: 0 },
+            { nom: 'Statistiques', lignes: [['École', 'Inscrits G', 'Inscrits F', 'Présents G', 'Présents F', 'Admis G', 'Admis F', 'Taux de réussite (%)']].concat(Object.entries(st).map(([k, o]) => [k, o.iG, o.iF, o.pG, o.pF, o.aG, o.aF, o.pG + o.pF ? Math.round(1000 * (o.aG + o.aF) / (o.pG + o.pF)) / 10 : ''])), entete: 0 }], 'resultats-' + norm(etatC.session).replace(/\s+/g, '-')) }, I('graphique') + 'Excel (résultats et statistiques)')));
+        zone.append(h('div', { class: 'pvs-tw' }, h('table', { class: 'pvs-t', 'data-pvs': 'table-resultats' }, h('thead', {}, h('tr', {}, ['Rang', 'N° de table', 'Candidat', 'Sexe', 'École', 'Total', 'Moyenne', 'Décision'].map(t => h('th', {}, t)))),
+          h('tbody', {}, l.map(c => { const x = R.res[c.id]; return h('tr', { class: /^Admis/.test(x.decision) ? 'q' : '' }, h('td', { class: 'c' }, x.rang || '—'), h('td', {}, c.numeroTable || ''), h('td', {}, nomComplet(c)), h('td', { class: 'c' }, c.sexe || ''), h('td', {}, c.entiteLib), h('td', { class: 'n' }, x.total), h('td', { class: 'n' }, x.moyenne == null ? '—' : x.moyenne), h('td', {}, x.decision)); })))),
+          h('h3', {}, 'Statistiques par école'), h('div', { class: 'pvs-tw' }, h('table', { class: 'pvs-t' }, h('thead', {}, h('tr', {}, ['École', 'Inscrits (G/F)', 'Présents (G/F)', 'Admis (G/F)', 'Taux de réussite'].map(t => h('th', {}, t)))),
+            h('tbody', {}, Object.entries(st).map(([k, o]) => h('tr', {}, h('td', {}, k), h('td', { class: 'c' }, o.iG + ' / ' + o.iF), h('td', { class: 'c' }, o.pG + ' / ' + o.pF), h('td', { class: 'c' }, o.aG + ' / ' + o.aF), h('td', { class: 'n' }, tx(o.aG + o.aF, o.pG + o.pF))))))));
+      }
+    });
     /* ---------- dessin du module ---------- */
     const api = { accuses, etat: () => etat, ctx: () => ctx, libRef, entite, peut, lignes, sauver, toast, dialogue, confirmer, h, esc, fr, iso, num, uid, auj, nomComplet, saisonCourante,
       ecolesDe, superieure, dans, sigUascep, sigVisa, blocSig, document_, tableDoc, exporter, feuille, formulaire, valeur, classement, scoreMatch, vainqueur, proposerPalmares, DOCS };
@@ -1411,5 +1636,5 @@
     return { rafraichir: async () => { ctx = await A.contexte(); uasCache = null; dessiner(); }, etat: () => etat, api };
   }
 
-  global.PVS = { monter, contenuDocument, canon, classement, scoreMatch, vainqueur, tourniquet, rangsPerformances, rangsPoints, iso, fr, norm, niveauDe, saisonCourante, LIB_NIVEAU, VISA_DEFAUT, barres };
+  global.PVS = { monter, contenuDocument, resultatsCep, canon, classement, scoreMatch, vainqueur, tourniquet, rangsPerformances, rangsPoints, iso, fr, norm, niveauDe, saisonCourante, LIB_NIVEAU, VISA_DEFAUT, barres };
 })(typeof window !== 'undefined' ? window : globalThis);
