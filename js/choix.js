@@ -23,6 +23,7 @@
   const tactile = () => !!(global.matchMedia && global.matchMedia('(pointer: coarse)').matches) && !global.CHOIX_DESACTIVE;
   const cle = (s) => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
     .replace(/^(DDEMP|DEPARTEMENT|COMMUNE)\s+(DE L'|DE LA|DU|DES|DE|D')?\s*/, '').replace(/[^A-Z0-9]/g, '');
+  const souple = (s) => cle(s).replace(/(.)\1+/g, '$1');   // IGANNA = Igana, AHOYEYE = Ahoyèyè
   const sansAccent = (s) => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
   /* ------------------------------------------------------------------ référentiel */
@@ -56,6 +57,7 @@
   }
   function role(el) {
     if (el.dataset.geo) return el.dataset.geo === 'aucun' ? null : el.dataset.geo;
+    if (el.tagName === 'SELECT') { const t = libelleDe(el); return /arrondissement/.test(t) ? 'arrondissement' : /\bcommune\b/.test(t) ? 'commune' : /\bdepartement\b/.test(t) && !/direction|service|division/.test(t) ? 'departement' : null; }
     if (el.tagName !== 'INPUT' || !/^(text|search|)$/.test(el.type || '')) return null;   // lecture seule : compte pour la cascade
     if (el.dataset.geoRole !== undefined) return el.dataset.geoRole || null;
     const t = libelleDe(el);
@@ -71,16 +73,16 @@
   const groupeDe = (el) => el.closest('form, .dialog, .modal, .modal-contenu, .modal-content, fieldset, .card, .carte, section') || doc.body;
   function champs(groupe) {
     const ch = {};
-    groupe.querySelectorAll('input, select').forEach(x => { const r = x.tagName === 'SELECT' ? (x.dataset.geo || null) : role(x); if (r) (ch[r] = ch[r] || []).push(x); });
+    groupe.querySelectorAll('input, select').forEach(x => { const r = role(x); if (r) (ch[r] = ch[r] || []).push(x); });
     return ch;
   }
   function contexte(el, G) {
     const ch = champs(groupeDe(el)), def = global.CHOIX_GEO_DEFAUT || {};
     const val = (k) => ((ch[k] || []).find(x => x !== el && x.value) || {}).value || '';
     const dv = val('departement') || (ch.departement ? '' : def.departement || '');
-    const dep = dv ? G.deps.find(d => cle(d) === cle(dv) || cle(dv).indexOf(cle(d)) >= 0) || null : null;
+    const dep = dv ? G.deps.find(d => souple(d) === souple(dv) || souple(dv).indexOf(souple(d)) >= 0) || null : null;
     const cv = val('commune') || (ch.commune ? '' : def.commune || '');
-    const com = cv ? G.communes.find(c => cle(c.nom) === cle(cv)) || null : null;
+    const com = cv ? G.communes.find(c => souple(c.nom) === souple(cv)) || null : null;
     const av = val('arrondissement');
     return { ch, dep, com, arr: av };
   }
@@ -95,7 +97,7 @@
     }
     if (r === 'village') {
       let lst = c.com ? (G.vil[c.com.nom] || []) : (c.dep ? G.lieux.filter(v => v.dep === c.dep) : G.lieux);
-      if (c.arr) { const f = lst.filter(v => cle(v.arr) === cle(c.arr)); if (f.length) lst = f.concat(lst.filter(v => cle(v.arr) !== cle(c.arr))); }
+      if (c.arr) { const f = lst.filter(v => souple(v.arr) === souple(c.arr)); if (f.length) lst = f.concat(lst.filter(v => souple(v.arr) !== souple(c.arr))); }
       return lst.map(v => ({ v: v.nom, l: v.arr + (c.com ? '' : ', ' + v.com) }));
     }
     if (r === 'lieu') {
@@ -136,10 +138,10 @@
   /* Choisir plus bas remplit les niveaux au-dessus s'ils sont vides ; choisir plus haut rafraîchit les listes */
   function apresChoix(el, G) {
     const r = el._choixGeo, c = contexte(el, G), v = el.value;
-    const poser = (k, val) => (c.ch[k] || []).forEach(x => { if (x !== el && !x.value && x.tagName === 'INPUT') { x.value = val; x.dispatchEvent(new Event('input', { bubbles: true })); x.dispatchEvent(new Event('change', { bubbles: true })); } });
-    if (r === 'commune') { const com = G.communes.find(x => cle(x.nom) === cle(v)); if (com) { if (el.value !== com.nom) el.value = com.nom; poser('departement', com.dep); } }
+    const poser = (k, val) => (c.ch[k] || []).forEach(x => { if (x !== el && !x.value && x.tagName === 'INPUT' && !x.readOnly) { x.value = val; x.dispatchEvent(new Event('input', { bubbles: true })); x.dispatchEvent(new Event('change', { bubbles: true })); } });
+    if (r === 'commune') { const com = G.communes.find(x => souple(x.nom) === souple(v)); if (com) { if (el.value !== com.nom) el.value = com.nom; poser('departement', com.dep); } }
     if (r === 'arrondissement') {
-      const coms = Object.keys(G.arr).filter(k => G.arr[k].some(a => cle(a) === cle(v)));
+      const coms = Object.keys(G.arr).filter(k => G.arr[k].some(a => souple(a) === souple(v)));
       const com = c.com || (coms.length === 1 ? G.communes.find(x => x.nom === coms[0]) : null);
       if (com && !c.com) { poser('commune', com.nom); poser('departement', com.dep); }
     }
@@ -149,6 +151,10 @@
     }
     ['departement', 'commune', 'arrondissement', 'village'].forEach(k => (c.ch[k] || []).forEach(x => { if (x !== el && x._choixDl) majDatalist(x, G); }));
   }
+  doc.addEventListener('change', (e) => {
+    const x = e.target; if (!x || x.tagName !== 'SELECT' || !role(x)) return;
+    charger().then(G => champs(groupeDe(x)).village && champs(groupeDe(x)).village.forEach(v => { if (v._choixDl) majDatalist(v, G); })).catch(() => {});
+  }, true);
   function scanner(racine) {
     (racine.querySelectorAll ? racine : doc).querySelectorAll('input').forEach(x => { try { brancher(x); } catch (e) { /* champ ignoré */ } });
   }
