@@ -158,6 +158,23 @@ SIGNES = {"\u25aa": "\u2022", "\u25ab": "\u2022", "\u25b6": "\u25b8", "\u2194": 
           "\u2716": "\u00d7", "\u2764": "", "\ufe0f": "", "\u2600": "", "\u260e": ""}
 
 
+def revisions_cours(C, cours):
+    """SCOLARIS 1.31 : les cahiers de révision des disciplines d'éveil (CM1, CM2) deviennent des fiches de révision dans l'onglet Résumés."""
+    out = []
+    for rv in C.get("revisions") or []:
+        if rv.get("cours") != cours:
+            continue
+        for k, sec in enumerate(rv.get("sections") or [], 1):
+            qr = sec.get("qr") or []
+            out.append({"id": f"{rv['id']}-{k:02d}", "cours": cours, "matiere": sec["matiere"], "domaine": "",
+                        "collection": "Révisions d'éveil (type CEP)", "titre": "Révision — " + sec["titre"], "regle": sec.get("je_retiens") or "",
+                        "methode": "Schéma : " + sec["schema"] if sec.get("schema") else "",
+                        "exemple": " ".join(f"{x['q']} — {x['r']}" for x in qr[:3]),
+                        "questions_reponses": qr, "exercices": sec.get("exercices") or [], "sa": [sec["sa"]] if sec.get("sa") else [],
+                        "mois": "Mai", "trimestre": "III", "ordre": [8, 900 + k, 0], "revision": True, "mention": rv.get("mention") or ""})
+    return out
+
+
 def ecrire(dossier, nom, obj):
     t = json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
     for a, b in SIGNES.items():
@@ -183,6 +200,7 @@ def main():
         lignes, plan = plan_cours(MP, EP, S, c)
         fiches = [{k: v for k, v in f.items() if k not in CHAMPS_EXCLUS_FICHE} for f in MP.fiches_filtrees(cours=c)]
         resumes = sorted([r for r in C.get("resumes") or [] if r["cours"] == c], key=MP.ordre_resume)
+        resumes += revisions_cours(C, c)
         progs = [p for p in C["programmes"] if p["cours"] == c]
         ep = epreuves_cours(EP, B, c, epp)
         d = {"cours": c, "programmes": progs, "progression": lignes, "edt": edt_cours(EP, S, c), "fiches": fiches,
