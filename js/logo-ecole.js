@@ -150,9 +150,10 @@
     Object.entries(SYMBOLES).concat([['initiales', { l: 'Initiales seules', d: '' }]]).forEach(([k, s]) => syms.append(el('button', { type: 'button', title: s.l, 'aria-label': s.l, 'data-s': k, onclick: () => { cfg.symbole = k; maj(); },
       html: s.d ? '<svg viewBox="0 0 24 24">' + traces(s.d, '#1F4E79', 1.7) + '</svg>' : '<b style="font:900 13px Arial">ABC</b>' })));
     const ini = el('input', { type: 'text', value: cfg.initiales || initialesDe(nom), maxlength: '4', 'aria-label': 'Initiales', 'data-le': 'initiales', 'data-geo': 'aucun', oninput: () => { cfg.initiales = ini.value.trim(); maj(); } });
-    const idListe = 'le-devises-' + Math.random().toString(36).slice(2, 7);
-    const dev = el('input', { type: 'text', value: devise, list: idListe, maxlength: '70', placeholder: 'Ex. : Travail – Discipline – Réussite', 'aria-label': 'Devise', 'data-le': 'devise', 'data-geo': 'aucun', oninput: () => { devise = dev.value.trim(); maj(); } });
-    const liste = el('datalist', { id: idListe }, DEVISES.map(d => el('option', { value: d })));
+    const dev = el('input', { type: 'text', value: devise, maxlength: '70', placeholder: 'Ex. : Travail – Discipline – Réussite', 'aria-label': 'Devise', 'data-le': 'devise', 'data-geo': 'aucun', oninput: () => { devise = dev.value.trim(); maj(); } });
+    // suggestions : liste à part (le champ reste libre pour écrire sa propre devise)
+    const liste = el('select', { 'aria-label': 'Suggestions de devise', 'data-le': 'suggestions', onchange: () => { if (liste.value) { dev.value = liste.value; devise = liste.value; maj(); } liste.value = ''; } },
+      [el('option', { value: '' }, ['Suggestions de devise…'])].concat(DEVISES.map(d => el('option', { value: d }, [d]))));
     const surLogo = el('input', { type: 'checkbox', checked: cfg.devise_sur_logo !== false, style: 'width:auto;min-height:0', onchange: () => { cfg.devise_sur_logo = surLogo.checked; maj(); } });
     const coul = ['c1', 'c2', 'c3'].map(k => { const i = el('input', { type: 'color', value: cfg.couleurs[k] || COULEURS[k], 'aria-label': { c1: 'Couleur du fond', c2: 'Couleur des filets et de la devise', c3: 'Couleur des initiales' }[k], oninput: () => { cfg.couleurs[k] = i.value; maj(); } });
       return el('label', {}, [i, { c1: 'Fond', c2: 'Filets', c3: 'Initiales' }[k]]); });
@@ -176,7 +177,7 @@
         el('header', {}, [el('h3', {}, ['Logo et devise — ' + nom]), el('button', { type: 'button', 'aria-label': 'Fermer', onclick: fermer }, ['×'])]),
         el('div', { class: 'le-corps' }, [
           el('div', {}, [
-            el('label', {}, ['Devise de l’école', dev, liste]),
+            el('label', {}, ['Devise de l’école', dev]), el('label', {}, [liste]),
             el('label', { style: 'flex-direction:row;align-items:center;gap:6px' }, [surLogo, 'Écrire la devise sur le logo']),
             el('label', {}, ['Forme', forme]),
             el('div', { style: 'font-size:12px;font-weight:600;color:#344054;margin:0 0 4px' }, ['Symbole au centre']), syms,
