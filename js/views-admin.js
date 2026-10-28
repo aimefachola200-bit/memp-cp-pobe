@@ -1,5 +1,5 @@
 /* République du Bénin — MEMP — Vues d'administration : identité numérique, transmission, vérification, journal, utilisateurs, paramètres
-   Conception : Maître Aimé FACHE — Tél. 01 96 51 03 33 */
+   Conception : Maître Aimé FACHOLA — Tél. +229 01 96 51 03 33 */
 import { h, uid, nowISO, toast, modal, confirmBox, pickFile, readAsText, download, sha256, checkPassword, hashPassword, fmtDateTime, clean, bytesToB64, fetchBytes, today, $ } from './util.js';
 import { db } from './db.js';
 import { APP, CREDIT } from './config.js';
@@ -175,7 +175,7 @@ async function parametres(ctx) {
   }
   ctx.el.append(
     h('div', { class: 'card', style: { textAlign: 'center' } }, h('img', { class: 'emblem', src: 'assets/embleme-memp.png', alt: 'République du Bénin — MEMP', style: { maxWidth: '100%', width: '680px' } }), h('h2', { style: { color: 'var(--green)' } }, APP.full), h('p', 'Application autonome — fonctionne hors ligne sur ordinateur, tablette et Android.'),
-      h('p', h('b', 'Conception et réalisation : '), APP.concepteur, h('br'), 'Tél. ', h('a', { href: 'tel:' + APP.concepteurTelRaw }, APP.concepteurTel))),
+      h('p', h('b', 'Conception et réalisation : '), APP.concepteur, h('br'), 'Tél. ', h('a', { href: 'tel:+229' + APP.concepteurTelRaw }, APP.concepteurTel))),
     h('div', { class: 'card' }, h('h3', '\uE045 Installation'), inst, h('ul', h('li', h('b', 'Android (Chrome) : '), 'menu ⋮ → « Installer l\'application » ou « Ajouter à l\'écran d\'accueil ».'), h('li', h('b', 'Ordinateur (Chrome / Edge) : '), 'icône d\'installation ⊕ dans la barre d\'adresse, ou menu → « Installer Application CP ».'), h('li', h('b', 'Tablette / iPad (Safari) : '), 'Partager → « Sur l\'écran d\'accueil ».'), h('li', 'Après la première ouverture avec Internet, l\'application fonctionne entièrement sans connexion.'))),
     h('div', { class: 'card' }, h('h3', '\uE033 Compte'), h('p', `${u.prenoms || ''} ${u.nom || u.username} — ${ROLES[u.role]}`), h('button', { class: 'btn', onclick: () => changePasswordDialog(u) }, 'Changer mon mot de passe'), ' ', h('button', { class: 'btn', onclick: () => import('./motdepasse.js').then(m => m.dialogueSecours(u)) }, u.secours ? '\uE032 Changer ma question de secours' : '\uE032 Définir ma question de secours')),
     h('div', { class: 'card' }, h('h3', '\uE011 Données'), h('p', 'Les données sont enregistrées sur cet appareil. Stockage : ', est), h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } }, 

@@ -1,5 +1,5 @@
 /* République du Bénin — MEMP — Composants d'interface : grand tableau, formulaires, barre d'actions
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { h, modal, norm, toast } from './util.js';
 
 /** Grand tableau : recherche, tri, pagination, sélection d'une ligne */

@@ -1,7 +1,7 @@
 /* République du Bénin — MEMP — Excel des fiches de rapport de rentrée et de fin d'année (même structure que GESCOL /
    SCOLARIS m_rapports.generer_excel) : feuille « Rapport » (rubriques, champs, tableaux, structure pédagogique,
    état nominatif) et feuille « Données » (Clé, Libellé, Valeur, Origine), qui sert aussi à l'import.
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { XlsxBook, readXlsx } from './xlsx.js';
 import { entier, champsEditables, clesTableau, tousCalculs, nbLignesPersonnel, validerValeur, NIV_EP } from './rapports.js';
 

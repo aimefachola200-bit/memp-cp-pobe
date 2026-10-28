@@ -1,4 +1,4 @@
-// République du Bénin — MEMP — Application CP — Conception : Maître Aimé FACHE (01 96 51 03 33)
+// République du Bénin — MEMP — Application CP — Conception : Maître Aimé FACHOLA (+229 01 96 51 03 33)
 // Crée (ou met à jour) l'application jumelle d'une circonscription dans un autre dossier :
 //   node tools/creer-jumelle.mjs pobe ../memp-cp-pobe
 // Copie l'application, applique tools/jumelles/<id>/variante.json (nom, base locale distincte, comptes de départ)

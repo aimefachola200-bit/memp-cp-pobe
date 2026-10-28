@@ -6,7 +6,7 @@
      4. Attributions (AOF, article 13) et plan d'action
      5. Comités et instances (membres)
      6. Import / export : classeur Excel complet, import des feuilles Identité, Personnel et Comités, modèle, PDF signé
-   Conception : Maître Aimé FACHE — Tél. 01 96 51 03 33 */
+   Conception : Maître Aimé FACHOLA — Tél. +229 01 96 51 03 33 */
 import { h, uid, nowISO, toast, confirmBox, pickFile, readAsBuffer, readAsText, download, norm, currentSchoolYear } from './util.js';
 import { db } from './db.js';
 import { dataTable, formDialog, fieldEl } from './ui.js';

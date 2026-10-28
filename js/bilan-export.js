@@ -1,10 +1,10 @@
 /* République du Bénin — MEMP — Exports du bilan des activités pédagogiques (PDF, Excel, JSON, relecture Excel).
-   Tous les fichiers portent le bandeau officiel. Conception : Maître Aimé FACHE — Tél. 01 96 51 03 33 */
+   Tous les fichiers portent le bandeau officiel. Conception : Maître Aimé FACHOLA — Tél. +229 01 96 51 03 33 */
 import { newPdf, bannerBytes, GREY } from './pdf.js';
 import { XlsxBook, readXlsx } from './xlsx.js';
 import { dataUrlToBytes, bytesToB64, fetchBytes, nowISO } from './util.js';
 import { qrPayload, canonical } from './sign.js';
-import { APP, CREDIT } from './config.js';
+import { APP, CREDIT, CREDIT_DOC } from './config.js';
 import { TABLES, TOTAL, PERIODES, rowsOf, totalLabel, showTotal, cellValue, fmtCell, layoutHead, newBilan } from './bilan-schema.js';
 import { db } from './db.js';
 
@@ -98,7 +98,7 @@ export async function bilanToXlsx(b) {
   r++; ws.set(r, 0, '7. DIFFICULTÉS MAJEURES', 'section'); for (let c = 1; c < 6; c++) ws.set(r, c, '', 'section'); r++;
   ['Ordre', 'Désignation', '', 'Ampleur (%)', 'Observations'].forEach((t, i) => ws.set(r, i, t, 'th')); ws.merge(r, 1, r, 2); r++;
   (b.lists.problemes || []).forEach((x, i) => { ws.set(r, 0, i + 1, 'tdc'); ws.set(r, 1, x.designation || '', 'td'); ws.set(r, 2, '', 'td'); ws.merge(r, 1, r, 2); ws.set(r, 3, x.ampleur || '', 'tdc'); ws.set(r, 4, x.obs || '', 'td'); r++; });
-  r += 2; ws.set(r, 0, CREDIT, 'note');
+  r += 2; ws.set(r, 0, CREDIT_DOC, 'note');
   /* feuille de données (permet de recharger le fichier) */
   const dd = wb.sheet('Données'); let q = dd.banner(ban, 700);
   dd.width(0, 36); dd.width(1, 90); dd.set(q, 0, 'MEMP-BILAN', 'bold'); dd.set(q, 1, 'Ne pas modifier cette feuille : elle permet de recharger ce fichier dans l\'Application CP.', 'note'); q++;

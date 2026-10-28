@@ -3,7 +3,7 @@
    avec corrigés et planification jour / semaine / mois, du CI au CM2 (contenus de SCOLARIS, data/pedagogie/).
    Lecture pour tous ; le CP, le CCS, la DDEMP, la DOSP et l'administrateur ajoutent des notes (réglage « pedagogieNotes »).
    Les sujets d'une période peuvent être retenus pour l'examen blanc du CEP (réglage « examenBlancSujets »).
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { db } from './db.js';
 import { adaptateurUascep } from './views-uascep.js';
 

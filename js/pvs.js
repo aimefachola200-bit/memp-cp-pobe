@@ -3,7 +3,7 @@
    spécification : outils/lots/spec.md). L'application fournit un adaptateur (comme pour les bureaux UASCEP) :
    charger / enregistrer l'état, contexte (entités et droits), Excel, impression, cachets, visas, signature et code QR.
    PVS.monter(racine, A, moduleId).
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 (function (global) {
   'use strict';
   const CAT = () => global.PVS_CATALOGUE;

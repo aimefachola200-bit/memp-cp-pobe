@@ -1,5 +1,5 @@
 /* République du Bénin — MEMP — Choix faciles sur téléphone et référentiel des villages
-   (même module dans MEMP-CP, CS Pobè / Mon école et ÉduGestion Pro ; conception : Maître Aimé FACHE)
+   (même module dans MEMP-CP, CS Pobè / Mon école et ÉduGestion Pro ; conception : Maître Aimé FACHOLA)
 
    1. Référentiel national (data/referentiel_villages.json : 12 départements, 77 communes, 546 arrondissements,
       5 290 villages et quartiers de ville), chargé seulement quand un champ en a besoin, gardé hors ligne par le

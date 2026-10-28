@@ -1,5 +1,5 @@
 /* République du Bénin — MEMP — Accès aux données, rôles, journal, listes de suggestions
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { db } from './db.js';
 import { h, uid, nowISO, hashPassword, norm } from './util.js';
 import { DEPARTEMENTS } from './refdata.js';

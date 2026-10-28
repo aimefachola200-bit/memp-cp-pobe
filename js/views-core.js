@@ -1,5 +1,5 @@
 /* République du Bénin — MEMP — Vues : tableau de bord, écoles, fiches de collecte
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { h, uid, nowISO, toast, modal, confirmBox, pickFile, readAsBuffer, readAsText, download, norm, currentSchoolYear, fmtDate, today, clean } from './util.js';
 import { db } from './db.js';
 import { dataTable, formDialog, badge } from './ui.js';
@@ -63,6 +63,7 @@ const SCHOOL_FIELDS = (user) => {
     { k: 'numZone', l: 'N° zone pédagogique', t: 'number', w: 'half', ro: lock }, { k: 'codeZone', l: 'Code zone (auto)', t: 'text', w: 'half', ro: lock },
     { k: 'commune', l: 'Commune', t: 'text', list: 'dl-commune', w: 'half' }, { k: 'arrondissement', l: 'Arrondissement', t: 'text', list: 'dl-arrondissement', w: 'half' },
     { k: 'localite', l: 'Village / quartier', t: 'text', list: 'dl-localite', w: 'half' }, { k: 'up', l: 'Unité pédagogique', t: 'text', list: 'dl-up', w: 'half' },
+    { k: 'devise', l: "Devise de l'école", t: 'text', w: 'full' },
     // équipements de l'école (fiche de recensement) : consolidés dans « Écoles : structure et équipements »
     { k: 'eau', l: "Point d'eau potable dans le domaine ?", t: 'select', options: ['Oui', 'Non'], w: 'half' }, { k: 'eauSource', l: "Source de l'eau", t: 'select', options: ['SONEB', 'Forage', "Adduction d'eau villageoise", 'Puits', 'Citerne', 'Autre'], w: 'half' },
     { k: 'electricite', l: 'Électricité ?', t: 'select', options: ['Oui', 'Non'], w: 'half' }, { k: 'elecSource', l: "Source de l'électricité", t: 'select', options: ['SBEE', 'Groupe électrogène', 'Énergie solaire', 'Autre'], w: 'half' },
@@ -119,6 +120,14 @@ async function ecoles(ctx) {
     const ag = (await db.all('personnel')).filter(x => x.schoolId === v.id);
     if (ag.length) await db.putMany('personnel', ag.map(x => ({ ...x, ecole: v.nom, codeZone: v.codeZone || '', numZone: v.numZone || '', codeCs: v.codeCs || '', arrondissement: v.arrondissement || '' })));
     toast('École modifiée.'); reload();
+  }
+  /** Logo de l'école (automatique, réglable ou importé) et devise : en tête de ses fiches et rapports */
+  async function logoEcole() {
+    const s = sel(); if (!s || !globalThis.LogoEcole) return; const { nbf, ...rec } = s;
+    globalThis.LogoEcole.editer({ nom: rec.nom, valeur: rec.logo_cfg, devise: rec.devise, surEnregistrer: async (v) => {
+      await db.put('schools', { ...rec, logo_cfg: v.cfg, logo: v.png || '', devise: v.devise || '' });
+      await addLog(u, { action: 'Logo et devise', target: rec.nom }); toast('Logo et devise enregistrés.'); reload();
+    } });
   }
   async function del() {
     const s = sel(); if (!s) return;
@@ -196,6 +205,7 @@ async function ecoles(ctx) {
   const exCols = COLS.filter(c => c.k !== 'nbf');
   ctx.actions([
     { label: '\uE001 Ajouter', kind: 'primary', onClick: add }, { label: '\uE006 Modifier', onClick: edit }, { label: '\uE005 Supprimer', onClick: del },
+    { label: '\uE047 Logo et devise', onClick: logoEcole },
     { label: '\uE042 Affecter une zone', show: u.role !== 'CP', onClick: affecterZone }, { label: '\uE00E Générer les fiches', kind: 'accent', onClick: genFiches }, { label: '\uE00A Importer Excel/CSV', onClick: importXlsx }, { label: '\uE00D Modèle d\'import', onClick: template },
     { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: 'LISTE DES ÉCOLES', subtitle: `Édité le ${new Date().toLocaleDateString('fr-FR')}`, columns: exCols, rows: t.visible }), 'Ecoles.xlsx') },
     { label: '\uE009 PDF', onClick: async () => download(new Blob([await listToPdf({ title: 'LISTE DES ÉCOLES', columns: exCols, rows: t.visible })], { type: 'application/pdf' }), 'Ecoles.pdf') },

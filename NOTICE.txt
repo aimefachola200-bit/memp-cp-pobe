@@ -1,2 +1,2 @@
-Application CP — MEMP Bénin. Conception : Maître Aimé FACHE — Tél. 01 96 51 03 33.
+Application CP — MEMP Bénin. Conception : Maître Aimé FACHOLA — Tél. +229 01 96 51 03 33.
 Bibliothèques embarquées : pdf-lib (MIT), JSZip (MIT ou GPLv3).

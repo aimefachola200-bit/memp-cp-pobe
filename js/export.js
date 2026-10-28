@@ -5,6 +5,8 @@ import { newPdf, armsBytes, bannerBytes, GREY } from './pdf.js';
 import { XlsxBook } from './xlsx.js';
 import { dataUrlToBytes, num } from './util.js';
 import { qrPayload } from './sign.js';
+import { db } from './db.js';
+const ecoleDe = async (id) => { try { return id ? await db.get('schools', id) : null; } catch (e) { return null; } };
 
 const yn = (v) => (v === true || v === 'true' || v === 1) ? 'Oui' : (v === false || v === undefined || v === '' ? '' : String(v));
 const fieldText = (fld, data) => fld.t === 'check' ? (data[fld.k] ? 'Oui' : 'Non') : fmtVal(data[fld.k]);
@@ -37,6 +39,7 @@ export async function ficheToPdf(fiche, { signed = null } = {}) {
   pdf.text(T.direction, { bold: true, align: 'center', size: 10 }); pdf.space(2);
   pdf.titleBox([T.titre, `ANNÉE SCOLAIRE : ${fiche.annee}`]);
   pdf.text(`École : ${fiche.schoolNom}${fiche.schoolCode ? ' (' + fiche.schoolCode + ')' : ''}  ·  Statut de la fiche : ${fiche.statut || 'Brouillon'}`, { size: 8.5, align: 'center' });
+  await pdf.blocEcole(await ecoleDe(fiche.schoolId));
   for (const s of sections) {
     if (s.type === 'fields') {
       pdf.heading(s.title);
@@ -155,6 +158,7 @@ export async function reportToPdf(rep, { signed = null } = {}) {
   const pdf = await newPdf({ title: `Rapport de fin d'année — ${rep.schoolNom} ${rep.cours}`, footer: `Rapport de fin d'année · ${rep.schoolNom} · ${rep.cours} · ${rep.annee}`, orientation: 'portrait' });
   pdf.text(`DIRECTION DÉPARTEMENTALE DES ENSEIGNEMENTS MATERNEL ET PRIMAIRE ${(rep.departement || '').toUpperCase()}`, { align: 'center', bold: true, size: 8.5 });
   pdf.text(`CIRCONSCRIPTION SCOLAIRE DE ${(rep.nomCs || '').toUpperCase()}  ·  ÉCOLE PRIMAIRE ${(rep.schoolNom || '').toUpperCase()}`, { align: 'center', size: 8.5 });
+  await pdf.blocEcole(await ecoleDe(rep.schoolId));
   pdf.space(2); pdf.titleBox(["RAPPORT DE FIN D'ANNÉE", `ANNÉE SCOLAIRE : ${rep.annee}  ·  COURS : ${rep.cours}`]);
   const rows = (rep.rows || []).filter(r => (r.nom || '').trim()).map((r, i) => [String(i + 1), r.nom, r.sexe || '', ...[0, 1, 2, 3, 4].map(k => (r.ev && r.ev[k]) ? 'x' : ''), String((r.ev || []).filter(Boolean).length), r.decision || '', r.obs || '']);
   pdf.table({ widths: [22, 140, 26, 28, 28, 28, 28, 28, 40, 56, 80], align: ['center', 'left', 'center', 'center', 'center', 'center', 'center', 'center', 'center', 'center', 'left'],

@@ -2,7 +2,7 @@
    Tout remplir à la main, sans importer de fichier Excel : les fiches de collecte de chaque école (rentrée et fin
    d'année, EM et EP), l'état nominatif du personnel de chaque école (directeur, adjoints, enseignants, personnel
    administratif et de soutien), le personnel de la circonscription et les directeurs de toutes les écoles.
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { h, uid, nowISO, toast, norm, currentSchoolYear } from './util.js';
 import { db } from './db.js';
 import { badge } from './ui.js';

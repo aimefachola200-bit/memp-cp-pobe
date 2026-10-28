@@ -3,7 +3,7 @@
    synthèse EP (public + privé), EM (public + privé) et total général de la circonscription scolaire. Regroupements par
    secteur, par zone pédagogique, par arrondissement ou détail par école (avec sous-totaux), exports PDF et Excel de même
    structure. Sources : fiche de l'école, personnel enseignant, effectifs des apprenants, fiches de rentrée et de fin
-   d'année (modèle GESCOL), rapports du CM2 pour le CEP. Conception : Maître Aimé FACHE */
+   d'année (modèle GESCOL), rapports du CM2 pour le CEP. Conception : Maître Aimé FACHOLA */
 import { h, download, clean, norm, currentSchoolYear } from './util.js';
 import { db } from './db.js';
 import { scoped, cleGroupe, libGroupe, ordreGroupe } from './data.js';

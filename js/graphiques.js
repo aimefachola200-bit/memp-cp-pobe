@@ -1,4 +1,4 @@
-/* République du Bénin — MEMP — Graphiques au choix (courbe, histogramme, barres empilées, aires, points). Conception : Maître Aimé FACHE */
+/* République du Bénin — MEMP — Graphiques au choix (courbe, histogramme, barres empilées, aires, points). Conception : Maître Aimé FACHOLA */
   /* Graphiques au choix : courbe, histogramme, barres empilées, aires, points (SVG, sans dépendance).
      Les boutons au-dessus de chaque graphique changent son type ; « pour tous » l'applique à tous et le retient. */
   const TYPES = [['ligne', '\uE016 Courbe'], ['barres', '\uE015 Histogramme'], ['empilees', '▤ Barres empilées'], ['aire', '◭ Aires'], ['points', '⁘ Points']];

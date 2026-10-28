@@ -1,5 +1,5 @@
 /* République du Bénin — MEMP — Circuit de validation (CP → CCS) et exports signés
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { db } from './db.js';
 import { nowISO, toast, download, clean, promptBox, confirmBox, hasNum } from './util.js';
 import { inScope, addLog, session } from './data.js';

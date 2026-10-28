@@ -1,5 +1,5 @@
 /* République du Bénin — MEMP — Application CP — Mode intégré à ÉduGestion Pro
-   Conception : Maître Aimé FACHE — Tél. 01 96 51 03 33
+   Conception : Maître Aimé FACHOLA — Tél. +229 01 96 51 03 33
 
    Quand l'application CP est livrée DANS ÉduGestion Pro (dossier memp-cp/), elle n'a pas de comptes à elle :
    - la personne connectée à ÉduGestion (CP, chef de circonscription, DDEMP, administration) y entre directement,

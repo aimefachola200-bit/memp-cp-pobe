@@ -3,7 +3,7 @@
    écoles, classes / sections autorisées et ouvertes, salles, classes simples, jumelées et multigrades (fiches de rentrée
    ou de fin d'année), moyennes et écarts types, cantine, lavage des mains, gestion collégiale (fiches), eau potable et
    sa source (dont puits), électricité et sa source, latrines, clôture (fiche de l'école). Graphiques au choix, Excel.
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { h, download, clean, currentSchoolYear } from './util.js';
 import { htmlVersXlsx } from './xlsx.js';
 import { bannerBytes } from './pdf.js';

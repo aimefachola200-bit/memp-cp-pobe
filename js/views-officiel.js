@@ -1,6 +1,6 @@
 /* République du Bénin — MEMP — Vues : emplois du temps officiels, calendrier scolaire, règlement intérieur, personnel
    Textes officiels repris de SCOLARIS (emplois du temps MEMP 2016, règlement intérieur révisé 2018, arrêté du calendrier 2026-2027).
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { h, uid, nowISO, toast, modal, confirmBox, pickFile, readAsBuffer, readAsText, download, norm, fmtDate, today, clean } from './util.js';
 import { calculerFiche, lireDate, fmtIso, fmtJour, fmtDuree, ANCIENNETES, CATEGORIES, DIPLOMES } from './carriere.js';
 import { db } from './db.js';

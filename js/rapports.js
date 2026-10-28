@@ -4,7 +4,7 @@
    Les valeurs sont gardées dans la fiche (fiche.valeurs, fiche.format = 'gescol') ; une copie au format des anciennes
    fiches (fiche.data, fiche.perso) est recalculée à chaque enregistrement pour les écrans qui les consolident
    (synthèse, effectifs, infrastructures, écoles, CEP, DOSP). Aucune dépendance DOM.
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { db } from './db.js';
 import { norm } from './util.js';
 import { calculerFiche } from './carriere.js';

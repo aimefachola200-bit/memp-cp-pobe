@@ -3,7 +3,7 @@
    (fiche de l'école, personnel enseignant, effectifs des apprenants, fiche sœur), cases corrigées à la main en jaune,
    totaux recalculés (T = G + F, ENSEMBLE), contrôles de cohérence, état nominatif ; PDF rempli / vierge identique au
    modèle, Excel (feuilles « Rapport » et « Données ») et import Excel ; circuit Brouillon → Transmise → Validée.
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { h, nowISO, toast, fmtDateTime, confirmBox, pickFile, readAsBuffer } from './util.js';
 import { db } from './db.js';
 import { badge } from './ui.js';

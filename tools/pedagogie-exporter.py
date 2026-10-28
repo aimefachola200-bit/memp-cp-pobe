@@ -15,7 +15,7 @@ le générateur d'épreuves sont ceux de SCOLARIS (modules importés en lecture 
 Usage : python3 -I exporter.py --scolaris /home/claude/scolaris --sortie DOSSIER [--sortie DOSSIER2 …] [--pack PACK.json.gz]
   --pack : paquet exporté par SCOLARIS (outils/pedafiche/pack/pedagogie-<version>.json.gz) ; ses listes remplacent celles
            du corpus (fiches, résumés, programmes, guides, modèles, épreuves) quand il les fournit.
-Conception : Maître Aimé FACHE
+Conception : Maître Aimé FACHOLA
 """
 import argparse
 import gzip

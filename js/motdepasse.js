@@ -4,7 +4,7 @@
      2. réinitialisation sur cet appareil par l'administrateur (ou le CCS / DDEMP / la DOSP du périmètre) : il saisit son
         identifiant et son mot de passe, un mot de passe provisoire est affiché (à changer à la connexion) ;
      3. demande par WhatsApp.
-   Réponses stockées hachées (PBKDF2), 5 essais par quart d'heure. Conception : Maître Aimé FACHE */
+   Réponses stockées hachées (PBKDF2), 5 essais par quart d'heure. Conception : Maître Aimé FACHOLA */
 import { h, toast, modal, checkPassword, hashPassword, norm } from './util.js';
 import { db } from './db.js';
 import { fieldEl } from './ui.js';

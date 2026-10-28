@@ -2,7 +2,7 @@
    Pendant le défilement de la page, la ligne d'en-tête (thead) de chaque tableau descend avec l'écran et reste juste sous
    la barre du haut, la barre d'actions et le titre de la rubrique (s'il est fixé), jusqu'à la fin du tableau.
    Les tableaux peuvent défiler en largeur dans leur cadre : l'en-tête suit, la première colonne reste à gauche.
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 const CADRES = '.tbl-wrap > table, .gridwrap > table, .rc-tw > table, .fixe-wrap > table';
 let prevu = false;
 function titreAuDessus(table) {

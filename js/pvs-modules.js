@@ -5,7 +5,7 @@
    calc (valeur calculée, exportée mais non importée), cache (absent du tableau, présent au formulaire et en Excel).
    Types : txt, long, num, date, heure, choix, multi (liste « a, b »), oui (Oui / Non), sexe (M / F), ecole (école du
    périmètre), ref (enregistrement d'une autre rubrique), calc.
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 (function (global) {
   'use strict';
   const NIVEAUX = ['ECOLE', 'UP', 'ZONE', 'CS', 'DDEMP'];

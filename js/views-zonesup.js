@@ -4,7 +4,7 @@
    une zone ou tout) · rubriques « Écoles en attente d'UP » et « Écoles ne fonctionnant plus » · Excel, PDF, impression.
    Zone d'appartenance (codeZone) et zone de l'UP (codeZoneUp, zone des activités pédagogiques) sont distinctes : une école d'une
    zone peut suivre les activités d'une UP d'une autre zone. Les UP sont celles du tableau synoptique du CP.
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { h, toast, download, confirmBox, modal, norm, currentSchoolYear } from './util.js';
 import { db } from './db.js';
 import { formDialog } from './ui.js';

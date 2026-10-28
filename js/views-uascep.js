@@ -2,7 +2,7 @@
    Membres et responsables des bureaux de l'UASCEP par école, UP, zone pédagogique, circonscription et DDEMP.
    Périmètre : CP = sa zone (écoles, UP, zone) ; CCS et DOSP = la circonscription ; DDEMP = le département ; administrateur = tout.
    Données : réglage « uascep » (sauvegarde, transmission et restauration comme les autres réglages).
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { toast, download, norm } from './util.js';
 import { db } from './db.js';
 import { scoped, inScope } from './data.js';

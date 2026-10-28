@@ -1,5 +1,5 @@
 /* République du Bénin — MEMP — Vues : synoptique, activités, thèmes, planification, règlement, documents, référentiel
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { h, uid, nowISO, toast, modal, confirmBox, pickFile, readAsBuffer, readAsText, download, norm, currentSchoolYear, fmtDate, today, promptBox } from './util.js';
 import { db } from './db.js';
 import { dataTable, formDialog, badge } from './ui.js';

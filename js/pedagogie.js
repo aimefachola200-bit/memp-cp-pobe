@@ -8,7 +8,7 @@
        imprimer(titre, html)?, entete()?, memo: { get, set }?, liens: [{ l, route, icone }]?, ouvrir(route)?,
        examenBlanc: { lire(), retenir(sel) }? }
    Pedagogie.monter(racine, A, { onglet, cours }) ; Pedagogie.imprimerJeu(A, cours, periode, corrige).
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 (function (global) {
   'use strict';
   if (global.Pedagogie) return;
@@ -57,6 +57,13 @@
   const ONGLETS = [['planification', 'Planification', 'calendrier'], ['fiches', 'Fiches de préparation', 'fiche'], ['resumes', 'Résumés', 'bloc-notes'],
     ['epreuves', 'Épreuves', 'examen'], ['progressions', 'Progressions annuelles', 'courbe'], ['programmes', 'Programmes', 'livre'], ['guides', 'Guides', 'livres']];
   const TYPES_EP = [['mensuelle', 'Évaluations mensuelles'], ['trimestrielle', 'Évaluations trimestrielles'], ['passage', 'Évaluation de passage'], ['cep_blanc', 'Examens blancs du CEP']];
+  /* Couleur et dessin de chaque matière (bandeau des fiches imprimées et à l'écran) */
+  const COUL_MAT = { francais: '#1F4E79', maths: '#B54708', es: '#067647', est: '#6941C6', eps: '#C11574', ea: '#0E7090' };
+  const IC_MAT = { francais: 'livre', maths: 'calcul', es: 'monde', est: 'science', eps: 'ballon', ea: 'image' };
+  const IC_CHAMP = { intitule: 'etiquette', sous_matiere: 'dossier', unite: 'classeur', duree: 'horloge', cd: 'cible', ct: 'puzzle', contenus: 'livre', objectifs: 'cible',
+    strategies: 'groupe', materiel: 'outils', evaluation: 'valider-cercle', projection: 'fleche-droite', je_retiens: 'cerveau', observations: 'voir' };
+  const CREDIT_PED = 'Conception : Maître Aimé FACHOLA — +229 01 96 51 03 33';
+  const svgIc = (nom, t) => (global.Icones && global.Icones.icone) ? global.Icones.icone(nom, { taille: t || 14 }) : '';
   const PAR_PAGE = 40;
   const MAX_LIVRET = 120;
 
@@ -110,6 +117,8 @@
       .ped-doc th{background:#EEF1F5}.ped-doc .saut{break-before:page;page-break-before:always}.ped-doc .mention{font-size:8.5pt;color:#555;font-style:italic}
       .ped-doc .ligne{border-bottom:1px dotted #999;height:1.6em}
       #ped-impression{display:none}
+      ${CSS_FICHE}
+      .ped-dialogue .ped-fiche{font-size:12pt}
       @media print{.ped-voile{display:none!important}body.ped-imprime>*:not(#ped-impression){display:none!important}body.ped-imprime #ped-impression{display:block!important}}
     ` }));
   }
@@ -137,13 +146,31 @@
     dialogue(titre, h('div', { class: 'ped-doc', html }), [{ l: 'Fermer' }, { l: 'Imprimer / PDF', icone: 'imprimer', p: true, action: () => { imprimerDirect(html); return false; } }]);
   }
   /** o.epreuve : épreuve (sujet ou corrigé) — elle porte son propre en-tête, l'en-tête administratif de l'application est omis */
+  /** o.titulaire : nom du titulaire de la classe, porté en filigrane oblique sur chaque page (fiches de préparation) */
   function imprimer(A, titre, corps, o) {
     o = o || {};
-    const html = '<div class="ped-doc">' + (A.entete && !o.epreuve ? A.entete() : '') + corps
-      + (o.epreuve ? '' : '<p class="mention">' + esc(A.app || '') + ' — module Pédagogie. Contenus de SCOLARIS conçus selon l\'APC, à valider par le conseiller pédagogique.</p>') + '</div>';
+    const fili = o.titulaire ? '<div class="ped-filigrane" aria-hidden="true">' + esc(o.titulaire) + '</div>' : '';
+    const fiche = corps.indexOf('class="ped-fiche"') >= 0;
+    const html = '<div class="ped-doc' + (fiche ? ' ped-avec-fiche' : '') + '">' + fili + (A.entete && !o.epreuve ? A.entete() : '') + corps
+      + (o.epreuve ? '' : '<p class="mention">' + esc(A.app || '') + ' — module Pédagogie. Contenus de SCOLARIS conçus selon l\'APC, à valider par le conseiller pédagogique.</p>')
+      + (fiche ? '' : '<p class="ped-credit">' + esc(CREDIT_PED) + '</p>') + '</div>';
     if (A.imprimer) return A.imprimer(titre, CSS_DOC + html, o);
     return imprimerDefaut(titre, CSS_DOC + html);
   }
+  /* Fiches : Times New Roman 14 pt, couleurs de la matière, recto verso (marges alternées, numéro de page), filigrane du titulaire */
+  const CSS_FICHE = '.ped-fiche{width:100%;border-collapse:collapse;margin:0 0 4mm;font-family:"Times New Roman",Times,"Liberation Serif",serif;font-size:14pt;line-height:1.35;color:#111}'
+    + '.ped-fiche>thead>tr>td,.ped-fiche>tfoot>tr>td,.ped-fiche>tbody>tr>td{border:0!important;padding:0!important;background:none!important}'
+    + '.ped-fiche h2{font-size:16pt;margin:6px 0 6px;text-align:left}.ped-fiche h3{font-size:14.5pt;margin:10px 0 4px;padding-bottom:2px}'
+    + '.ped-fiche table.ped-fc{border-collapse:collapse;width:100%;margin:4px 0}.ped-fiche table.ped-fc td,.ped-fiche table.ped-fc th{border:1px solid #98A2B3;padding:4px 6px;vertical-align:top;text-align:left;font-size:13pt}'
+    + '.ped-fiche table.ped-fc th{background:#F8F9FB}.ped-fiche tr{break-inside:avoid;page-break-inside:avoid}.ped-fiche thead{display:table-header-group}.ped-fiche tfoot{display:table-footer-group}'
+    + '.ped-fb{display:flex;align-items:center;gap:8px;color:#fff;border-radius:6px;padding:6px 10px;margin:0 0 4px;-webkit-print-color-adjust:exact;print-color-adjust:exact}'
+    + '.ped-fb small{font-size:10.5pt;opacity:.95}.ped-fb-ic svg{width:26px;height:26px;display:block}.ped-fi{display:inline-block;vertical-align:-2px;margin-right:4px}.ped-fi svg{width:14px;height:14px}'
+    + '.ped-credit{font:7.5pt Arial,sans-serif;color:#98A2B3;text-align:right;margin:3mm 0 0}'
+    + '.ped-filigrane{display:none}';
+  const CSS_FICHE_IMPR = '@media print{.ped-filigrane{display:block;position:fixed;top:42%;left:0;right:0;text-align:center;transform:rotate(-35deg);font:bold 54pt "Times New Roman",Times,serif;color:#1F4E79;opacity:.11;z-index:0;pointer-events:none;white-space:nowrap}'
+    + '@page{size:A4;margin:12mm 12mm 15mm}@page :left{margin-left:15mm;margin-right:10mm}@page :right{margin-left:10mm;margin-right:15mm}'
+    + '@page{@bottom-center{content:"Page " counter(page) " / " counter(pages);font:9pt Arial,sans-serif;color:#667085}}'
+    + '.ped-fb,.ped-fiche table.ped-fc thead tr{-webkit-print-color-adjust:exact;print-color-adjust:exact}}';
   const CSS_DOC = '<style>.ped-doc{font:10.5pt/1.45 Arial,sans-serif;color:#111}.ped-doc h1{font-size:14pt;text-align:center;margin:6px 0}.ped-doc h2{font-size:12.5pt;margin:12px 0 4px;color:#1F4E79}'
     + '.ped-doc h3{font-size:11pt;margin:8px 0 3px}.ped-doc table{border-collapse:collapse;width:100%;margin:4px 0}.ped-doc td,.ped-doc th{border:1px solid #777;padding:3px 5px;vertical-align:top;text-align:left}'
     + '.ped-doc th{background:#EEF1F5}.ped-doc .saut{break-before:page;page-break-before:always}.ped-doc .mention{font-size:8.5pt;color:#555;font-style:italic}.ped-doc .ligne{border-bottom:1px dotted #999;height:1.6em}'
@@ -153,7 +180,8 @@
     + '.ped-ep h3,.ped-ep b,.ped-ep th,.ped-ep .ped-titre-item{font-weight:bold}.ped-ep h3{font-size:14pt;color:#000}.ped-ep p{margin:4px 0}.ped-ep ol{margin:2px 0 4px;padding-left:28px}'
     + '.ped-ep table td,.ped-ep table th{font-size:13pt}.ped-ep .ped-item,.ped-ep table,.ped-ep tr,.ped-ep li{break-inside:avoid;page-break-inside:avoid}'
     + '.ped-doc .ped-ep-tete{width:100%;border-collapse:collapse;margin:0 0 6px}.ped-doc .ped-ep-tete td{border:0;padding:1px 0;font-size:13pt}'
-    + '.ped-demi{break-inside:avoid;page-break-inside:avoid}.ped-coupe{border-top:1.5px dashed #444;margin:9mm 0 7mm;text-align:center;font:9pt Arial,sans-serif;color:#444;padding-top:2px}</style>';
+    + '.ped-demi{break-inside:avoid;page-break-inside:avoid}.ped-coupe{border-top:1.5px dashed #444;margin:9mm 0 7mm;text-align:center;font:9pt Arial,sans-serif;color:#444;padding-top:2px}'
+    + CSS_FICHE + CSS_FICHE_IMPR + '</style>';
 
   /** Guides : HTML du corpus nettoyé (aucun script, aucun attribut d'évènement, aucun lien javascript:) */
   function nettoyer(html) {
@@ -223,20 +251,27 @@
 
   /* ---------------- rendus HTML (écran et impression) ---------------- */
   const nomMat = (ix, m) => (ix.matieres || {})[m] || m;
+  /** Fiche de préparation : bandeau de couleur de la matière (répété en tête de chaque page à l'impression), dessins au trait,
+      corps en Times New Roman 14 pt, tableaux jamais coupés au milieu d'une ligne. */
   function ficheHtml(f, ix) {
-    let s = '<h2>' + esc(f.titre) + '</h2><p><b>' + esc(f.cours) + '</b> · ' + esc(nomMat(ix, f.matiere))
-      + (f.sa ? ' · SA ' + esc(f.sa) : '') + (f.seance ? ' · séance ' + esc(f.seance) : '') + '</p><table>';
-    CHAMPS_FICHE.forEach(([k, l]) => { if (f[k]) s += '<tr><th style="width:30%">' + esc(l) + '</th><td>' + txt(f[k]) + '</td></tr>'; });
-    s += '</table>';
+    const c = COUL_MAT[f.matiere] || '#1F4E79';
+    const rep = esc(f.cours) + ' · ' + esc(nomMat(ix, f.matiere)) + (f.sous_matiere ? ' · ' + esc(f.sous_matiere) : '')
+      + (f.sa ? ' · SA ' + esc(f.sa) : '') + (f.seance ? ' · séance ' + esc(f.seance) : '') + (f.duree ? ' · ' + esc(f.duree) : '');
+    const bandeau = '<div class="ped-fb" style="background:' + c + '"><span class="ped-fb-ic">' + svgIc(IC_MAT[f.matiere] || 'fiche', 26) + '</span>'
+      + '<span class="ped-fb-t"><b>Fiche de préparation — ' + esc(nomMat(ix, f.matiere)) + '</b><br><small>' + rep + '</small></span></div>';
+    const ligne = ([k, l]) => f[k] ? '<tr><th style="width:31%;color:' + c + '"><span class="ped-fi">' + svgIc(IC_CHAMP[k] || 'point', 14) + '</span>' + esc(l) + '</th><td>' + txt(f[k]) + '</td></tr>' : '';
+    let s = '<h2 style="color:' + c + '">' + esc(f.titre) + '</h2><table class="ped-fc">' + CHAMPS_FICHE.map(ligne).join('') + '</table>';
     if (f.deroulement && f.deroulement.length) {
-      s += '<h3>Déroulement</h3><table><thead><tr><th>Phases / étapes</th><th>Activités de l\'enseignant(e) et des apprenant(e)s</th><th>Résultats attendus</th></tr></thead><tbody>'
+      s += '<h3 style="color:' + c + ';border-bottom:2px solid ' + c + '"><span class="ped-fi">' + svgIc('horloge', 16) + '</span>Déroulement</h3>'
+        + '<table class="ped-fc"><thead><tr style="background:' + c + '1A"><th>Phases / étapes</th><th>Activités de l\'enseignant(e) et des apprenant(e)s</th><th>Résultats attendus</th></tr></thead><tbody>'
         + f.deroulement.map(l => '<tr><td><b>' + txt(l[0]) + '</b></td><td>' + txt(l[1] || '') + '</td><td>' + txt(l[2] || '') + '</td></tr>').join('') + '</tbody></table>';
     }
-    if (f.sequences && f.sequences.length) s += '<h3>Séquences</h3><ol>' + f.sequences.map(q => '<li>' + txt(typeof q === 'string' ? q : (q.titre || JSON.stringify(q))) + '</li>').join('') + '</ol>';
-    s += '<table>';
-    CHAMPS_FIN.forEach(([k, l]) => { if (f[k]) s += '<tr><th style="width:30%">' + esc(l) + '</th><td>' + txt(f[k]) + '</td></tr>'; });
-    s += '</table><p class="mention">' + esc(f.source || '') + (f.auteur ? ' — auteur : ' + esc(f.auteur) : '') + (f.mention ? ' — ' + esc(f.mention) : '') + '</p>';
-    return s;
+    if (f.sequences && f.sequences.length) s += '<h3 style="color:' + c + '">Séquences</h3><ol>' + f.sequences.map(q => '<li>' + txt(typeof q === 'string' ? q : (q.titre || JSON.stringify(q))) + '</li>').join('') + '</ol>';
+    s += '<table class="ped-fc">' + CHAMPS_FIN.map(ligne).join('') + '</table>'
+      + '<p class="mention">' + esc(f.source || '') + (f.auteur ? ' — auteur : ' + esc(f.auteur) : '') + (f.mention ? ' — ' + esc(f.mention) : '') + '</p>';
+    // cadre : l'en-tête (bandeau) et le pied (mention de conception) se répètent sur chaque page imprimée
+    return '<table class="ped-fiche" style="--mat:' + c + '"><thead><tr><td>' + bandeau + '</td></tr></thead>'
+      + '<tfoot><tr><td><p class="ped-credit">' + esc(CREDIT_PED) + '</p></td></tr></tfoot><tbody><tr><td>' + s + '</td></tr></tbody></table>';
   }
   function resumeHtml(r, ix, eleve) {
     let s = '<h2>' + esc(r.titre) + '</h2><p><b>' + esc(r.cours) + '</b> · ' + esc(nomMat(ix, r.matiere)) + ' · ' + esc(r.domaine || '')
@@ -407,6 +442,13 @@
     const E_ = (type, x) => eff(notes, type, x);
     const peutModifier = A.peutModifier !== false;
     const sauverF = () => memo.set('filtres', JSON.stringify(F));
+    /* Titulaire de la classe : en filigrane oblique sur les fiches imprimées (saisi une fois, gardé sur l'appareil) */
+    const titulaire = () => String(memo.get('titulaire') || (A.titulaire && A.titulaire(F.cours)) || '').trim();
+    const champTitulaire = () => {
+      const i = h('input', { type: 'text', value: titulaire(), placeholder: 'Nom et prénoms du titulaire', 'aria-label': 'Titulaire de la classe (filigrane)', 'data-ped': 'titulaire', 'data-geo': 'aucun', style: 'max-width:280px' });
+      i.addEventListener('input', () => memo.set('titulaire', i.value.trim()));
+      return h('label', { class: 'ped-aide', style: 'display:flex;gap:6px;align-items:center;flex-wrap:wrap' }, 'Titulaire (filigrane des fiches)', i);
+    };
 
     racine.innerHTML = '';
     const boite = h('div', { class: 'ped', 'data-ped': 'module' });
@@ -549,10 +591,10 @@
       const d = CHARGES_COURS[f.cours];
       const lies = d ? d.resumes.filter(r => (r.fiches || []).indexOf(f.id) >= 0) : [];
       let fermer = () => {};
-      const corps = h('div', {}, h('div', { 'data-ped': 'zone-edition' }), h('div', { class: 'ped-doc', html: ficheHtml(f, ix) }),
+      const corps = h('div', {}, h('div', { 'data-ped': 'zone-edition' }), h('div', { class: 'ped-actions' }, champTitulaire()), h('div', { class: 'ped-doc', html: ficheHtml(f, ix) }),
         lies.length ? h('div', { class: 'ped-carte', 'data-ped': 'resumes-seance' }, h('h3', {}, 'Résumé' + (lies.length > 1 ? 's' : '') + ' de la séance'), h('ul', { class: 'ped-liste' }, lies.map(r => h('li', {}, lien({ onclick: () => ouvrirResume(r) }, r.titre))))) : null,
         blocNotes('fiche:' + f.id));
-      fermer = dialogue(f.titre, corps, [{ l: 'Fermer' }, { l: 'Imprimer / PDF', icone: 'imprimer', p: true, action: () => { imprimer(A, f.titre, ficheHtml(f, ix) + notesHtml('fiche:' + f.id)); } }]);
+      fermer = dialogue(f.titre, corps, [{ l: 'Fermer' }, { l: 'Imprimer / PDF', icone: 'imprimer', p: true, action: () => { imprimer(A, f.titre, ficheHtml(f, ix) + notesHtml('fiche:' + f.id), { titulaire: titulaire() }); } }]);
       const b = barreEdition('fiche', f, ouvrirFiche, () => fermer()); if (b) corps.firstChild.append(b);
     }
     function ouvrirResume(r) {
@@ -640,8 +682,8 @@
           btn('classeur', `Classeur de la sélection (PDF${l.length > MAX_LIVRET ? ', ' + MAX_LIVRET + ' premières' : ''})`, () => {
             if (!l.length) return;
             imprimer(A, 'Classeur de fiches — ' + F.cours, '<h1>Classeur de fiches de préparation — ' + esc(F.cours) + (F.matiere ? ' — ' + esc(nomMat(ix, F.matiere)) : '') + '</h1>'
-              + l.slice(0, MAX_LIVRET).map((f, i) => (i ? '<div class="saut"></div>' : '') + ficheHtml(f, ix)).join(''));
-          }, 's', { 'data-ped': 'classeur-selection' })));
+              + l.slice(0, MAX_LIVRET).map((f, i) => (i ? '<div class="saut"></div>' : '') + ficheHtml(f, ix)).join(''), { titulaire: titulaire() });
+          }, 's', { 'data-ped': 'classeur-selection' }), champTitulaire()));
         if (!l.length) { liste.append(h('p', { class: 'ped-vide' }, 'Aucune fiche pour ces critères.')); return; }
         liste.append(h('div', { class: 'ped-tw' }, h('table', { class: 'ped-t', 'data-ped': 'table-fiches' },
           h('thead', {}, h('tr', {}, ['Matière', 'Unité / SA / séance', 'Sous-matière', 'Titre', 'Durée', 'Origine'].map(x => h('th', {}, x)))),
@@ -795,7 +837,7 @@
       const cleNote = 'plan:' + F.cours + ':' + F.pmois + (F.pvue === 'mois' ? '' : ':S' + (k + 1));
       const classeur = (titre, fs, rs) => imprimer(A, titre, '<h1>' + esc(titre) + '</h1>' + notesHtml(cleNote)
         + (fs.length ? '<h2>Fiches de préparation (' + fs.length + ')</h2>' + fs.slice(0, MAX_LIVRET).map((f, i) => (i ? '<div class="saut"></div>' : '') + ficheHtml(f, ix)).join('') : '')
-        + (rs.length ? '<div class="saut"></div><h2>Résumés (' + rs.length + ')</h2>' + rs.map((r, i) => (i ? '<div class="saut"></div>' : '') + resumeHtml(r, ix, false)).join('') : ''));
+        + (rs.length ? '<div class="saut"></div><h2>Résumés (' + rs.length + ')</h2>' + rs.map((r, i) => (i ? '<div class="saut"></div>' : '') + resumeHtml(r, ix, false)).join('') : ''), { titulaire: titulaire() });
 
       if (F.pvue === 'jour') {
         const ji = +F.pjour || 0;

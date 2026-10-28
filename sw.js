@@ -1,9 +1,9 @@
 /* République du Bénin — MEMP — Application CP — Service worker (mode hors ligne)
-   Conception : Maître Aimé FACHE — Tél. 01 96 51 03 33 */
+   Conception : Maître Aimé FACHOLA — Tél. +229 01 96 51 03 33 */
 // Préfixe propre à chaque application (même domaine github.io pour l'application CP et ses jumelles)
 const PREFIX = 'memp-cp-' + new URL(self.registration.scope).pathname.replace(/[^a-z0-9]+/gi, '-') + '-';
 // Empreinte de la publication (écrite par tools/gen-assets.mjs) : sw.js change à chaque mise à jour, les appareils la reçoivent.
-const BUILD = '79f256341373';
+const BUILD = '5e3f531ab86a';
 const CACHE = PREFIX + BUILD;   // une seule version servie à la fois : jamais de mélange ancien / nouveau
 
 self.addEventListener('install', (event) => {

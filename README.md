@@ -7,7 +7,7 @@ mêmes fonctions, avec ses propres données sur l'appareil (elle ne se mélange 
 
 **Adresse : https://aimefachola200-bit.github.io/memp-cp-pobe/**
 
-**Conception : Maître Aimé FACHE — Tél. 01 96 51 03 33**
+**Conception : Maître Aimé FACHOLA — Tél. +229 01 96 51 03 33**
 
 ## Données de départ
 - **156 écoles** (92 EPP publiques, 18 EM publiques, 46 écoles privées) et **282 agents** (directeurs, adjoints, CP, CCS)

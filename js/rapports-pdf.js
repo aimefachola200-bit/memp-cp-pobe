@@ -2,7 +2,7 @@
    Transposition fidèle du rendu de GESCOL / SCOLARIS (m_rapports.Rendu, reportlab) sur pdf-lib : en-tête MEMP, bandes
    tricolores, pointillés, cases /…/…/, ronds et cases à cocher, tableaux du modèle, état nominatif en paysage (12, 10
    ou 9 lignes par page), notes et visas. Valeurs écrites à l'encre bleue, comme au stylo.
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { fetchBytes } from './util.js';
 import { Canvas, decouper, hex } from './pdf-canvas.js';
 import { APP } from './config.js';

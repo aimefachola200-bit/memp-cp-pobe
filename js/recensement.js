@@ -4,7 +4,7 @@
    les calculs (totaux G + F = T, lignes et colonnes de total), les contrôles de cohérence, le PDF rempli, le PDF
    vierge et l'export / import Excel (feuille « Données (import) »).
    Convention : une valeur vide = valeur CALCULÉE (identité de l'école, personnel, effectifs) ; une valeur saisie
-   = correction. Aucune dépendance DOM. Conception : Maître Aimé FACHE */
+   = correction. Aucune dépendance DOM. Conception : Maître Aimé FACHOLA */
 import { db } from './db.js';
 import { norm, uid, nowISO } from './util.js';
 import { calculerFiche } from './carriere.js';

@@ -1,5 +1,5 @@
 /* République du Bénin — MEMP — Bilan trimestriel / annuel des activités pédagogiques (zone et circonscription scolaire)
-   Conception : Maître Aimé FACHE — Tél. 01 96 51 03 33 */
+   Conception : Maître Aimé FACHOLA — Tél. +229 01 96 51 03 33 */
 import { h, uid, nowISO, toast, confirmBox, pickFile, readAsText, readAsBuffer, download, currentSchoolYear, today, clean } from './util.js';
 import { db } from './db.js';
 import { dataTable, formDialog, badge, fieldEl } from './ui.js';

@@ -2,7 +2,7 @@
    dans MEMP-CP / DOSP / MEMP-CP Pobè : sport scolaire, tableau de bord du pilotage (lot A).
    Entités, droits, cachets, visas : ceux des bureaux UASCEP (views-uascep.js). Données : réglage « pvs ».
    Pièces signées : registre des documents (store « pvs »), vérifiables dans « Vérifier un document ».
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { db } from './db.js';
 import { scoped } from './data.js';
 import { sha256, uid, nowISO } from './util.js';

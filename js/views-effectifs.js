@@ -1,6 +1,6 @@
 /* République du Bénin — MEMP — Vues : effectifs des apprenants (fiche de recensement annuel)
    Niveaux : école (saisie), zone pédagogique et circonscription scolaire (consolidation automatique).
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { h, nowISO, toast, download, clean, confirmBox, promptBox, pickFile, readAsBuffer, currentSchoolYear, modal } from './util.js';
 import { db } from './db.js';
 import { dataTable, badge } from './ui.js';

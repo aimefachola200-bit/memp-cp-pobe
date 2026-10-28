@@ -4,7 +4,7 @@
    archivé), \uE058 renouvellement, synthèse, anciens bureaux, impression / PDF, Excel (export et import, mêmes colonnes dans
    toutes les applications — voir outils/uascep/spec.md).
    L'application hôte fournit un adaptateur : charger / enregistrer l'état, contexte (entités et droits), Excel, impression.
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 (function (global) {
   'use strict';
   if (global.UASCEP) return;

@@ -2,7 +2,7 @@
    Par zone pédagogique (une ligne par école) ou par circonscription (une ligne par zone), secteur public et privé à part :
    salles de classe par nature, salles existantes / utilisées, élèves par salle, lavage des mains, mobilier du primaire
    (places assises, déficit), mobilier de la maternelle, manuels par élève. Courbes et Excel.
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { h, download, clean, currentSchoolYear } from './util.js';
 import { htmlVersXlsx } from './xlsx.js';
 import { bannerBytes } from './pdf.js';

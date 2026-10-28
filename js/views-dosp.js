@@ -13,7 +13,7 @@
      capacites   renforcement des capacités : sessions, participants, liste de présence, attestations, rapport
      plandosp    attributions et plan d'action de la division
      docsdosp    documents officiels de la division (note de service, convocation, PV, relance, soit-transmis, rapport)
-   Conception : Maître Aimé FACHE — Tél. 01 96 51 03 33 */
+   Conception : Maître Aimé FACHOLA — Tél. +229 01 96 51 03 33 */
 import { h, uid, nowISO, toast, confirmBox, download, clean, currentSchoolYear, today, sha256 } from './util.js';
 import { db } from './db.js';
 import { dataTable, formDialog } from './ui.js';

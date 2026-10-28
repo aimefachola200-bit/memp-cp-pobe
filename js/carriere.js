@@ -5,7 +5,7 @@
      (janv.–mars → 1er avril ; avril–juin → 1er juillet ; juil.–sept. → 1er octobre ; oct.–déc. → 1er janvier suivant) ;
      année de naissance seule (« 1968 ») → 1er janvier de (année + âge + 1) ;
    - anciennetés arrêtées au 31 décembre de la première année de l'année scolaire en cours ;
-   - alerte quand le départ intervient dans les 2 ans. Conception : Maître Aimé FACHE */
+   - alerte quand le départ intervient dans les 2 ans. Conception : Maître Aimé FACHOLA */
 import { currentSchoolYear } from './util.js';
 
 export const AGES_RETRAITE = { A: 60, B: 58, C: 55 };

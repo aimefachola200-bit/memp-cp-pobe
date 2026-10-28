@@ -4,7 +4,7 @@
    ligne par école) ou par circonscription (une ligne par zone), secteur public et privé à part : effectifs par sexe et
    pourcentages, parité filles / garçons, taux de présence, taux de réussite par sexe, écart filles − garçons, moyenne et
    écart type des taux des écoles. Graphiques au choix, Excel.
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { h, download, clean, currentSchoolYear } from './util.js';
 import { htmlVersXlsx } from './xlsx.js';
 import { bannerBytes } from './pdf.js';

@@ -1,6 +1,6 @@
 /* République du Bénin — MEMP — Bilan trimestriel / annuel des activités pédagogiques (niveau Zone et niveau CS)
    Canevas inspiré du bilan trimestriel du CS fourni par le Ministère, enrichi : calculs automatiques, consolidation,
-   analyses pré-rédigées, annexes photographiques.   Conception : Maître Aimé FACHE — Tél. 01 96 51 03 33 */
+   analyses pré-rédigées, annexes photographiques.   Conception : Maître Aimé FACHOLA — Tél. +229 01 96 51 03 33 */
 import { hasNum, num, norm } from './util.js';
 
 export const PERIODES = { T1: 'Trimestre 1 (Septembre-Octobre-Novembre-Décembre)', T2: 'Trimestre 2 (Janvier-Février-Mars)', T3: 'Trimestre 3 (Avril-Mai-Juin-Juillet)', ANNUEL: 'Bilan annuel' };

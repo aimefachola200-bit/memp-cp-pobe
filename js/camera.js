@@ -1,5 +1,5 @@
 /* République du Bénin — MEMP — Appareil photo (caméra frontale ou arrière) pour joindre des preuves photographiques.
-   Conception : Maître Aimé FACHE — Tél. 01 96 51 03 33 */
+   Conception : Maître Aimé FACHOLA — Tél. +229 01 96 51 03 33 */
 import { h, modal, toast } from './util.js';
 
 /* v1.10.10 — avant / arrière : appareil choisi d'après son nom (front / back, avant / arrière…), sinon le suivant :

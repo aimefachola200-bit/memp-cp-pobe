@@ -8,7 +8,7 @@
    l'examen blanc » (mêmes colonnes que CS Pobè), reprise de la liste des candidats au CEP (module « Examens et concours »).
    Documents signés avec code QR (registre « Vérifier un document ») : PV du centre, relevé de notes du centre, résultats
    (synthèse des centres). Données : réglage « examenBlanc ».
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { h, toast, download, confirmBox, modal, pickFile, readAsBuffer, uid, nowISO, norm, sha256, currentSchoolYear } from './util.js';
 import { db } from './db.js';
 import { readXlsx } from './xlsx.js';

@@ -5,7 +5,7 @@
                            onglet « Remplir » par rubrique (même numérotation, mêmes tableaux), valeurs calculées
                            proposées (identité, personnel, effectifs) et modifiables, totaux en direct, contrôles de
                            cohérence, Sauvegarder / Charger / Réinitialiser, PDF rempli, PDF vierge, Excel, import Excel
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { h, toast, download, pickFile, readAsBuffer, confirmBox, currentSchoolYear, norm } from './util.js';
 import { db } from './db.js';
 import { scoped, inScope, addLog, cleGroupe, libGroupe, ordreGroupe } from './data.js';

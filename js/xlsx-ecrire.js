@@ -5,7 +5,7 @@
    feuille de styles, en-têtes en gras, largeurs de colonnes, propriétés du document — comme Excel et openpyxl.
    XlsxEcrire.classeur(feuilles) -> Blob ; feuilles = [{ nom, lignes: [[valeur | {v, s:'h'|'t'|'b'}], …], entete?: n }]
    XlsxEcrire.depuisHtml(html) -> lignes (titres h1-h4 / p et tableaux, en-têtes <th> repérés, fusions respectées)
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 (function (global) {
   'use strict';
   if (global.XlsxEcrire) return;

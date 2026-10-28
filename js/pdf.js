@@ -1,7 +1,7 @@
 /* République du Bénin — MEMP — Génération de PDF (pdf-lib). Le bandeau officiel est imprimé en tête de CHAQUE page. */
 import { fetchBytes, today } from './util.js';
 import { qrMatrix } from './qr.js';
-import { CREDIT } from './config.js';
+import { CREDIT, CREDIT_DOC } from './config.js';
 
 let _banner;
 export async function bannerBytes() { return _banner || (_banner = await fetchBytes('assets/embleme-memp.png')); }
@@ -48,6 +48,18 @@ class Pdf {
     return this.page;
   }
   ensure(h) { if (this.y - h < this.M + 30) this.addPage(); }
+  /** École du document : son logo (PNG enregistré dans sa fiche) et sa devise, sur une ligne centrée */
+  async blocEcole(e) {
+    if (!e || (!e.logo && !e.devise)) return;
+    const taille = 34; this.ensure(taille + 6);
+    const t = this.clean(e.devise ? '« ' + e.devise + ' »' : ''), tw = t ? this.font.widthOfTextAtSize(t, 8.5) : 0;
+    let x = (this.W - (e.logo ? taille + 8 : 0) - tw) / 2;
+    if (e.logo && /^data:image\/png/.test(e.logo)) {
+      try { const img = await this.doc.embedPng(e.logo); this.page.drawImage(img, { x, y: this.y - taille, width: taille, height: taille }); x += taille + 8; } catch (err) { /* image illisible */ }
+    }
+    if (t) this.page.drawText(t, { x, y: this.y - taille / 2 - 3, size: 8.5, font: this.font, color: this.rgb([0.25, 0.25, 0.25]) });
+    this.y -= taille + 6;
+  }
   space(n = 6) { this.y -= n; }
   width(t, size, b = false) { return (b ? this.bold : this.font).widthOfTextAtSize(this.clean(t), size); }
   wrap(text, size, maxW, b = false) {
@@ -168,7 +180,7 @@ class Pdf {
       const t = this.clean(`République du Bénin · MEMP · ${this.footerText} · Édité le ${new Date().toLocaleDateString('fr-FR')}`);
       pg.drawLine({ start: { x: this.M, y: this.M + 20 }, end: { x: pg.getWidth() - this.M, y: this.M + 20 }, thickness: 0.5, color: this.rgb(LINE) });
       pg.drawText(t, { x: this.M, y: this.M + 10, size: 7, font: this.font, color: this.rgb([0.35, 0.35, 0.35]) });
-      pg.drawText(this.clean(CREDIT), { x: this.M, y: this.M, size: 6.5, font: this.bold, color: this.rgb(GREEN) });
+      { const c = this.clean(CREDIT_DOC); pg.drawText(c, { x: pg.getWidth() - this.M - this.font.widthOfTextAtSize(c, 4.5), y: this.M, size: 4.5, font: this.font, color: this.rgb([0.78, 0.79, 0.81]) }); }
       const pn = `Page ${i + 1}/${pages.length}`; pg.drawText(pn, { x: pg.getWidth() - this.M - this.font.widthOfTextAtSize(pn, 7), y: this.M + 10, size: 7, font: this.font });
     });
     return this.doc.save();

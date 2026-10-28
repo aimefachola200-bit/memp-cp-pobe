@@ -1,5 +1,5 @@
 /* République du Bénin — MEMP — Rapports de fin d'année par classe (EP)
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { h, uid, nowISO, toast, confirmBox, currentSchoolYear, today, modal, norm } from './util.js';
 import { db } from './db.js';
 import { dataTable, formDialog, badge, fieldEl } from './ui.js';

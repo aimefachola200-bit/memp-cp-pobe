@@ -5,7 +5,7 @@
    Dans le code des applications, un caractère de la zone privée U+E000… (Icones.code(nom)) marque une icône dans un texte :
    il est remplacé par le dessin à l'affichage (boutons, menus, tuiles, messages, documents imprimés) et retiré ailleurs
    (listes déroulantes, info-bulles, boîtes alert / confirm, Excel, liens de partage, presse-papiers, textes des PDF).
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 (function (global) {
   'use strict';
   if (global.Icones) return;

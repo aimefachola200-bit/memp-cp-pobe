@@ -3,7 +3,7 @@
    mêmes bandes de rubriques, mêmes cases l__l__l, cases à cocher, pointillés, cadres FCFA, mêmes tableaux (en-têtes
    fusionnés, textes verticaux, cellules grisées), filigrane « ANNÉE SCOLAIRE », pied de page « Page n / N »,
    signatures et visas, guide de remplissage. Valeurs inscrites à l'encre bleue, comme au stylo.
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { fetchBytes } from './util.js';
 import { Canvas, decouper } from './pdf-canvas.js';
 import { APP } from './config.js';

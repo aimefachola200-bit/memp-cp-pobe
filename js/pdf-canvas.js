@@ -1,6 +1,6 @@
 /* République du Bénin — MEMP — « canvas » à la reportlab sur pdf-lib (rendus des fiches officielles de GESCOL / SCOLARIS)
    Largeurs sans crénage (comme reportlab stringWidth), polices standard PDF, cercles, pointillés, texte tourné.
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 export const hex = (h) => { const n = parseInt(h.slice(1), 16); return [(n >> 16 & 255) / 255, (n >> 8 & 255) / 255, (n & 255) / 255]; };
 const NOIR = [0, 0, 0];
 /* ------------------------------------------------------------------ « canvas » à la reportlab sur pdf-lib */

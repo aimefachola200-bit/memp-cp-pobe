@@ -5,7 +5,7 @@
    international du Bénin, produit le fichier de contacts (.vcf) — l'écran « Nouveau groupe » de WhatsApp ne propose
    alors que ceux qui ont un compte WhatsApp —, envoie le lien d'invitation directeur par directeur avec suivi, et
    prépare des messages prêts à l'emploi (convocation, rappel, informations…). Les numéros restent sur l'appareil.
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { h, toast, download } from './util.js';
 import { db } from './db.js';
 import { scoped, cleGroupe, libGroupe, ordreGroupe, modeGroupeDefaut, schoolLabel } from './data.js';

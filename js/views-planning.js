@@ -2,7 +2,7 @@
    Présentée comme la planification des écoles : jours × plages horaires, sur l'année scolaire 2026-2027 (calendrier officiel :
    trimestres, congés, jours fériés ; dates des unités pédagogiques, conférences et formations groupées). Remplie à la main,
    enregistrée pour chaque CP, téléchargeable (PDF, Excel, version vierge) et imprimable.
-   Conception : Maître Aimé FACHE */
+   Conception : Maître Aimé FACHOLA */
 import { h, toast, modal, confirmBox, download, clean, nowISO, norm } from './util.js';
 import { db } from './db.js';
 import { fieldEl } from './ui.js';
