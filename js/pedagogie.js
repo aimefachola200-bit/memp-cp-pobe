@@ -272,8 +272,9 @@
     let s = '<div class="ped-ep">' + enteteEpreuve(d) + '<h2>' + esc(e.titre || ('Épreuve de ' + d.discipline)) + '</h2><p><b>COURS :</b> ' + esc(e.classe || d.cours) + ' · <b>PÉRIODE :</b> ' + esc(d.periode_lib)
       + ' · <b>DURÉE :</b> ' + esc(e.duree || d.duree) + ' · <b>Barème :</b> ' + esc(d.bareme || 20) + ' points</p>';
     if (d.contexte) s += '<p><i>' + txt(d.contexte) + '</i></p>';
-    if (d.support && d.code !== 'dictee') s += '<p><b>' + (['ea', 'eps'].includes(d.code) ? 'Support' : 'Texte') + ' : ' + esc(d.support_titre) + '</b></p><p>' + txt(d.support) + '</p>';
+    if (d.support && d.code !== 'dictee' && !(Array.isArray(d.parties_ea) && d.parties_ea.length)) s += '<p><b>' + (['ea', 'eps'].includes(d.code) ? 'Support' : 'Texte') + ' : ' + esc(d.support_titre) + '</b></p><p>' + txt(d.support) + '</p>';
     if (d.tache) s += '<p><b>Tâche :</b> ' + txt(d.tache) + '</p>';
+    if (Array.isArray(d.parties_ea) && d.parties_ea.length) s += d.parties_ea.map(x => x.materiel ? '<p><b>Matériel — partie ' + esc(x.partie) + ' :</b> ' + esc(x.materiel) + '</p>' : '').join('');
     s += '<p><b>Consigne :</b></p>';
     (d.consignes || []).forEach(it => {
       if (it.titre === 'Présentation') return;
@@ -289,6 +290,18 @@
     (d.consignes || []).forEach(it => (it.questions || []).forEach(x => { if (x.r) lignes.push('<tr><td>' + esc(it.titre) + '</td><td>' + esc(x.q) + '</td><td>' + esc(x.r) + '</td><td>' + esc(x.pts || '') + '</td></tr>'); }));
     if (lignes.length) s += '<table><thead><tr><th>Item</th><th>Question</th><th>Réponse attendue</th><th>Pts</th></tr></thead><tbody>' + lignes.join('') + '</tbody></table>';
     if (d.corrige_note) s += '<p>' + txt(d.corrige_note) + '</p>';
+    if (Array.isArray(d.baremes) && d.baremes.length) {   // EPS : barèmes de performance par sexe et par âge
+      const a = d.age_normal || '';
+      d.baremes.forEach(bm => {
+        s += '<div class="ped-item"><h3>Barème — ' + esc(bm.titre) + '</h3><table><thead><tr><th>Note</th><th>Garçons ' + esc(a) + ' ans</th><th>Garçons ' + esc(a ? a + 2 : '') + ' ans</th><th>Filles ' + esc(a) + ' ans</th><th>Filles ' + esc(a ? a + 2 : '') + ' ans</th></tr></thead><tbody>'
+          + (bm.lignes || []).map(l => '<tr>' + l.map((c, i) => '<td>' + (i ? esc(c) : '<b>' + esc(c) + '</b>') + '</td>').join('') + '</tr>').join('') + '</tbody></table></div>';
+      });
+    }
+    if (d.fiche_notation && Array.isArray(d.fiche_notation.colonnes)) {
+      const fn = d.fiche_notation;
+      s += '<div class="saut"></div><h3>Fiche de notation</h3><table><thead><tr>' + fn.colonnes.map(c => '<th>' + esc(c) + '</th>').join('') + '</tr></thead><tbody>'
+        + Array.from({ length: Math.min(60, +fn.lignes || 20) }, (_, i) => '<tr><td>' + (i + 1) + '</td>' + fn.colonnes.slice(1).map(() => '<td>&nbsp;</td>').join('') + '</tr>').join('') + '</tbody></table>';
+    }
     if (d.grille && d.grille.length) s += '<h3>Grille de correction</h3><table><thead><tr><th>Critère</th><th>Indicateurs</th><th>Points</th></tr></thead><tbody>'
       + d.grille.map(g => '<tr><td>' + esc(g.critere) + '</td><td>' + (g.indicateurs || []).map(esc).join(' ; ') + '</td><td>' + esc(g.points) + '</td></tr>').join('') + '</tbody></table>';
     const prog = (d.progression || []).filter(Boolean);
