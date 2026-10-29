@@ -115,8 +115,18 @@ function loginScreen() {
   const u = h('input', { class: 'input', id: 'lg-user', autocomplete: 'username', autocapitalize: 'none', required: true }), p = h('input', { class: 'input', id: 'lg-pass', type: 'password', autocomplete: 'current-password', required: true });
   const form = h('form', { onsubmit: async (e) => {
     e.preventDefault(); err.textContent = '';
-    const users = await db.all('users'), rec = users.find(x => x.username.toLowerCase() === u.value.trim().toLowerCase() && x.actif !== false);
-    if (!rec || !(await checkPassword(p.value, rec.pwd))) { err.textContent = 'Identifiant ou mot de passe incorrect.'; return; }
+    const S = window.Securite, ident = u.value.trim(), app0 = 'memp-cp-' + (VARIANT.id || 'cp');
+    const reste = S ? S.blocage(app0, ident) : 0;
+    if (reste) { err.textContent = S.texteBlocage(reste); return; }
+    const users = await db.all('users'), rec = users.find(x => x.username.toLowerCase() === ident.toLowerCase() && x.actif !== false);
+    if (!rec || !(await checkPassword(p.value, rec.pwd))) {
+      const r = S ? S.echec(app0, ident) : { restants: 0 };
+      err.textContent = r.bloqueMs ? S.texteBlocage(r.bloqueMs) : 'Identifiant ou mot de passe incorrect.' + (r.restants && r.restants <= 3 ? ' Encore ' + r.restants + ' essai(s) avant blocage temporaire.' : '');
+      return;
+    }
+    if (S) S.reussite(app0, ident);
+    // mot de passe de départ (admin123, ccs123…) : changement obligatoire
+    if (S && S.deDepart(p.value) && !rec.mustChange) { rec.mustChange = true; await db.put('users', rec); }
     session.user = rec; sessionStorage.setItem(CLE_SESSION, rec.id); start();
   } },
     h('label', { class: 'field' }, h('span', 'Identifiant'), u), h('label', { class: 'field' }, h('span', 'Mot de passe'), p), err,
@@ -125,7 +135,7 @@ function loginScreen() {
   app.replaceChildren(h('div', { class: 'login-wrap' }, h('div', { class: 'login-card' },
     h('div', { style: { background: '#fff', padding: '8px' } }, banner('')), h('div', { class: 'tricolor' }, h('i'), h('i'), h('i')),
     h('div', { class: 'login-body' }, h('h1', VARIANT.profil === 'dosp' ? 'Application DOSP — Organisation scolaire et prévision' : APP.full), VARIANT.titre ? h('p', { class: 'sub', style: { fontWeight: '700', color: 'var(--ink)', margin: '.1em 0 0' } }, VARIANT.titre) : null, h('p', { class: 'sub' }, 'Collecte, validation et suivi pédagogique — fonctionne sans connexion Internet.'), form,
-      h('div', { class: 'hint' }, h('b', 'Premier démarrage : '), 'comptes initiaux ', ...VARIANT.comptes.flatMap(([u, p], i) => [i ? ', ' : '', h('code', `${u} / ${p}`)]), '. Changez les mots de passe dès la première connexion.'),
+      h('div', { class: 'hint' }, h('b', 'Premier démarrage : '), 'comptes initiaux ', ...VARIANT.comptes.flatMap(([u, p], i) => [i ? ', ' : '', h('code', `${u} / ${p}`)]), '. Ces mots de passe de départ doivent être changés à la première connexion.'),
       h('p', { style: { textAlign: 'center', fontSize: '.8rem', color: 'var(--mute)', marginTop: '14px' } }, CREDIT, h('br'), `Version ${APP.version}`)))));
   u.focus();
 }
@@ -238,7 +248,10 @@ function mesurerEntetes() {
 addEventListener('resize', () => mesurerEntetes());
 import('./entetes.js').catch(() => { /* en-têtes flottants indisponibles : tableaux normaux */ });
 
+window.addEventListener('memp-deconnexion', () => logout());
+function addLogSafe(a) { try { import('./data.js').then(m => m.addLog && m.addLog(a, '')).catch(() => {}); } catch (e) { /* journal indisponible */ } }
 function logout() {
+  if (window.Securite) window.Securite.arreterInactivite();
   if (VARIANT.integre) { location.href = retourEduGestion(); return; } sessionStorage.removeItem(CLE_SESSION); sessionStorage.removeItem(CLE_SESSION + '-vu'); session.user = null; loginScreen(); }
 
 async function start() {
@@ -253,6 +266,17 @@ async function start() {
   sessionStorage.setItem(CLE_SESSION + '-vu', '1');
   await route();
   if (session.user.mustChange) setTimeout(() => import('./views-admin.js').then(m => m.changePasswordDialog(session.user, true)), 400);
+  // copies de sauvegarde automatiques sur l'appareil (instantanés) et rappel d'export hebdomadaire
+  if (window.SauvegardeAuto && !window.__sauvegardeAuto) {
+    window.__sauvegardeAuto = window.SauvegardeAuto.installer({
+      app: VARIANT.base || 'memp-cp', titre: APP.name || 'Application CP', couleur: '#0b5d3b', garder: 10, intervalleH: 20, rappel: !VARIANT.integre,
+      peutRestaurer: () => !!(session.user && session.user.role === 'ADMIN'),
+      lire: async () => JSON.stringify(await db.exportAll()),
+      restaurer: async (texte) => { await db.importAll(JSON.parse(texte), { replace: true }); sessionStorage.clear(); setTimeout(() => location.reload(), 700); }
+    });
+  }
+  // déconnexion automatique après 20 minutes sans action (hors mode intégré : ÉduGestion gère sa session)
+  if (window.Securite && !VARIANT.integre) window.Securite.inactivite(20, () => { addLogSafe('DECONNEXION_INACTIVITE'); logout(); });
 }
 window.addEventListener('hashchange', route);
 

@@ -95,7 +95,7 @@
       .ped-badge{display:inline-block;padding:1px 7px;border-radius:999px;font-size:.72rem;font-weight:600;background:#F2F4F7;color:#475467;white-space:nowrap}
       .ped-badge.ok{background:#ECFDF3;color:#067647}.ped-badge.src{background:#EEF4FB;color:#1F4E79}
       .ped-dl{display:grid;grid-template-columns:minmax(120px,30%) 1fr;gap:4px 12px;margin:6px 0}.ped-dl dt{font-weight:600;color:#344054;font-size:.84rem}.ped-dl dd{margin:0}
-      @media (max-width:600px){.ped-dl{grid-template-columns:1fr}.ped-dl dd{margin-bottom:6px}}
+      @media (max-width:600px){.ped-dl{grid-template-columns:1fr}.ped-dl dd{margin-bottom:6px}.ped-filtres{position:static;grid-template-columns:1fr 1fr;gap:6px}.ped-filtres label{font-size:.7rem}}
       .ped-retiens{background:#EEF4FB;border:1px solid var(--ped-bleu);border-radius:6px;padding:8px 10px;margin:8px 0}
       .ped-engage{border:1px dashed #067647;border-radius:6px;padding:8px 10px;margin:8px 0}
       .ped-rep{color:#067647;font-style:italic}
@@ -241,9 +241,38 @@
     }
     return d;
   }
+  /** Corps des fiches (déroulement, objectifs…) : un fichier par cours et par matière, chargé à la première ouverture
+      d'une fiche ou d'un classeur ; complète la fiche d'origine et l'objet passé (version modifiée), sans écraser les champs modifiés. */
+  async function completer(A, fs) {
+    const besoin = {};
+    (fs || []).forEach(f => {
+      if (!f || f._copie || f._complet) return;
+      const d = CHARGES_COURS[f.cours]; if (!d || !d.corps) return;
+      const m = f.matiere || 'autre'; if (!d.corps[m]) return;
+      const k = f.cours + '|' + m; (besoin[k] = besoin[k] || { d, m, l: [] }).l.push(f);
+    });
+    await Promise.all(Object.values(besoin).map(async ({ d, m, l }) => {
+      const corps = await fichier(A, d.corps[m]);
+      l.forEach(f => {
+        const c = corps[String(f.id)] || {};
+        [f, d._fiche[f.id]].forEach(o => { if (!o) return; Object.keys(c).forEach(k => { if (!(k in o)) o[k] = c[k]; }); o._complet = true; });
+      });
+    }));
+    return fs;
+  }
+  /** Corps des résumés (exercices, méthode, exemples…) : un fichier par cours, chargé à la première ouverture d'un résumé ou d'un cahier */
+  async function completerResumes(A, rs) {
+    const parCours = {};
+    (rs || []).forEach(r => { if (!r || r._copie || r._complet) return; const d = CHARGES_COURS[r.cours]; if (!d || !d.corps || !d.corps._resumes) return; (parCours[r.cours] = parCours[r.cours] || { d, l: [] }).l.push(r); });
+    await Promise.all(Object.values(parCours).map(async ({ d, l }) => {
+      const corps = await fichier(A, d.corps._resumes);
+      l.forEach(r => { const c = corps[String(r.id)] || {}; [r, d._resume[r.id]].forEach(o => { if (!o) return; Object.keys(c).forEach(k => { if (!(k in o)) o[k] = c[k]; }); o._complet = true; }); });
+    }));
+    return rs;
+  }
   async function toutHorsLigne(A, progres) {
     const ix = await index(A);
-    const noms = ix.cours.map(c => c.fichier).concat([ix.guides.fichier]);
+    const noms = ix.cours.flatMap(c => [c.fichier].concat(Object.values(c.corps || {}).map(x => x.fichier))).concat([ix.guides.fichier]);   // corps des fiches et des résumés compris
     let n = 0;
     for (const f of noms) { await fichier(A, f); n++; progres && progres(n, noms.length); }
     return noms.length;
@@ -369,6 +398,32 @@
     return pages.map((x, i) => (i ? '<div class="saut"></div>' : '') + x).join('');
   }
   /* ---------- versions modifiées (gardées dans l'application) et copies ---------- */
+  /** Fusion de deux jeux de modifications (versions, copies, notes) venus de deux appareils : rien n'est perdu,
+      les versions d'un même élément sont classées par date (la plus récente s'applique), les doublons écartés. */
+  function fusionnerNotes(a, b) {
+    const out = JSON.parse(JSON.stringify(a || {})), sig = (x) => JSON.stringify([x.date || '', x.auteur || '', x.texte || '', x.data || null]);
+    Object.entries(b || {}).forEach(([k, v]) => {
+      if (k === 'copies') {
+        const ids = new Set((out.copies || []).map(c => c.id || sig(c)));
+        out.copies = (out.copies || []).concat((v || []).filter(c => !ids.has(c.id || sig(c))));
+      } else if (Array.isArray(v)) {
+        const vus = new Set((out[k] || []).map(sig));
+        out[k] = (out[k] || []).concat(v.filter(x => !vus.has(sig(x)))).sort((x, y) => String(x.date || '').localeCompare(String(y.date || '')));
+      } else if (!(k in out)) out[k] = v;
+    });
+    return out;
+  }
+  /** Liste lisible des modifications : [{ type, id, cours?, titre, auteur, date, n }] */
+  function inventaireNotes(notes) {
+    const l = [];
+    Object.entries(notes || {}).forEach(([k, v]) => {
+      const m = /^version:(fiche|resume|epreuve):(.+)$/.exec(k);
+      if (m && Array.isArray(v) && v.length) { const d = v[v.length - 1]; l.push({ type: m[1], id: m[2], titre: (d.data && (d.data.titre || (d.data.entete && d.data.entete.titre))) || m[2], auteur: d.auteur || '', date: d.date || '', n: v.length }); }
+      else if (/^(fiche|resume|epreuve|plan|programme):/.test(k) && Array.isArray(v)) v.forEach(x => l.push({ type: 'note', id: k, titre: String(x.texte || '').slice(0, 80), auteur: x.auteur || '', date: x.date || '', n: 1 }));
+    });
+    (notes.copies || []).forEach(c => l.push({ type: 'copie (' + c.type + ')', id: c.id || '', titre: (c.data && c.data.titre) || '', auteur: c.auteur || (c.data && c.data._auteur) || '', date: c.date || '', n: 1 }));
+    return l.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+  }
   const idDe = (type, x) => (type === 'epreuve' ? x.cle : x.id);
   const cleV = (type, id) => 'version:' + type + ':' + id;
   function eff(notes, type, x) {
@@ -472,6 +527,36 @@
       try { await toutHorsLigne(A, (n, t) => { hl.lastChild.textContent = `Hors ligne : ${n} / ${t}…`; }); hl.lastChild.textContent = 'Disponible hors ligne'; } catch (e) { hl.lastChild.textContent = 'Échec : réessayez connecté'; hl.disabled = false; }
     }, 's', { 'data-ped': 'hors-ligne' });
     liens.append(hl);
+    /* modifications (versions d'épreuves, de fiches, de résumés, copies, notes) : partagées avec l'école ou la CS par fichier ;
+       elles font aussi partie des sauvegardes et de la synchronisation de l'application */
+    liens.append(btn('partager', 'Modifications partagées', () => fenetreModifs(), 's', { 'data-ped': 'modifs' }));
+    function fenetreModifs() {
+      const l = inventaireNotes(notes);
+      const fr = (d) => String(d || '').slice(0, 10).split('-').reverse().join('/');
+      const corps = h('div', {},
+        h('p', {}, 'Les versions modifiées (épreuves, fiches, résumés), les copies et les notes sont enregistrées avec leur auteur et leur date. Elles sont comprises dans la sauvegarde et la synchronisation de l’application ; vous pouvez aussi les envoyer à un collègue, à l’école ou à la circonscription par un fichier, qu’il importe ici : rien n’est écrasé, chaque version garde son auteur.'),
+        h('div', { class: 'ped-actions' },
+          btn('telecharger', 'Exporter les modifications (fichier)', () => {
+            const t = JSON.stringify({ format: 'PEDAGOGIE-MODIFS', version: 1, app: A.app || '', auteur: A.auteur || '', cree: new Date().toISOString(), notes });
+            const nom = 'modifications-pedagogie_' + new Date().toISOString().slice(0, 10) + '.json';
+            if (A.telecharger) A.telecharger(nom, new Blob([t], { type: 'application/json' }));
+            else { const a = h('a', { href: URL.createObjectURL(new Blob([t], { type: 'application/json' })), download: nom }); document.body.append(a); a.click(); setTimeout(() => a.remove(), 1500); }
+          }, 's p', { 'data-ped': 'exporter-modifs' }),
+          h('label', { class: 'ped-btn s', 'data-ped': 'importer-modifs' }, ic('importer'), 'Importer un fichier de modifications',
+            h('input', { type: 'file', accept: '.json,application/json', style: 'display:none', onchange: async (e) => {
+              const f = e.target.files && e.target.files[0]; if (!f) return;
+              let o; try { o = JSON.parse(await f.text()); } catch (x) { o = null; }
+              if (!o || o.format !== 'PEDAGOGIE-MODIFS' || !o.notes) { alert('Ce fichier n’est pas un fichier de modifications du module Pédagogie.'); return; }
+              const avant = inventaireNotes(notes).length;
+              notes = fusionnerNotes(notes, o.notes); await sauverNotes();
+              alert((inventaireNotes(notes).length - avant) + ' modification(s) ajoutée(s), venues de ' + (o.auteur || o.app || 'un autre appareil') + ' (' + fr(o.cree) + ').');
+              fermer(); rendre();
+            } }))),
+        l.length ? h('div', { class: 'ped-tw' }, h('table', { class: 'ped-t', 'data-ped': 'table-modifs' }, h('thead', {}, h('tr', {}, ['Date', 'Type', 'Élément', 'Auteur', 'Versions'].map(x => h('th', {}, x)))),
+          h('tbody', {}, l.map(x => h('tr', {}, h('td', { class: 'n' }, fr(x.date)), h('td', {}, x.type), h('td', {}, x.titre), h('td', {}, x.auteur || '—'), h('td', { class: 'n' }, String(x.n)))))))
+          : h('p', { class: 'ped-vide' }, 'Aucune modification sur cet appareil pour le moment.'));
+      const fermer = dialogue('Modifications partagées', corps, [{ l: 'Fermer' }]);
+    }
 
     ONGLETS.forEach(([id, l, ico]) => barreOnglets.append(h('button', { type: 'button', role: 'tab', 'data-ped-onglet': id, class: id === onglet ? 'on' : '', 'aria-selected': id === onglet ? 'true' : 'false',
       onclick: () => { onglet = id; memo.set('onglet', id); page = 0; [...barreOnglets.children].forEach(b => { const on = b.getAttribute('data-ped-onglet') === id; b.className = on ? 'on' : ''; b.setAttribute('aria-selected', on ? 'true' : 'false'); }); rendre(); } }, ic(ico), l)));
@@ -587,7 +672,10 @@
     }
 
     /* --- ouverture d'un élément (fenêtre) --- */
-    function ouvrirFiche(f) {
+    async function ouvrirFiche(f) {
+      if (!f._complet && !f._copie) {
+        try { await completer(A, [f]); } catch (e) { dialogue(f.titre || 'Fiche', h('p', { class: 'ped-vide' }, 'Le contenu de cette fiche n’est pas encore sur cet appareil (connexion nécessaire pour l’ouvrir la première fois).'), [{ l: 'Fermer' }]); return; }
+      }
       const d = CHARGES_COURS[f.cours];
       const lies = d ? d.resumes.filter(r => (r.fiches || []).indexOf(f.id) >= 0) : [];
       let fermer = () => {};
@@ -597,7 +685,10 @@
       fermer = dialogue(f.titre, corps, [{ l: 'Fermer' }, { l: 'Imprimer / PDF', icone: 'imprimer', p: true, action: () => { imprimer(A, f.titre, ficheHtml(f, ix) + notesHtml('fiche:' + f.id), { titulaire: titulaire() }); } }]);
       const b = barreEdition('fiche', f, ouvrirFiche, () => fermer()); if (b) corps.firstChild.append(b);
     }
-    function ouvrirResume(r) {
+    async function ouvrirResume(r) {
+      if (!r._complet && !r._copie) {
+        try { await completerResumes(A, [r]); } catch (e) { dialogue(r.titre || 'Résumé', h('p', { class: 'ped-vide' }, 'Le contenu de ce résumé n’est pas encore sur cet appareil (connexion nécessaire pour l’ouvrir la première fois).'), [{ l: 'Fermer' }]); return; }
+      }
       let eleve = false;
       const doc = h('div', { class: 'ped-doc', html: resumeHtml(r, ix, false) });
       const bascule = btn('eleve', 'Version élève (sans les réponses)', () => { eleve = !eleve; doc.innerHTML = resumeHtml(r, ix, eleve); bascule.lastChild.textContent = eleve ? 'Version enseignant (avec les réponses)' : 'Version élève (sans les réponses)'; }, 's');
@@ -646,15 +737,25 @@
     };
     const optMatieres = (avecTout, liste) => (avecTout ? [['', 'Toutes les matières']] : []).concat(ORDRE_MAT.filter(m => !liste || liste.includes(m)).map(m => [m, nomMat(ix, m)]));
     const uniq = (a) => [...new Set(a.filter(x => x !== null && x !== undefined && x !== ''))];
-    const contient = (o, champs) => { const q = norm(F.q || '').trim(); if (!q) return true; const t = norm(champs.map(k => o[k] || '').join(' ')); return q.split(/\s+/).every(m => t.includes(m)); };
+    /* recherche : texte normalisé (sans accents, minuscules) calculé une fois par élément et gardé avec lui */
+    const contient = (o, champs) => {
+      const q = norm(F.q || '').trim(); if (!q) return true;
+      const k = '_q' + champs.join('|');
+      let t = o[k];
+      if (t === undefined) { t = norm(champs.map(c => o[c] || '').join(' ')); try { Object.defineProperty(o, k, { value: t, enumerable: false }); } catch (e) { /* objet figé */ } }
+      return q.split(/\s+/).every(m => t.includes(m));
+    };
 
     let rendreListe = () => {};
+    let generation = 0;
     async function rendre() {
+      const g = ++generation;   // un rendu plus récent (changement d'onglet ou de cours pendant le chargement) l'emporte
       zoneFiltres.innerHTML = ''; zone.innerHTML = '';
       zone.append(h('p', { class: 'ped-aide' }, 'Chargement…'));
       let d;
-      try { d = await cours(A, F.cours); } catch (e) { zone.innerHTML = ''; zone.append(h('p', { class: 'ped-vide' }, 'Ce cours n’est pas encore disponible sur cet appareil (connexion nécessaire pour l’ouvrir la première fois).')); return; }
-      zone.innerHTML = '';
+      try { d = await cours(A, F.cours); } catch (e) { if (g !== generation) return; zone.innerHTML = ''; zone.append(h('p', { class: 'ped-vide' }, 'Ce cours n’est pas encore disponible sur cet appareil (connexion nécessaire pour l’ouvrir la première fois).')); return; }
+      if (g !== generation) return;
+      zoneFiltres.innerHTML = ''; zone.innerHTML = '';
       zoneFiltres.append(sel('Cours', 'cours', COURS.map(c => [c, c])));
       const vues = { fiches: vueFiches, resumes: vueResumes, epreuves: vueEpreuves, progressions: vueProgressions, programmes: vueProgrammes, guides: vueGuides, planification: vuePlanification };
       await vues[onglet](d);
@@ -679,8 +780,9 @@
         const l = b3.filter(f => (!F.seance || String(f.seance) === String(F.seance)) && contient(f, ['titre', 'intitule', 'sous_matiere', 'contenus', 'unite']));
         const nbp = Math.max(1, Math.ceil(l.length / PAR_PAGE)); if (page >= nbp) page = nbp - 1;
         liste.append(h('div', { class: 'ped-actions' }, h('span', { class: 'ped-aide', style: 'align-self:center' }, `${l.length} fiche(s)`),
-          btn('classeur', `Classeur de la sélection (PDF${l.length > MAX_LIVRET ? ', ' + MAX_LIVRET + ' premières' : ''})`, () => {
+          btn('classeur', `Classeur de la sélection (PDF${l.length > MAX_LIVRET ? ', ' + MAX_LIVRET + ' premières' : ''})`, async () => {
             if (!l.length) return;
+            await completer(A, l.slice(0, MAX_LIVRET));
             imprimer(A, 'Classeur de fiches — ' + F.cours, '<h1>Classeur de fiches de préparation — ' + esc(F.cours) + (F.matiere ? ' — ' + esc(nomMat(ix, F.matiere)) : '') + '</h1>'
               + l.slice(0, MAX_LIVRET).map((f, i) => (i ? '<div class="saut"></div>' : '') + ficheHtml(f, ix)).join(''), { titulaire: titulaire() });
           }, 's', { 'data-ped': 'classeur-selection' }), champTitulaire()));
@@ -713,7 +815,8 @@
       rendreListe = () => {
         liste.innerHTML = '';
         const l = b2.filter(r => (!F.rsa || (r.sa || []).map(String).includes(String(F.rsa))) && (!F.rmois || r.mois === F.rmois) && (!F.rtype || (F.rtype === 'seance') === !!r.seance_resume) && contient(r, ['titre', 'domaine', 'outil', 'regle', 'etape']));
-        const cahier = (eleve) => imprimer(A, 'Cahier de résumés — ' + F.cours, '<h1>Cahier de résumés — ' + esc(F.cours) + (F.matiere ? ' — ' + esc(nomMat(ix, F.matiere)) : '') + (eleve ? ' (version élève)' : '') + '</h1>'
+        const cahier = async (eleve) => { await completerResumes(A, l.slice(0, MAX_LIVRET * 2)); return imprimerCahier(eleve); };
+        const imprimerCahier = (eleve) => imprimer(A, 'Cahier de résumés — ' + F.cours, '<h1>Cahier de résumés — ' + esc(F.cours) + (F.matiere ? ' — ' + esc(nomMat(ix, F.matiere)) : '') + (eleve ? ' (version élève)' : '') + '</h1>'
           + '<p class="mention">' + l.length + ' résumé(s), dans l’ordre de la progression annuelle.</p>' + l.slice(0, MAX_LIVRET * 2).map((r, i) => (i ? '<div class="saut"></div>' : '') + resumeHtml(r, ix, eleve)).join(''));
         liste.append(h('div', { class: 'ped-actions' }, h('span', { class: 'ped-aide', style: 'align-self:center' }, `${l.length} résumé(s)`),
           btn('livre', 'Cahier de résumés (PDF enseignant)', () => l.length && cahier(false), 's', { 'data-ped': 'cahier' }),
@@ -835,9 +938,9 @@
       const lienF = (f) => lien({ onclick: () => ouvrirFiche(f) }, f.titre);
       const lienR = (r) => lien({ onclick: () => ouvrirResume(r) }, r.titre);
       const cleNote = 'plan:' + F.cours + ':' + F.pmois + (F.pvue === 'mois' ? '' : ':S' + (k + 1));
-      const classeur = (titre, fs, rs) => imprimer(A, titre, '<h1>' + esc(titre) + '</h1>' + notesHtml(cleNote)
+      const classeur = async (titre, fs, rs) => { await completer(A, fs.slice(0, MAX_LIVRET)); await completerResumes(A, rs); return imprimer(A, titre, '<h1>' + esc(titre) + '</h1>' + notesHtml(cleNote)
         + (fs.length ? '<h2>Fiches de préparation (' + fs.length + ')</h2>' + fs.slice(0, MAX_LIVRET).map((f, i) => (i ? '<div class="saut"></div>' : '') + ficheHtml(f, ix)).join('') : '')
-        + (rs.length ? '<div class="saut"></div><h2>Résumés (' + rs.length + ')</h2>' + rs.map((r, i) => (i ? '<div class="saut"></div>' : '') + resumeHtml(r, ix, false)).join('') : ''), { titulaire: titulaire() });
+        + (rs.length ? '<div class="saut"></div><h2>Résumés (' + rs.length + ')</h2>' + rs.map((r, i) => (i ? '<div class="saut"></div>' : '') + resumeHtml(r, ix, false)).join('') : ''), { titulaire: titulaire() }); };
 
       if (F.pvue === 'jour') {
         const ji = +F.pjour || 0;
@@ -859,7 +962,7 @@
         const tr = uniq(ORDRE_MAT.flatMap(m => resumesDe((W.resumes || {})[m])));
         zone.append(h('div', { class: 'ped-actions' },
           btn('classeur', `Classeur de la semaine (${toutes.length} fiches, ${tr.length} résumés)`, () => classeur(`Classeur de la semaine ${k + 1} — ${F.pmois} — ${F.cours}`, toutes, tr), 's p', { 'data-ped': 'classeur-semaine' }),
-          btn('bloc-notes', 'Résumés de la semaine (PDF)', () => tr.length && imprimer(A, 'Résumés de la semaine', '<h1>Résumés — semaine ' + (k + 1) + ' de ' + esc(F.pmois) + ' — ' + esc(F.cours) + '</h1>' + tr.map((r, i) => (i ? '<div class="saut"></div>' : '') + resumeHtml(r, ix, false)).join('')), 's', { 'data-ped': 'resumes-semaine' })));
+          btn('bloc-notes', 'Résumés de la semaine (PDF)', async () => tr.length && (await completerResumes(A, tr)) && imprimer(A, 'Résumés de la semaine', '<h1>Résumés — semaine ' + (k + 1) + ' de ' + esc(F.pmois) + ' — ' + esc(F.cours) + '</h1>' + tr.map((r, i) => (i ? '<div class="saut"></div>' : '') + resumeHtml(r, ix, false)).join('')), 's', { 'data-ped': 'resumes-semaine' })));
         const cartes = ORDRE_MAT.filter(m => (M.annuel || {})[m] || ((W.fiches || {})[m] || []).length).map(m => {
           const fs = fichesDe((W.fiches || {})[m]), rs = resumesDe((W.resumes || {})[m]);
           return h('div', { class: 'ped-carte', 'data-ped-mat': m }, h('h3', {}, nomMat(ix, m)), h('p', { class: 'ped-aide' }, 'Planification annuelle : ', (M.annuel || {})[m] || '—'),
@@ -904,5 +1007,5 @@
     return true;
   }
 
-  global.Pedagogie = { monter, imprimerJeu, index, cours, toutHorsLigne, journee, imprimerSimple: imprimerDefaut, _int: { ficheHtml, resumeHtml, epreuveSujetHtml, epreuveCorrigeHtml, nettoyer, miseEnPage, hauteurMm, eff } };
+  global.Pedagogie = { monter, imprimerJeu, index, cours, completer, completerResumes, fusionnerNotes, inventaireNotes, toutHorsLigne, journee, imprimerSimple: imprimerDefaut, _int: { ficheHtml, resumeHtml, epreuveSujetHtml, epreuveCorrigeHtml, nettoyer, miseEnPage, hauteurMm, eff } };
 })(window);

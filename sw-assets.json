@@ -1,5 +1,5 @@
 {
- "version": "f99330a67d77",
+ "version": "7d71ae84ab1c",
  "files": [
   "./",
   "LISEZ-MOI.pdf",
@@ -86,8 +86,10 @@
   "js/recensement-pdf.js",
   "js/recensement.js",
   "js/refdata.js",
+  "js/sauvegarde-auto.js",
   "js/schema.js",
   "js/secteurs.js",
+  "js/securite.js",
   "js/sign.js",
   "js/uascep.js",
   "js/ui.js",

@@ -29,6 +29,12 @@ from datetime import date
 COURS = ["CI", "CP", "CE1", "CE2", "CM1", "CM2"]
 MOIS_SCO = ["Septembre", "Octobre", "Novembre", "Décembre", "Janvier", "Février", "Mars", "Avril", "Mai", "Juin"]
 CHAMPS_EXCLUS_FICHE = {"fichier"}          # noms de fichiers d'origine : inutiles dans l'application
+# Fiches : la liste (filtres, recherche, planification) n'a besoin que de ces champs ; le corps de chaque fiche (déroulement,
+# objectifs, stratégies…) est rangé à part, un fichier par cours et par matière, chargé à l'ouverture d'une fiche ou d'un classeur.
+CHAMPS_LISTE_FICHE = ("id", "cours", "matiere", "sous_matiere", "unite", "intitule", "sa", "seance", "semaine", "duree", "titre", "statut", "contenus")
+# Résumés : même principe ; ces champs (exercices, méthode, exemples…) ne servent qu'à l'affichage d'un résumé et vont dans <COURS>.resumes.json
+CHAMPS_CORPS_RESUME = {"exercices", "mention", "methode", "exemple", "vocabulaire", "manuel_note", "sources", "je_retiens", "questions_reponses",
+                       "message", "actualisation", "situation", "engagement", "mots_cles", "lecture", "bilan"}
 
 
 def charger(scolaris, pack):
@@ -203,22 +209,43 @@ def main():
         resumes += revisions_cours(C, c)
         progs = [p for p in C["programmes"] if p["cours"] == c]
         ep = epreuves_cours(EP, B, c, epp)
-        d = {"cours": c, "programmes": progs, "progression": lignes, "edt": edt_cours(EP, S, c), "fiches": fiches,
-             "resumes": resumes, "epreuves": ep, "plan": plan, "guides": [g["id"] for g in C["guides"] if c in (g.get("cours") or [])]}
+        legeres, corps = [], {}
+        for f in fiches:
+            legeres.append({k: f[k] for k in CHAMPS_LISTE_FICHE if k in f})
+            corps.setdefault(f.get("matiere") or "autre", {})[str(f["id"])] = {k: v for k, v in f.items() if k not in CHAMPS_LISTE_FICHE}
+        info_corps = {}
+        for m, o in sorted(corps.items()):
+            nomf = f"{c}.fiches.{m}.json"
+            oc, ec = ecrire(tmp, nomf, o)
+            empreintes.append(ec)
+            info_corps[m] = {"fichier": nomf, "octets": oc, "empreinte": ec, "nb": len(o)}
+        res_leg, res_corps = [], {}
+        for r in resumes:
+            res_leg.append({k: v for k, v in r.items() if k not in CHAMPS_CORPS_RESUME})
+            res_corps[str(r["id"])] = {k: v for k, v in r.items() if k in CHAMPS_CORPS_RESUME}
+        nomr = f"{c}.resumes.json"
+        orr, err = ecrire(tmp, nomr, res_corps)
+        empreintes.append(err)
+        info_corps["_resumes"] = {"fichier": nomr, "octets": orr, "empreinte": err, "nb": len(res_corps)}
+        d = {"cours": c, "programmes": progs, "progression": lignes, "edt": edt_cours(EP, S, c), "fiches": legeres,
+             "resumes": res_leg, "epreuves": ep, "plan": plan, "guides": [g["id"] for g in C["guides"] if c in (g.get("cours") or [])],
+             "corps": {m: x["fichier"] for m, x in info_corps.items()}}
         octets, e = ecrire(tmp, c + ".json", d)
         empreintes.append(e)
-        cours_info.append({"cours": c, "fichier": c + ".json", "octets": octets, "empreinte": e,
+        cours_info.append({"cours": c, "fichier": c + ".json", "octets": octets, "empreinte": e, "corps": info_corps,
                            "nb": {"fiches": len(fiches), "resumes": len(resumes), "epreuves": len(ep), "programmes": len(progs)}})
     guides = [{k: g.get(k) for k in ("id", "matiere", "cours", "titre", "groupe", "html", "source", "niveau", "mention")} for g in C["guides"]]
     og, eg = ecrire(tmp, "guides.json", guides)
     empreintes.append(eg)
+    ecrire(tmp, "modeles.json", C.get("modeles") or [])
     version = hashlib.sha256("|".join(empreintes).encode()).hexdigest()[:12]
     index = {"version": version, "genere": date.today().isoformat(), "scolaris": getattr(CFG, "VERSION", ""), "pack": vpack,
              "source": C.get("source"), "mention": "Contenus de SCOLARIS : fiches conçues selon l'APC (à valider par le conseiller pédagogique), "
              "fiches transmises par la CS (crédit de l'auteur conservé), guides officiels MEMP / INFRE.",
              "matieres": {k: v for k, v in C["matieres"].items() if k != "dg"}, "cours": cours_info,
              "guides": {"fichier": "guides.json", "octets": og, "nb": len(guides)},
-             "modeles": C.get("modeles") or [],
+             # modèles de fiche vierges (non affichés par les applications) : fichier à part, hors du premier chargement
+             "modeles": {"fichier": "modeles.json", "nb": len(C.get("modeles") or [])},
              "periodes": [{"code": p[0], "libelle": p[1], "type": p[2]} for p in B.PERIODES], "types": B.TYPES}
     ecrire(tmp, "index.json", index)
     for s in a.sortie:
@@ -228,7 +255,7 @@ def main():
     shutil.rmtree(tmp, ignore_errors=True)
     print("version", version, "| SCOLARIS", index["scolaris"], "| pack", vpack)
     for ci in cours_info:
-        print(f"  {ci['cours']}: {ci['octets'] // 1024} Ko — {ci['nb']}")
+        print(f"  {ci['cours']}: {ci['octets'] // 1024} Ko + corps {sum(x['octets'] for x in ci['corps'].values()) // 1024} Ko — {ci['nb']}")
     print(f"  guides: {og // 1024} Ko — {len(guides)}")
 
 

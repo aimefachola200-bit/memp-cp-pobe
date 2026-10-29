@@ -16,12 +16,16 @@ export async function render(id, ctx) { return ({ identite, transmission, verifi
 /* ================= Mot de passe ================= */
 export function changePasswordDialog(user, forced = false) {
   const v = { old: '', n1: '', n2: '' };
-  modal({ title: forced ? 'Changez votre mot de passe' : 'Changer le mot de passe', body: h('div', forced ? h('p', 'Pour la sécurité de vos données, choisissez un nouveau mot de passe personnel.') : null,
-    [['old', 'Mot de passe actuel'], ['n1', 'Nouveau mot de passe (6 caractères minimum)'], ['n2', 'Confirmer le nouveau mot de passe']].map(([k, l]) => fieldEl({ k, l, t: 'password' }, '', (kk, val) => { v[kk] = val; }))),
-    actions: [{ label: forced ? 'Plus tard' : 'Annuler' }, { label: 'Enregistrer', kind: 'primary', keepOpen: true, onClick: async (e, close) => {
+  const S = window.Securite;
+  // changement obligatoire (mot de passe provisoire ou de départ) : fermer la fenêtre déconnecte
+  const d = modal({ title: forced ? 'Changez votre mot de passe' : 'Changer le mot de passe', body: h('div', forced ? h('p', 'Le mot de passe utilisé est provisoire ou connu de tous (mot de passe de départ). Pour la sécurité des données, choisissez-en un nouveau, personnel : c’est obligatoire pour continuer.') : null,
+    [['old', 'Mot de passe actuel'], ['n1', 'Nouveau mot de passe (8 caractères, lettres et chiffres)'], ['n2', 'Confirmer le nouveau mot de passe']].map(([k, l]) => fieldEl({ k, l, t: 'password' }, '', (kk, val) => { v[kk] = val; })),
+    S ? h('p', { class: 'muted', style: { fontSize: '.8rem' } }, S.regle) : null),
+    onClose: () => { if (forced && session.user && session.user.mustChange) window.dispatchEvent(new Event('memp-deconnexion')); },
+    actions: [{ label: forced ? 'Se déconnecter' : 'Annuler' }, { label: 'Enregistrer', kind: 'primary', keepOpen: true, onClick: async (e, close) => {
       const rec = await db.get('users', user.id);
       if (!(await checkPassword(v.old, rec.pwd))) { toast('Mot de passe actuel incorrect.', 'err'); return false; }
-      if (v.n1.length < 6) { toast('6 caractères minimum.', 'err'); return false; }
+      { const fb = S ? S.faible(v.n1, rec.username) : (v.n1.length < 6 ? '6 caractères minimum.' : ''); if (fb) { toast(fb, 'err'); return false; } }
       if (v.n1 !== v.n2) { toast('Les deux saisies ne correspondent pas.', 'err'); return false; }
       rec.pwd = await hashPassword(v.n1); rec.mustChange = false; await db.put('users', rec); session.user = rec; toast('Mot de passe modifié.'); close(); } }] });
 }
@@ -84,7 +88,8 @@ async function transmission(ctx) {
       h('button', { class: 'btn primary', onclick: async () => { const f = await pickFile('.json,.memp.json,application/json'); if (!f) return; try { const r = await importPackage(u, await readAsText(f)); await ctx.refreshDatalists(); modal({ title: 'Import terminé', body: h('div', h('p', `Paquet de ${r.from.username} (${ROLES[r.from.role] || r.from.role}) du ${fmtDateTime(r.date)}.`), h('ul', h('li', `${r.stat.nouv} nouvel(les) élément(s)`), h('li', `${r.stat.maj} mis à jour`), h('li', `${r.stat.ignore} déjà à jour`), h('li', `${r.stat.hors} hors de votre périmètre (ignorés)`))), actions: [{ label: 'OK', kind: 'primary' }] }); } catch (e) { toast(e.message, 'err', 6000); } } }, '\uE00A Importer un paquet')),
     h('div', { class: 'card' }, h('h3', '\uE007 Sauvegarde complète de cet appareil'), h('p', 'Contient toutes les données (écoles, fiches, utilisateurs, identité…). Conservez-la en lieu sûr.'),
       h('div', { style: { display: 'flex', gap: '8px', flexWrap: 'wrap' } },
-        h('button', { class: 'btn', onclick: async () => { const all = await db.exportAll(); download(new Blob([JSON.stringify({ format: 'MEMP-CP-BACKUP', version: 1, republique: APP.republique, ministere: APP.ministere, concepteur: CREDIT, embleme: bytesToB64(await fetchBytes('assets/armoiries.png')), date: nowISO(), data: all })], { type: 'application/json' }), `Sauvegarde_Application_CP_${today()}.json`); await addLog(u, { action: 'Sauvegarde complète', target: '' }); } }, '\uE009 Sauvegarder'),
+        h('button', { class: 'btn', onclick: async () => { const all = await db.exportAll(); download(new Blob([JSON.stringify({ format: 'MEMP-CP-BACKUP', version: 1, republique: APP.republique, ministere: APP.ministere, concepteur: CREDIT, embleme: bytesToB64(await fetchBytes('assets/armoiries.png')), date: nowISO(), data: all })], { type: 'application/json' }), `Sauvegarde_Application_CP_${today()}.json`); await addLog(u, { action: 'Sauvegarde complète', target: '' }); if (window.__sauvegardeAuto) window.__sauvegardeAuto.marquerExport(); } }, '\uE009 Sauvegarder'),
+        window.__sauvegardeAuto ? h('button', { class: 'btn', 'data-sauvegarde': 'copies', onclick: () => window.__sauvegardeAuto.fenetre() }, '\uE007 Copies automatiques et restauration') : null,
         u.role === 'ADMIN' ? h('button', { class: 'btn danger', onclick: async () => { const f = await pickFile('.json'); if (!f) return; try { const b = JSON.parse(await readAsText(f)); if (b.format !== 'MEMP-CP-BACKUP') throw new Error('Fichier de sauvegarde invalide.'); if (!(await confirmBox('Remplacer TOUTES les données de cet appareil par cette sauvegarde ?', 'Restaurer', true))) return; await db.importAll(b.data, { replace: true }); sessionStorage.clear(); toast('Sauvegarde restaurée. Reconnexion…'); setTimeout(() => location.reload(), 900); } catch (e) { toast(e.message, 'err'); } } }, '\uE00A Restaurer (administrateur)') : null)));
 }
 

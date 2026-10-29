@@ -68,9 +68,9 @@ export async function dialogueOubli(identInitial = '') {
   }
   function nouveau(u) {
     const n1 = champ('Nouveau mot de passe', 'password', { autocomplete: 'new-password' }), n2 = champ('Confirmation', 'password', { autocomplete: 'new-password' });
-    corps.replaceChildren(h('p', 'Réponse correcte. Choisissez votre nouveau mot de passe.'), ligne('Nouveau mot de passe (6 caractères minimum)', n1), ligne('Confirmation', n2),
+    corps.replaceChildren(h('p', 'Réponse correcte. Choisissez votre nouveau mot de passe.'), ligne('Nouveau mot de passe (8 caractères, lettres et chiffres)', n1), ligne('Confirmation', n2),
       h('button', { class: 'btn primary', style: { width: '100%' }, onclick: async () => {
-        if (n1.value.length < 6) return toast('6 caractères minimum.', 'err');
+        { const fb = window.Securite ? window.Securite.faible(n1.value, u.username) : (n1.value.length < 6 ? '6 caractères minimum.' : ''); if (fb) return toast(fb, 'err'); }
         if (n1.value !== n2.value) return toast('Les deux saisies ne correspondent pas.', 'err');
         const rec = await db.get('users', u.id); rec.pwd = await hashPassword(n1.value); rec.mustChange = false; await db.put('users', rec);
         toast('Mot de passe modifié : vous pouvez vous connecter.'); fermer();

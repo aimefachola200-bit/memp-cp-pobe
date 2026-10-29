@@ -1,12 +1,12 @@
 # Guide d’utilisation — MEMP-CP, DOSP et MEMP-CP Pobè — applications des conseillers pédagogiques et de la circonscription
 
-_Version 1.23.0_
+_Version 1.24.0_
 
 Rôles : Administrateur · Conseiller pédagogique · Chef de circonscription · DDEMP · DOSP
 
 ## 1. Premiers pas
 
-Connectez-vous avec l’identifiant reçu. Au premier démarrage, changez le mot de passe (ou touchez « **Plus tard** »). Chaque compte voit son périmètre : zone (CP), circonscription (CCS, DOSP), département (DDEMP).
+Connectez-vous avec l’identifiant reçu. Au premier démarrage, choisissez un nouveau mot de passe (obligatoire avec un mot de passe de départ). Chaque compte voit son périmètre : zone (CP), circonscription (CCS, DOSP), département (DDEMP).
 
 1. « **Paramètres & à propos** » : vérifiez votre identité, votre zone ou circonscription.
 2. « **Identité numérique (signature)** » : dessinez votre signature et réglez votre cachet.
@@ -105,8 +105,24 @@ Faites une sauvegarde au moins une fois par semaine, et toujours avant de change
 
 - Nommez vos sauvegardes avec la date (l’application le fait pour vous).
 - Une sauvegarde contient des données personnelles : ne la partagez qu’avec les personnes autorisées.
+- Copies automatiques : l’application garde aussi sur l’appareil les 10 dernières copies de vos données (une par jour d’utilisation). « **Copies automatiques et restauration** » permet de revenir à l’une d’elles ; une copie endommagée est refusée.
+- Un bandeau vous rappelle d’exporter une sauvegarde quand la dernière date de plus de 7 jours.
 
-## 11. Comptes et mots de passe
+## 11. Sécurité des comptes et de l’appareil
+
+Les données d’élèves et de personnel sont protégées : mots de passe personnels, blocage après des essais faux, déconnexion après 20 minutes sans action.
+
+1. À la première connexion avec un mot de passe de départ (admin123, ccs123…) ou provisoire, l’application demande d’en choisir un nouveau : c’est obligatoire.
+2. Un bon mot de passe a au moins 8 caractères, des lettres et des chiffres, et ne reprend ni votre identifiant ni un mot de passe de départ.
+3. Après 5 essais faux, le compte est bloqué quelques minutes sur l’appareil (puis de plus en plus longtemps) : attendez, ou demandez une réinitialisation à l’administrateur.
+4. Après 20 minutes sans action, l’application vous déconnecte (ou se verrouille) ; un avertissement apparaît une minute avant.
+
+**Bon à savoir**
+
+- Ne communiquez jamais votre mot de passe, même à un collègue.
+- Sur une application sans comptes (CS Pobè, Mon école), définissez un mot de passe d’accès dans « **Sécurité et sauvegardes** ».
+
+## 12. Comptes et mots de passe
 
 _Pour : Administrateur, Chef de circonscription, DDEMP_
 
@@ -114,7 +130,7 @@ _Pour : Administrateur, Chef de circonscription, DDEMP_
 2. Donnez un mot de passe provisoire ; la personne le change à sa première connexion.
 3. Mot de passe oublié : l’administrateur réinitialise le compte, ou l’utilisateur demande un code par WhatsApp depuis l’écran de connexion.
 
-## 12. Travailler sans connexion
+## 13. Travailler sans connexion
 
 L’application fonctionne sans internet une fois ouverte une première fois sur l’appareil. Les données sont enregistrées dans l’appareil lui-même.
 
@@ -128,7 +144,7 @@ L’application fonctionne sans internet une fois ouverte une première fois sur
 - Les données d’un appareil ne passent pas toutes seules sur un autre : utilisez la sauvegarde (ou l’envoi des fiches) pour les transmettre.
 - Si vous videz les données du navigateur, vous effacez aussi les données de l’application : faites d’abord une sauvegarde.
 
-## 13. Questions fréquentes et dépannage
+## 14. Questions fréquentes et dépannage
 
 **L’application affiche une ancienne version.**  
 Fermez-la complètement puis rouvrez-la avec une connexion ; dans le navigateur, rechargez la page. Sur un site en ligne, videz le cache du navigateur pour ce site si besoin (après une sauvegarde).
