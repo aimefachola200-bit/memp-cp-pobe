@@ -1,5 +1,5 @@
 {
- "version": "7d71ae84ab1c",
+ "version": "b54afe32dacd",
  "files": [
   "./",
   "LISEZ-MOI.pdf",
@@ -58,6 +58,7 @@
   "js/config.js",
   "js/data.js",
   "js/db.js",
+  "js/ed25519.js",
   "js/effectifs-charts.js",
   "js/effectifs-export.js",
   "js/effectifs-schema.js",
@@ -91,6 +92,8 @@
   "js/secteurs.js",
   "js/securite.js",
   "js/sign.js",
+  "js/sync-client.js",
+  "js/sync-commun.js",
   "js/uascep.js",
   "js/ui.js",
   "js/util.js",
@@ -112,6 +115,7 @@
   "js/views-recensement.js",
   "js/views-reports.js",
   "js/views-saisie.js",
+  "js/views-sync.js",
   "js/views-synodosp.js",
   "js/views-uascep.js",
   "js/views-whatsapp.js",

@@ -1,6 +1,6 @@
 # Guide d’utilisation — MEMP-CP, DOSP et MEMP-CP Pobè — applications des conseillers pédagogiques et de la circonscription
 
-_Version 1.24.0_
+_Version 2.0.0_
 
 Rôles : Administrateur · Conseiller pédagogique · Chef de circonscription · DDEMP · DOSP
 
@@ -122,7 +122,24 @@ Les données d’élèves et de personnel sont protégées : mots de passe perso
 - Ne communiquez jamais votre mot de passe, même à un collègue.
 - Sur une application sans comptes (CS Pobè, Mon école), définissez un mot de passe d’accès dans « **Sécurité et sauvegardes** ».
 
-## 12. Comptes et mots de passe
+## 12. Synchronisation entre niveaux
+
+Les données remontent école → zone → circonscription → département sans ressaisie : bureaux et vie UASCEP, sport scolaire, examens, versions d’épreuves et de fiches. Les notes de service, échéances et l’agenda redescendent. Tout fonctionne hors ligne, par fichier ; par Internet quand un hub SCOLARIS est disponible.
+
+1. Ouvrez « **Synchronisation** » (menu).
+2. Par fichier : « **Préparer le fichier pour le niveau supérieur** », puis envoyez le fichier .scsync (WhatsApp, clé USB, courriel). Le destinataire fait « **Importer un fichier reçu** ».
+3. Le niveau supérieur prépare de même « **le fichier pour les entités inférieures** » (notes, échéances, agenda) : chaque école ou zone l’importe.
+4. Par Internet : « **Rejoindre un hub** » avec le code QR (ou l’adresse et le code d’accès) donné par le hub, puis « **Synchroniser maintenant** ».
+5. Seuls les changements depuis le dernier envoi partent ; « **Envoi complet** » renvoie tout.
+
+**Bon à savoir**
+
+- Chaque paquet est signé par l’appareil : un fichier modifié en route est refusé.
+- Si une même information a été changée des deux côtés, la valeur du niveau le plus élevé est gardée et le cas est listé dans « **Conflits à revoir** ».
+- Après un changement d’appareil, le niveau supérieur doit « **Accepter la nouvelle clé** ».
+- Les dossiers de santé, les besoins spécifiques, les signatures et les cachets ne quittent jamais l’appareil.
+
+## 13. Comptes et mots de passe
 
 _Pour : Administrateur, Chef de circonscription, DDEMP_
 
@@ -130,7 +147,7 @@ _Pour : Administrateur, Chef de circonscription, DDEMP_
 2. Donnez un mot de passe provisoire ; la personne le change à sa première connexion.
 3. Mot de passe oublié : l’administrateur réinitialise le compte, ou l’utilisateur demande un code par WhatsApp depuis l’écran de connexion.
 
-## 13. Travailler sans connexion
+## 14. Travailler sans connexion
 
 L’application fonctionne sans internet une fois ouverte une première fois sur l’appareil. Les données sont enregistrées dans l’appareil lui-même.
 
@@ -144,7 +161,7 @@ L’application fonctionne sans internet une fois ouverte une première fois sur
 - Les données d’un appareil ne passent pas toutes seules sur un autre : utilisez la sauvegarde (ou l’envoi des fiches) pour les transmettre.
 - Si vous videz les données du navigateur, vous effacez aussi les données de l’application : faites d’abord une sauvegarde.
 
-## 14. Questions fréquentes et dépannage
+## 15. Questions fréquentes et dépannage
 
 **L’application affiche une ancienne version.**  
 Fermez-la complètement puis rouvrez-la avec une connexion ; dans le navigateur, rechargez la page. Sur un site en ligne, videz le cache du navigateur pour ce site si besoin (après une sauvegarde).

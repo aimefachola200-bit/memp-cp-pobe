@@ -48,7 +48,7 @@ async function identite(ctx) {
 
 /* ================= Transmission & sauvegarde ================= */
 const FORMAT = 'MEMP-CP-PACKAGE';
-async function makePackage(u, statuts) {
+export async function makePackage(u, statuts) {
   const fiches = (await scoped('fiches', u)).filter(f => statuts.includes(f.statut)), reports = (await scoped('classReports', u)).filter(f => statuts.includes(f.statut));
   const effs = (await scoped('effectifs', u)).filter(f => statuts.includes(f.statut));
   const ids = new Set([...fiches, ...reports, ...effs].map(f => f.schoolId)), schools = (await db.all('schools')).filter(s => ids.has(s.id));
@@ -57,7 +57,7 @@ async function makePackage(u, statuts) {
   const payload = { fiches, classReports: reports, effectifs: effs, schools, docs: [...docs, ...(await db.all('docs')).filter(d => bids.has(d.ficheId))], bilans, photos };
   return { fiches, reports, bilans, pkg: { format: FORMAT, version: 1, republique: APP.republique, ministere: APP.ministere, concepteur: CREDIT, embleme: bytesToB64(await fetchBytes('assets/armoiries.png')), date: nowISO(), from: { username: u.username, role: u.role, codeZone: u.codeZone || '', codeCs: u.codeCs || '', nomCs: u.nomCs || '' }, payload, hash: await sha256(canonical(payload)) } };
 }
-async function importPackage(u, text) {
+export async function importPackage(u, text) {
   const pkg = JSON.parse(text); if (pkg.format !== FORMAT) throw new Error('Ce fichier n\'est pas un paquet Application CP.');
   if ((await sha256(canonical(pkg.payload))) !== pkg.hash) throw new Error('Paquet altéré ou corrompu (empreinte invalide).');
   const stat = { nouv: 0, maj: 0, ignore: 0, hors: 0 };
