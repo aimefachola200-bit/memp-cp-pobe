@@ -3,7 +3,7 @@
 export const APP = {
   name: "Application CP — CS Pobè",
   full: 'Application CP — Gestion pédagogique',
-  version: '2.0.0',
+  version: '2.1.0',
   republique: 'RÉPUBLIQUE DU BÉNIN',
   ministere: 'MINISTÈRE DES ENSEIGNEMENTS MATERNEL ET PRIMAIRE',
   concepteur: 'Maître Aimé FACHOLA',

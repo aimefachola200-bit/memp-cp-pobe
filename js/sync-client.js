@@ -77,8 +77,10 @@
       return c;
     }
     async function emetteur() {
-      const c = await cles(), id = await A.identite();
-      return { installation: c.installation, cle: c.public, application: A.application, version: A.version || '', edition: A.edition || '', niveau: id.niveau, code: id.code, nom: id.nom, cs: id.cs || '', departement: id.departement || '' };
+      const c = await cles(), id = await A.identite(), hub = await lire('hub', null);
+      // le code d'entité donné par le hub dans l'invitation (QR « e= ») fait foi auprès de lui
+      const code = (hub && hub.entite) || id.code;
+      return { installation: c.installation, cle: c.public, application: A.application, version: A.version || '', edition: A.edition || '', niveau: id.niveau, code, nom: id.nom, cs: id.cs || '', departement: id.departement || '' };
     }
     async function signer(p) { const c = await cles(); const q = Object.assign({}, p); delete q.signature; return global.Ed25519.signer(c.prive, enc(canon(q))); }
     async function verifierSignature(p) { const q = Object.assign({}, p); delete q.signature; return !!(p.signature && p.emetteur && p.emetteur.cle) && global.Ed25519.verifier(p.emetteur.cle, enc(canon(q)), p.signature); }

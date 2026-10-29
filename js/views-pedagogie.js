@@ -6,14 +6,18 @@
    Conception : Maître Aimé FACHOLA */
 import { db } from './db.js';
 import { adaptateurUascep } from './views-uascep.js';
+import { inScope } from './data.js';
 
 const ANNOTENT = ['ADMIN', 'CP', 'CCS', 'DDEMP', 'DOSP'];
 
 export async function adaptateurPedagogie(u) {
   let entete = null;
   try { entete = (await adaptateurUascep(u)).entete; } catch (e) { entete = null; }
+  // un encadreur dont toutes les écoles sont des maternelles (CP de la maternelle) arrive sur les contenus de la maternelle
+  let coursParDefaut;
+  try { const ecs = (await db.all('schools')).filter(s => inScope(u, s)); if (ecs.length && ecs.every(s => s.cycle === 'Maternelle')) coursParDefaut = 'MAT'; } catch (e) { coursParDefaut = undefined; }
   return {
-    app: 'MEMP-CP', base: 'data/pedagogie/', hautFixe: 'var(--hdr, 0px)',
+    app: 'MEMP-CP', base: 'data/pedagogie/', hautFixe: 'var(--hdr, 0px)', coursParDefaut,
     peutAnnoter: ANNOTENT.includes(u.role), auteur: [u.prenoms, u.nom].filter(Boolean).join(' ') || u.username,
     notes: { charger: async () => (await db.setting('pedagogieNotes')) || {}, enregistrer: (o) => db.setting('pedagogieNotes', o) },
     entete,
@@ -26,7 +30,7 @@ export async function adaptateurPedagogie(u) {
 }
 
 export async function render(id, ctx) {
-  ctx.title && ctx.title('Pédagogie', 'Programmes, guides, progressions, fiches de préparation, résumés, épreuves et planification du CI au CM2');
+  ctx.title && ctx.title('Pédagogie', 'Programmes, guides, progressions, fiches, résumés, épreuves et planification, de la maternelle au CM2');
   if (!window.Pedagogie) { ctx.el.append(Object.assign(document.createElement('p'), { textContent: 'Module indisponible : rechargez l’application.' })); return; }
   const racine = document.createElement('div'); ctx.el.append(racine);
   await window.Pedagogie.monter(racine, await adaptateurPedagogie(ctx.user), { onglet: ctx.args && ctx.args[0], cours: ctx.args && ctx.args[1] });

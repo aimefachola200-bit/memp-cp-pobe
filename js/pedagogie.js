@@ -44,6 +44,24 @@
   const btn = (nom, libelle, onclick, cls, extra) => h('button', Object.assign({ type: 'button', class: 'ped-btn' + (cls ? ' ' + cls : ''), onclick }, extra || {}), nom ? ic(nom) : null, libelle);
 
   const COURS = ['CI', 'CP', 'CE1', 'CE2', 'CM1', 'CM2'];
+  /* École maternelle (contenus SCOLARIS 2.1) : un « cours » MAT à part, présent quand l'index le fournit */
+  const MAT = 'MAT';
+  const libCours = (c) => (c === MAT ? 'Maternelle' : c);
+  const SECTIONS_MAT = [['petits', 'Section des petits (Maternelle 1)'], ['grands', 'Section des grands (Maternelle 2)']];
+  const ONGLETS_MAT = { planification: 'Planification', fiches: 'Fiches d’activités', resumes: 'Repères pour l’éducateur', epreuves: 'Grilles d’observation',
+    progressions: 'Progressions', programmes: 'Domaines et compétences', guides: 'Guides' };
+  /** Le cours (ou la classe) est-il de la maternelle ? (EM, maternelle, petits, grands, PS / MS / GS, Maternelle 1 / 2) */
+  function estMaternelle(x) {
+    const t = String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+    return !!t && (/^em(\s*[12])?\b|^e\.m\.|matern|jardin|^(ps|ms|gs)$|^(petite|moyenne|grande) section|section des (petits|moyens|grands)|^(petits|moyens|grands)$|^mat$/.test(t));
+  }
+  /** Section de la maternelle d'après un nom de classe (« Section des petits », « Maternelle 1 », « PS »…) ; '' si inconnue */
+  function sectionMaternelle(x) {
+    const t = String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    if (/petit|maternelle ?1|\be?m ?1\b|\bps\b|premiere annee/.test(t)) return 'petits';
+    if (/grand|moyen|maternelle ?2|\be?m ?2\b|\bgs\b|\bms\b|deuxieme annee/.test(t)) return 'grands';
+    return '';
+  }
   const ORDRE_MAT = ['francais', 'maths', 'es', 'est', 'eps', 'ea'];
   const MOIS = ['Septembre', 'Octobre', 'Novembre', 'Décembre', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin'];
   const JOURS = [['lundi', 'Lundi'], ['mardi', 'Mardi'], ['mercredi', 'Mercredi'], ['jeudi', 'Jeudi'], ['vendredi', 'Vendredi']];
@@ -58,8 +76,9 @@
     ['epreuves', 'Épreuves', 'examen'], ['progressions', 'Progressions annuelles', 'courbe'], ['programmes', 'Programmes', 'livre'], ['guides', 'Guides', 'livres']];
   const TYPES_EP = [['mensuelle', 'Évaluations mensuelles'], ['trimestrielle', 'Évaluations trimestrielles'], ['passage', 'Évaluation de passage'], ['cep_blanc', 'Examens blancs du CEP']];
   /* Couleur et dessin de chaque matière (bandeau des fiches imprimées et à l'écran) */
-  const COUL_MAT = { francais: '#1F4E79', maths: '#B54708', es: '#067647', est: '#6941C6', eps: '#C11574', ea: '#0E7090' };
-  const IC_MAT = { francais: 'livre', maths: 'calcul', es: 'monde', est: 'science', eps: 'ballon', ea: 'image' };
+  const COUL_MAT = { francais: '#1F4E79', maths: '#B54708', es: '#067647', est: '#6941C6', eps: '#C11574', ea: '#0E7090', dg: '#9E3C8E' };
+  const IC_MAT = { francais: 'livre', maths: 'calcul', es: 'monde', est: 'science', eps: 'ballon', ea: 'image', dg: 'groupe' };
+  const NOM_SECTION = { petits: 'Section des petits', grands: 'Section des grands' };
   const IC_CHAMP = { intitule: 'etiquette', sous_matiere: 'dossier', unite: 'classeur', duree: 'horloge', cd: 'cible', ct: 'puzzle', contenus: 'livre', objectifs: 'cible',
     strategies: 'groupe', materiel: 'outils', evaluation: 'valider-cercle', projection: 'fleche-droite', je_retiens: 'cerveau', observations: 'voir' };
   const CREDIT_PED = 'Conception : Maître Aimé FACHOLA — +229 01 96 51 03 33';
@@ -284,17 +303,21 @@
       corps en Times New Roman 14 pt, tableaux jamais coupés au milieu d'une ligne. */
   function ficheHtml(f, ix) {
     const c = COUL_MAT[f.matiere] || '#1F4E79';
-    const rep = esc(f.cours) + ' · ' + esc(nomMat(ix, f.matiere)) + (f.sous_matiere ? ' · ' + esc(f.sous_matiere) : '')
+    const mat = f.cours === MAT;
+    const rep = mat ? ['Maternelle', sectionsFiche(f).map(x => NOM_SECTION[x] || x).join(' et '), f.domaine_code, f.sous_matiere, f.mois ? f.mois + (f.semaine ? ', semaine ' + f.semaine : '') : '', f.duree].filter(Boolean).map(esc).join(' · ')
+      : esc(f.cours) + ' · ' + esc(nomMat(ix, f.matiere)) + (f.sous_matiere ? ' · ' + esc(f.sous_matiere) : '')
       + (f.sa ? ' · SA ' + esc(f.sa) : '') + (f.seance ? ' · séance ' + esc(f.seance) : '') + (f.duree ? ' · ' + esc(f.duree) : '');
     const bandeau = '<div class="ped-fb" style="background:' + c + '"><span class="ped-fb-ic">' + svgIc(IC_MAT[f.matiere] || 'fiche', 26) + '</span>'
-      + '<span class="ped-fb-t"><b>Fiche de préparation — ' + esc(nomMat(ix, f.matiere)) + '</b><br><small>' + rep + '</small></span></div>';
+      + '<span class="ped-fb-t"><b>' + (mat ? 'Fiche d’activité — ' + esc(f.domaine_nom || 'Maternelle') : 'Fiche de préparation — ' + esc(nomMat(ix, f.matiere))) + '</b><br><small>' + rep + '</small></span></div>';
     const ligne = ([k, l]) => f[k] ? '<tr><th style="width:31%;color:' + c + '"><span class="ped-fi">' + svgIc(IC_CHAMP[k] || 'point', 14) + '</span>' + esc(l) + '</th><td>' + txt(f[k]) + '</td></tr>' : '';
     let s = '<h2 style="color:' + c + '">' + esc(f.titre) + '</h2><table class="ped-fc">' + CHAMPS_FICHE.map(ligne).join('') + '</table>';
     if (f.deroulement && f.deroulement.length) {
       s += '<h3 style="color:' + c + ';border-bottom:2px solid ' + c + '"><span class="ped-fi">' + svgIc('horloge', 16) + '</span>Déroulement</h3>'
-        + '<table class="ped-fc"><thead><tr style="background:' + c + '1A"><th>Phases / étapes</th><th>Activités de l\'enseignant(e) et des apprenant(e)s</th><th>Résultats attendus</th></tr></thead><tbody>'
+        + '<table class="ped-fc"><thead><tr style="background:' + c + '1A"><th>Phases / étapes</th><th>' + (mat ? 'Activités de l\'éducateur (éducatrice) et des enfants' : 'Activités de l\'enseignant(e) et des apprenant(e)s') + '</th><th>Résultats attendus</th></tr></thead><tbody>'
         + f.deroulement.map(l => '<tr><td><b>' + txt(l[0]) + '</b></td><td>' + txt(l[1] || '') + '</td><td>' + txt(l[2] || '') + '</td></tr>').join('') + '</tbody></table>';
     }
+    if (f.hors_programme) s += '<p class="mention"><b>Hors du programme en vigueur :</b> ' + esc(f.hors_programme) + '</p>';
+    else if (f.sequence_mc_titre) s += '<p class="mention">Programme en vigueur (mesures correctives) : séquence ' + esc(f.sequence_mc || '') + ' — ' + esc(f.sequence_mc_titre) + '</p>';
     if (f.sequences && f.sequences.length) s += '<h3 style="color:' + c + '">Séquences</h3><ol>' + f.sequences.map(q => '<li>' + txt(typeof q === 'string' ? q : (q.titre || JSON.stringify(q))) + '</li>').join('') + '</ol>';
     s += '<table class="ped-fc">' + CHAMPS_FIN.map(ligne).join('') + '</table>'
       + '<p class="mention">' + esc(f.source || '') + (f.auteur ? ' — auteur : ' + esc(f.auteur) : '') + (f.mention ? ' — ' + esc(f.mention) : '') + '</p>';
@@ -304,7 +327,7 @@
   }
   function resumeHtml(r, ix, eleve) {
     let s = '<h2>' + esc(r.titre) + '</h2><p><b>' + esc(r.cours) + '</b> · ' + esc(nomMat(ix, r.matiere)) + ' · ' + esc(r.domaine || '')
-      + (r.etape ? ' · ' + esc(r.etape) : '') + (r.trimestre ? ' · trimestre ' + esc(r.trimestre) : '') + (r.mois ? ' · ' + esc(r.mois) : '') + '</p>';
+      + (r.composante && r.composante !== r.domaine ? ' · ' + esc(r.composante) : '') + (r.etape ? ' · ' + esc(r.etape) : '') + (r.trimestre ? ' · trimestre ' + esc(r.trimestre) : '') + (r.mois ? ' · ' + esc(r.mois) : '') + '</p>';
     if (r.a_verifier) s += '<p class="mention"><b>À vérifier :</b> titre de la séance ou de la SA conçu faute de programme détaillé — à confirmer par le conseiller pédagogique.</p>';
     if (r.ancres && r.ancres.length) s += '<p class="mention">Progression : ' + r.ancres.map(a => esc(a.libelle || '')).filter(Boolean).join(' ; ') + '</p>';
     if (r.je_retiens) {
@@ -313,7 +336,7 @@
       if (r.vocabulaire && r.vocabulaire.length) s += '<h3>Vocabulaire</h3><ul>' + r.vocabulaire.map(v => '<li>' + esc(v) + '</li>').join('') + '</ul>';
       s += '<div class="ped-retiens"><b>Je retiens</b><br>' + txt(r.je_retiens) + '</div>';
       if (r.engagement) s += '<div class="ped-engage"><b>Je m\'engage</b><br>' + txt(r.engagement) + '</div>';
-    } else s += '<div class="ped-retiens"><b>Je retiens</b><br>' + txt(r.regle) + '</div>';
+    } else s += '<div class="ped-retiens"><b>' + (r.cours === MAT ? 'Repère pour l’éducateur' : 'Je retiens') + '</b><br>' + txt(r.regle) + '</div>';
     if (r.methode) s += '<h3>Méthode</h3><p>' + txt(r.methode) + '</p>';
     if (r.exemple) s += '<h3>Exemple</h3><p>' + txt(r.exemple) + '</p>';
     if (r.exercices && r.exercices.length) {
@@ -435,14 +458,16 @@
   }
   const copiesDe = (notes, type, c) => (notes.copies || []).filter(k => k.type === type && k.cours === c).map(k => Object.assign({}, k.data, { _copie: true }));
   function programmeHtml(p, ix) {
-    let s = '<h2>' + esc(p.titre) + '</h2><p>' + esc(p.cours) + ' · ' + esc(nomMat(ix, p.matiere)) + ' · ' + (p.type === 'unite' ? 'Unité' : "Situation d'apprentissage") + ' ' + esc(p.num || '')
+    let s = '<h2>' + esc(p.titre) + '</h2>' + (p.en_vigueur ? '<p><b>' + esc(((ix.programme_en_vigueur || {}).libelle) || 'Programme en vigueur') + '</b></p>' : '')
+      + '<p>' + esc(p.cours) + ' · ' + esc(nomMat(ix, p.matiere)) + (p.composante ? ' · ' + esc(p.composante) : '') + ' · ' + (p.type === 'unite' ? 'Unité' : "Situation d'apprentissage") + ' ' + esc(p.num || '')
+      + (p.nums && p.nums.length > 1 ? ' (SA d’origine ' + p.nums.map(esc).join(' et ') + ')' : '')
       + (p.duree ? ' · ' + esc(p.duree) : '') + (p.periode ? ' · ' + esc(p.periode) : '') + '</p><table>';
     [['theme', 'Thème'], ['domaine', 'Domaine'], ['cd', 'Compétence disciplinaire'], ['ct', 'Compétences transversales'], ['ctd', 'Compétences transdisciplinaires'],
       ['connaissances', 'Connaissances et techniques'], ['materiel', 'Matériel'], ['page', 'Pages du guide']].forEach(([k, l]) => { if (p[k]) s += '<tr><th style="width:30%">' + esc(l) + '</th><td>' + txt(p[k]) + '</td></tr>'; });
     if (p.detail && typeof p.detail === 'object') Object.entries(p.detail).forEach(([k, v]) => { if (v) s += '<tr><th>' + esc(k.replace(/_/g, ' ')) + '</th><td>' + txt(typeof v === 'string' ? v : JSON.stringify(v)) + '</td></tr>'; });
     s += '</table>';
     if (p.sequences && p.sequences.length) s += '<h3>Séquences</h3><table><thead><tr><th>N°</th><th>Titre</th><th>Contenu</th><th>Matériel</th></tr></thead><tbody>'
-      + p.sequences.map((q, i) => '<tr><td>' + esc(q.num || i + 1) + '</td><td>' + esc(q.titre || '') + '</td><td>' + txt(q.contenu || '') + '</td><td>' + txt(q.materiel || '') + '</td></tr>').join('') + '</tbody></table>';
+      + p.sequences.map((q, i) => '<tr><td>' + esc(q.num || i + 1) + '</td><td>' + esc(q.titre || '') + '</td><td>' + txt(q.contenu || q.connaissances || '') + '</td><td>' + txt(q.materiel || '') + '</td></tr>').join('') + '</tbody></table>';
     if (p.semaines && p.semaines.length) {
       s += '<h3>Progression par semaine</h3><table><thead><tr><th>Semaine</th><th>SA</th><th>Sous-matière</th><th>Contenu</th></tr></thead><tbody>';
       p.semaines.forEach(w => (w.seances || []).forEach((x, i) => { s += '<tr><td>' + (i === 0 ? esc(w.num) : '') + '</td><td>' + esc(x.sa || '') + '</td><td>' + esc(x.sous_matiere || '') + '</td><td><b>' + esc(x.titre || '') + '</b>' + (x.detail ? '<br>' + esc(x.detail) : '') + '</td></tr>'; }));
@@ -455,7 +480,9 @@
   function fichesDuProgramme(d, p) {
     return d.fiches.filter(f => f.matiere === p.matiere && (p.type === 'unite' ? numUnite(f) === p.num && !/dossier/i.test(f.unite || '') : f.sa === p.num && !(p.matiere === 'maths' && p.dossier && numUnite(f) !== p.dossier)));
   }
-  const reperesFiche = (f) => [f.unite, f.sa ? 'SA ' + f.sa : '', f.seance ? 'séance ' + f.seance : ''].filter(Boolean).join(' · ');
+  const sectionsFiche = (f) => (f.sections && f.sections.length ? f.sections : f.section ? [f.section] : []);
+  const pourSection = (f, sec) => !sec || !sectionsFiche(f).length || sectionsFiche(f).includes(sec);
+  const reperesFiche = (f) => f.cours === MAT ? [f.domaine_code, f.mois ? f.mois.slice(0, 4) + '.' + (f.semaine ? ' S' + f.semaine : '') : ''].filter(Boolean).join(' · ') : [f.unite, f.sa ? 'SA ' + f.sa : '', f.seance ? 'séance ' + f.seance : ''].filter(Boolean).join(' · ');
   const domaineResume = (r) => r.outil || r.domaine || '';
 
   /* ---------------- planification : répartition des fiches sur les créneaux (comme SCOLARIS) ---------------- */
@@ -486,8 +513,12 @@
     const memo = A.memo || { get: (k) => { try { return localStorage.getItem('ped.' + k); } catch (e) { return null; } }, set: (k, v) => { try { localStorage.setItem('ped.' + k, v); } catch (e) { /* indisponible */ } } };
     let F = {};
     try { F = JSON.parse(memo.get('filtres') || '{}') || {}; } catch (e) { F = {}; }
+    // cours imposé (opts), sinon dernier choix, sinon cours de la classe ou de l'école (A.coursParDefaut : 'MAT' pour une école maternelle)
     F.cours = opts.cours || F.cours || A.coursParDefaut || 'CM2';
-    if (!COURS.includes(F.cours)) F.cours = 'CM2';
+    // le cours de la classe (ou de l'école) l'emporte tant que l'utilisateur n'a pas choisi lui-même un autre cours
+    if (opts.cours) F.cours = opts.cours; else if (A.coursParDefaut && !F.coursManuel) F.cours = A.coursParDefaut;
+    if (estMaternelle(F.cours)) F.cours = MAT;
+    if (A.sectionParDefaut && !F.msec) F.msec = A.sectionParDefaut;
     let onglet = opts.onglet || memo.get('onglet') || 'planification';
     if (!ONGLETS.some(o => o[0] === onglet)) onglet = 'planification';
     let page = 0;
@@ -513,14 +544,18 @@
     const zoneFiltres = h('div', { class: 'ped-filtres' });
     const zone = h('div', { 'aria-live': 'polite' });
     const liens = h('div', { class: 'ped-actions' });
-    boite.append(h('p', { class: 'ped-aide' }, 'Programmes, guides, progressions, fiches, résumés et épreuves du CI au CM2 (contenus de SCOLARIS, consultables sans connexion une fois ouverts). ',
-      'Choisissez le cours puis la rubrique.'), liens, barreOnglets, zoneFiltres, zone);
+    const intro = h('p', { class: 'ped-aide' }, 'Programmes, guides, progressions, fiches, résumés et épreuves du CI au CM2 (contenus de SCOLARIS, consultables sans connexion une fois ouverts). ',
+      'Choisissez le cours puis la rubrique.');
+    boite.append(intro, liens, barreOnglets, zoneFiltres, zone);
 
     let ix;
     try { ix = await index(A); } catch (e) {
       zone.append(h('p', { class: 'ped-vide' }, 'Le contenu pédagogique n’a pas pu être chargé (pas de connexion et rien d’enregistré sur cet appareil). Réessayez une fois connecté.'));
       return;
     }
+    const coursDispo = COURS.concat((ix.cours || []).some(c => c.cours === MAT) ? [MAT] : []);
+    if (!coursDispo.includes(F.cours)) F.cours = 'CM2';
+    if (coursDispo.includes(MAT)) intro.firstChild.textContent = 'Maternelle (sections des petits et des grands) et CI au CM2 : programmes, guides, progressions, fiches, résumés, épreuves et grilles d’observation (contenus de SCOLARIS, consultables sans connexion une fois ouverts). ';
     (A.liens || []).forEach(l => liens.append(btn(l.icone || 'lien', l.l, () => A.ouvrir && A.ouvrir(l.route), 's')));
     const hl = btn('telecharger', 'Rendre tout disponible hors ligne', async () => {
       hl.disabled = true;
@@ -559,7 +594,9 @@
     }
 
     ONGLETS.forEach(([id, l, ico]) => barreOnglets.append(h('button', { type: 'button', role: 'tab', 'data-ped-onglet': id, class: id === onglet ? 'on' : '', 'aria-selected': id === onglet ? 'true' : 'false',
-      onclick: () => { onglet = id; memo.set('onglet', id); page = 0; [...barreOnglets.children].forEach(b => { const on = b.getAttribute('data-ped-onglet') === id; b.className = on ? 'on' : ''; b.setAttribute('aria-selected', on ? 'true' : 'false'); }); rendre(); } }, ic(ico), l)));
+      onclick: () => { onglet = id; memo.set('onglet', id); page = 0; [...barreOnglets.children].forEach(b => { const on = b.getAttribute('data-ped-onglet') === id; b.className = on ? 'on' : ''; b.setAttribute('aria-selected', on ? 'true' : 'false'); }); rendre(); } }, ic(ico), h('span', { 'data-ped-libelle': id }, l))));
+    /* libellés des onglets selon le cours (la maternelle a des fiches d'activités, des repères, des grilles d'observation, des domaines) */
+    const libellerOnglets = () => ONGLETS.forEach(([id, l]) => { const sp = barreOnglets.querySelector('[data-ped-libelle="' + id + '"]'); if (sp) sp.textContent = F.cours === MAT ? ONGLETS_MAT[id] : l; });
 
     /* --- notes locales (conseiller pédagogique, administrateur) --- */
     function blocNotes(cle) {
@@ -692,7 +729,7 @@
       let eleve = false;
       const doc = h('div', { class: 'ped-doc', html: resumeHtml(r, ix, false) });
       const bascule = btn('eleve', 'Version élève (sans les réponses)', () => { eleve = !eleve; doc.innerHTML = resumeHtml(r, ix, eleve); bascule.lastChild.textContent = eleve ? 'Version enseignant (avec les réponses)' : 'Version élève (sans les réponses)'; }, 's');
-      const barre = h('div', { class: 'ped-actions' }, bascule);
+      const barre = h('div', { class: 'ped-actions' }, r.cours === MAT ? null : bascule);
       const fermer = dialogue(r.titre, h('div', {}, barre, doc, blocNotes('resume:' + r.id)),
         [{ l: 'Fermer' }, { l: 'Imprimer / PDF', icone: 'imprimer', p: true, action: () => { imprimer(A, r.titre, resumeHtml(r, ix, eleve) + (eleve ? '' : notesHtml('resume:' + r.id))); } }]);
       const b = barreEdition('resume', r, ouvrirResume, () => fermer()); if (b) barre.after(b);
@@ -756,8 +793,11 @@
       try { d = await cours(A, F.cours); } catch (e) { if (g !== generation) return; zone.innerHTML = ''; zone.append(h('p', { class: 'ped-vide' }, 'Ce cours n’est pas encore disponible sur cet appareil (connexion nécessaire pour l’ouvrir la première fois).')); return; }
       if (g !== generation) return;
       zoneFiltres.innerHTML = ''; zone.innerHTML = '';
-      zoneFiltres.append(sel('Cours', 'cours', COURS.map(c => [c, c])));
-      const vues = { fiches: vueFiches, resumes: vueResumes, epreuves: vueEpreuves, progressions: vueProgressions, programmes: vueProgrammes, guides: vueGuides, planification: vuePlanification };
+      libellerOnglets();
+      zoneFiltres.append(sel('Cours', 'cours', coursDispo.map(c => [c, libCours(c)]), () => { F.coursManuel = 1; sauverF(); }));
+      const vues = F.cours === MAT
+        ? { fiches: vueFichesMat, resumes: vueReperesMat, epreuves: vueGrillesMat, progressions: vueProgressionsMat, programmes: vueDomainesMat, guides: vueGuides, planification: vuePlanifMat }
+        : { fiches: vueFiches, resumes: vueResumes, epreuves: vueEpreuves, progressions: vueProgressions, programmes: vueProgrammes, guides: vueGuides, planification: vuePlanification };
       await vues[onglet](d);
     }
 
@@ -886,13 +926,21 @@
       const liste = h('div', {}); zone.append(liste);
       rendreListe = () => {
         liste.innerHTML = '';
-        const l = d.programmes.filter(p => (!F.matiere || p.matiere === F.matiere) && contient(p, ['titre', 'theme', 'domaine']));
+        const l = d.programmes.filter(p => (!F.matiere || p.matiere === F.matiere) && contient(p, ['titre', 'theme', 'domaine', 'composante']));
+        const PV = ix.programme_en_vigueur;
+        if (PV && l.some(p => p.en_vigueur)) {
+          const cal = (PV.calendrier_es || []).find(x => x.cours === F.cours);
+          const lignesCal = cal ? [['morale', 'Morale'], ['civisme', 'Civisme'], ['histoire_geographie', 'Histoire-géographie'], ['langue_culture', 'Langue et culture']].filter(([k]) => cal[k]) : [];
+          liste.append(h('div', { class: 'ped-carte', 'data-ped': 'programme-en-vigueur' }, h('h3', {}, PV.libelle || 'Programme en vigueur'),
+            h('p', { class: 'ped-aide' }, 'ES et EPS : les SA et séquences sont celles des mesures correctives en vigueur ; les fiches d’ES et d’EPS sont rattachées à ce programme. ', PV.source || ''),
+            lignesCal.length ? h('dl', { class: 'ped-dl' }, lignesCal.map(([k, lb]) => [h('dt', {}, 'ES — ' + lb), h('dd', {}, cal[k])])) : null));
+        }
         if (!l.length) { liste.append(h('p', { class: 'ped-vide' }, 'Aucun programme détaillé pour ces critères dans le corpus (voir les guides et la progression annuelle).')); return; }
         liste.append(h('div', { class: 'ped-tw' }, h('table', { class: 'ped-t', 'data-ped': 'table-programmes' },
-          h('thead', {}, h('tr', {}, ['Matière', 'Type', 'N°', 'Titre', 'Durée / période'].map(x => h('th', {}, x)))),
+          h('thead', {}, h('tr', {}, ['Matière', 'Type / composante', 'N°', 'Titre', 'Durée / période'].map(x => h('th', {}, x)))),
           h('tbody', {}, l.map(p => h('tr', { class: 'lien', tabindex: '0', onclick: () => ouvrirProgramme(p), onkeydown: (e) => { if (e.key === 'Enter') ouvrirProgramme(p); } },
-            h('td', {}, nomMat(ix, p.matiere)), h('td', {}, p.type === 'unite' ? 'Unité' : 'SA'), h('td', { class: 'n' }, (p.dossier ? 'D' + p.dossier + ' ' : '') + (p.num || '')),
-            h('td', {}, h('b', {}, p.titre)), h('td', {}, [p.duree, p.periode].filter(Boolean).join(' · '))))))));
+            h('td', {}, nomMat(ix, p.matiere)), h('td', {}, (p.type === 'unite' ? 'Unité' : 'SA') + (p.composante ? ' — ' + p.composante : '')), h('td', { class: 'n' }, (p.dossier ? 'D' + p.dossier + ' ' : '') + (p.num || '')),
+            h('td', {}, h('b', {}, p.titre), p.en_vigueur ? h('span', { class: 'ped-badge ok' }, ' en vigueur') : null), h('td', {}, [p.duree, p.periode].filter(Boolean).join(' · '))))))));
       };
       rendreListe();
     }
@@ -992,6 +1040,273 @@
       zone.append(h('div', { class: 'ped-carte' }, h('h3', {}, 'Notes de planification'), blocNotes(cleNote)));
     }
 
+
+    /* ================= École maternelle : section → domaine → thème (composante) → mois / semaine → activité ================= */
+    const MD = (d) => d.maternelle || { sections: [], domaines: [], progressions: [], emplois_du_temps: [], grilles: [] };
+    const domCourt = (x) => x.code + ' — ' + String(x.nom || '').replace(/^Domaine (du |de la |de l’|de l'|des )?/i, '');
+    const nomDom = (d, c) => ((MD(d).domaines || []).find(x => x.code === c) || {}).nom || c || '';
+    const libSec = (c) => (SECTIONS_MAT.find(x => x[0] === c) || [c, c || 'Les deux sections'])[1];
+    const secCourt = (f) => { const l = sectionsFiche(f); return l.length === 1 ? (l[0] === 'petits' ? 'Petits' : 'Grands') : 'Petits et grands'; };
+    const filtreSection = (avecLesDeux) => zoneFiltres.append(sel('Section', 'msec', (avecLesDeux ? [['', 'Les deux sections']] : []).concat(SECTIONS_MAT)));
+    const filtreDomaine = (d) => zoneFiltres.append(sel('Domaine', 'mdom', [['', 'Tous les domaines']].concat((MD(d).domaines || []).map(x => [x.code, domCourt(x)]))));
+    const filtreComposante = (d, elements, champ) => {
+      const doms = (MD(d).domaines || []).filter(x => !F.mdom || x.code === F.mdom);
+      const l = uniq(doms.flatMap(x => x.composantes || []).concat(elements.map(e => e[champ])));
+      zoneFiltres.append(sel('Thème / composante', 'mcomp', [['', 'Tous']].concat(l.map(x => [x, x]))));
+    };
+    const pages = (liste, nbp, redessiner) => { if (nbp > 1) liste.append(h('div', { class: 'ped-pages' }, btn('precedent', 'Précédente', () => { page--; redessiner(); }, 's', { disabled: page === 0 }),
+      h('span', { class: 'ped-aide' }, `Page ${page + 1} / ${nbp}`), btn('suivant', 'Suivante', () => { page++; redessiner(); }, 's', { disabled: page >= nbp - 1 }))); };
+    const classeurMat = async (titre, fs, cleN) => {
+      if (!fs.length) return;
+      await completer(A, fs.slice(0, MAX_LIVRET));
+      return imprimer(A, titre, '<h1>' + esc(titre) + '</h1>' + (cleN ? notesHtml(cleN) : '') + fs.slice(0, MAX_LIVRET).map((f, i) => (i ? '<div class="saut"></div>' : '') + ficheHtml(f, ix)).join(''), { titulaire: titulaire() });
+    };
+    const ficheProg = (d, p) => (p.fiche && d._fiche[p.fiche] ? E_('fiche', d._fiche[p.fiche]) : null);
+    const lienActivite = (d, p) => { const f = ficheProg(d, p); return f ? lien({ onclick: () => ouvrirFiche(f) }, p.activite) : h('span', {}, p.activite); };
+    const aideProposee = (P) => (P.some(p => p.propose) ? h('p', { class: 'ped-note' }, 'Section des petits : progression proposée à partir de celle de la section des grands (activités adaptées à 3–4 ans, 20 min) — à ajuster en conseil des maîtres et à valider par le conseiller pédagogique.') : null);
+    const moisCourant = () => ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'][new Date().getMonth()];
+
+    /* --- fiches d'activités --- */
+    function vueFichesMat(d) {
+      const toutes = d.fiches.concat(copiesDe(notes, 'fiche', MAT)).map(f => E_('fiche', f));
+      filtreSection(true);
+      const b0 = toutes.filter(f => pourSection(f, F.msec));
+      filtreDomaine(d);
+      const b1 = b0.filter(f => !F.mdom || f.domaine_code === F.mdom);
+      filtreComposante(d, b1, 'sous_matiere');
+      const b2 = b1.filter(f => !F.mcomp || f.sous_matiere === F.mcomp);
+      zoneFiltres.append(sel('Mois', 'mmois', [['', 'Toute l’année']].concat(MOIS.filter(m => b2.some(f => f.mois === m)).map(m => [m, m]))));
+      const b3 = b2.filter(f => !F.mmois || f.mois === F.mmois);
+      zoneFiltres.append(sel('Semaine', 'msem', [['', 'Toutes']].concat(uniq(b3.map(f => f.semaine)).sort((a, b) => a - b).map(x => [String(x), 'Semaine ' + x]))));
+      zoneFiltres.append(champRecherche());
+      const liste = h('div', {}); zone.append(liste);
+      rendreListe = () => {
+        liste.innerHTML = '';
+        const l = b3.filter(f => (!F.msem || String(f.semaine) === String(F.msem)) && contient(f, ['titre', 'intitule', 'sous_matiere', 'contenus', 'domaine_nom']));
+        const nbp = Math.max(1, Math.ceil(l.length / PAR_PAGE)); if (page >= nbp) page = nbp - 1;
+        const titre = 'Classeur de fiches d’activités — Maternelle' + (F.msec ? ' — ' + libSec(F.msec) : '') + (F.mdom ? ' — ' + F.mdom : '') + (F.mcomp ? ' — ' + F.mcomp : '');
+        liste.append(h('div', { class: 'ped-actions' }, h('span', { class: 'ped-aide', style: 'align-self:center' }, `${l.length} fiche(s)`),
+          btn('classeur', `Classeur de la sélection (PDF${l.length > MAX_LIVRET ? ', ' + MAX_LIVRET + ' premières' : ''})`, () => classeurMat(titre, l), 's', { 'data-ped': 'classeur-selection' }), champTitulaire()));
+        if (!l.length) { liste.append(h('p', { class: 'ped-vide' }, 'Aucune fiche pour ces critères.')); return; }
+        liste.append(h('div', { class: 'ped-tw' }, h('table', { class: 'ped-t', 'data-ped': 'table-fiches' },
+          h('thead', {}, h('tr', {}, ['Section', 'Domaine', 'Thème / composante', 'Mois · semaine', 'Activité', 'Durée', 'Origine'].map(x => h('th', {}, x)))),
+          h('tbody', {}, l.slice(page * PAR_PAGE, (page + 1) * PAR_PAGE).map(f => h('tr', { class: 'lien', tabindex: '0', onclick: () => ouvrirFiche(f), onkeydown: (e) => { if (e.key === 'Enter') ouvrirFiche(f); } },
+            h('td', { class: 'n' }, secCourt(f)), h('td', { class: 'n' }, f.domaine_code || ''), h('td', {}, f.sous_matiere || ''),
+            h('td', { class: 'n' }, [f.mois, f.semaine ? 'S' + f.semaine : ''].filter(Boolean).join(' · ')),
+            h('td', {}, h('b', {}, f.titre), notes['fiche:' + f.id] ? h('span', { class: 'ped-badge' }, ' note') : null, f.a_verifier ? h('span', { class: 'ped-badge' }, ' à vérifier') : null),
+            h('td', { class: 'n' }, f.duree || ''), h('td', {}, h('span', { class: 'ped-badge ' + (f.statut === 'concue' ? 'ok' : 'src') }, f.statut === 'concue' ? 'conçue (APC)' : 'source'))))))));
+        pages(liste, nbp, rendreListe);
+      };
+      rendreListe();
+    }
+
+    /* --- repères pour l'éducateur --- */
+    function vueReperesMat(d) {
+      const tous = d.resumes.concat(copiesDe(notes, 'resume', MAT)).map(r => E_('resume', r));
+      filtreDomaine(d);
+      const b1 = tous.filter(r => !F.mdom || r.domaine_code === F.mdom);
+      filtreComposante(d, b1, 'composante');
+      zoneFiltres.append(champRecherche());
+      const liste = h('div', {}); zone.append(liste);
+      rendreListe = () => {
+        liste.innerHTML = '';
+        const l = b1.filter(r => (!F.mcomp || r.composante === F.mcomp) && contient(r, ['titre', 'composante', 'regle', 'domaine']));
+        liste.append(h('p', { class: 'ped-aide' }, 'Pour chaque thème : ce qui est visé, comment s’y prendre avec les enfants et des exemples. Pas de résumé à copier à la maternelle : l’enfant apprend par le geste, le jeu et la parole.'));
+        liste.append(h('div', { class: 'ped-actions' }, h('span', { class: 'ped-aide', style: 'align-self:center' }, `${l.length} repère(s)`),
+          btn('livre', 'Recueil des repères (PDF)', async () => { if (!l.length) return; await completerResumes(A, l); imprimer(A, 'Repères pour l’éducateur — Maternelle', '<h1>Repères pour l’éducateur — Maternelle</h1>' + l.map((r, i) => (i ? '<div class="saut"></div>' : '') + resumeHtml(r, ix, false)).join('')); }, 's', { 'data-ped': 'recueil-reperes' })));
+        if (!l.length) { liste.append(h('p', { class: 'ped-vide' }, 'Aucun repère pour ces critères.')); return; }
+        liste.append(h('div', { class: 'ped-tw' }, h('table', { class: 'ped-t', 'data-ped': 'table-resumes' },
+          h('thead', {}, h('tr', {}, ['Domaine', 'Thème / composante', 'Repère'].map(x => h('th', {}, x)))),
+          h('tbody', {}, l.map(r => h('tr', { class: 'lien', tabindex: '0', onclick: () => ouvrirResume(r), onkeydown: (e) => { if (e.key === 'Enter') ouvrirResume(r); } },
+            h('td', { class: 'n' }, r.domaine_code || ''), h('td', {}, r.composante || ''), h('td', {}, h('b', {}, r.titre))))))));
+      };
+      rendreListe();
+    }
+
+    /* --- grilles d'observation (pas d'épreuve écrite à la maternelle) --- */
+    const abrNiveau = (n) => String(n).split(/[\s'’]+/).filter(w => w.length > 1).map(w => w[0].toUpperCase()).join('');
+    function grilleHtml(d, g, sec, nb) {
+      const niv = g.niveaux && g.niveaux.length ? g.niveaux : ['Acquis', 'En cours d’acquisition', 'Non acquis'];
+      const noms = (A.enfants && A.enfants(sec)) || [];
+      const n = Math.max(noms.length, nb || 0);
+      let s = '<h1>Grille d’observation — ' + esc(g.composante) + '</h1><p style="text-align:center">' + esc(g.domaine_nom || nomDom(d, g.domaine)) + (sec ? ' · ' + esc(libSec(sec)) : '') + '</p>'
+        + '<table><tbody><tr><td style="width:50%"><b>Éducateur / éducatrice :</b> ' + esc(titulaire()) + '</td><td><b>Période d’observation :</b> du ……………… au ………………</td></tr></tbody></table>'
+        + '<p class="mention">' + esc(g.consigne || '') + '</p>'
+        + '<table class="ped-grille-obs"><thead><tr><th rowspan="2" style="width:6%">N°</th><th rowspan="2" style="width:22%">Nom et prénoms de l’enfant</th>'
+        + (g.criteres || []).map(c => '<th colspan="' + niv.length + '">' + esc(c) + '</th>').join('') + '<th rowspan="2">Observation pour les parents</th></tr><tr>'
+        + (g.criteres || []).map(() => niv.map(x => '<th style="text-align:center">' + esc(abrNiveau(x)) + '</th>').join('')).join('') + '</tr></thead><tbody>';
+      for (let i = 0; i < n; i++) s += '<tr><td>' + (i + 1) + '</td><td>' + esc(noms[i] || '') + '</td>' + (g.criteres || []).map(() => niv.map(() => '<td></td>').join('')).join('') + '<td></td></tr>';
+      s += '</tbody></table><p class="mention">Cocher la case du niveau atteint : ' + niv.map(x => abrNiveau(x) + ' = ' + esc(x)).join(' ; ') + '.</p><p class="mention">' + esc(g.mention || '') + '</p>';
+      return '<div class="ped-grille-doc">' + s + '</div>';
+    }
+    function vueGrillesMat(d) {
+      const G = MD(d).grilles || [];
+      filtreSection(true);
+      filtreDomaine(d);
+      const b1 = G.filter(g => !F.mdom || g.domaine === F.mdom);
+      filtreComposante(d, b1, 'composante');
+      const l = b1.filter(g => !F.mcomp || g.composante === F.mcomp);
+      if (!F.mlignes) F.mlignes = '25';
+      const nbL = h('input', { type: 'number', min: '1', max: '60', value: F.mlignes, 'aria-label': 'Nombre de lignes (enfants)', 'data-ped': 'lignes-grille', style: 'max-width:90px' });
+      nbL.addEventListener('change', () => { F.mlignes = String(Math.max(1, Math.min(60, +nbL.value || 25))); sauverF(); });
+      const css = '<style>.ped-grille-obs th,.ped-grille-obs td{font-size:8.5pt;padding:2px 3px}.ped-grille-obs tbody td{height:7mm}</style>';
+      const imprimerGrilles = (gs) => imprimer(A, 'Grilles d’observation — Maternelle', css + gs.map((g, i) => (i ? '<div class="saut"></div>' : '') + grilleHtml(d, g, F.msec, +F.mlignes)).join(''));
+      zone.append(h('p', { class: 'ped-aide' }, 'À la maternelle, on n’évalue pas par des épreuves écrites : l’éducateur observe chaque enfant pendant les activités et note le niveau atteint pour chaque critère.'));
+      zone.append(h('div', { class: 'ped-actions' }, h('span', { class: 'ped-aide', style: 'align-self:center' }, `${l.length} grille(s)`),
+        h('label', { class: 'ped-aide', style: 'display:flex;gap:6px;align-items:center' }, 'Lignes (enfants)', nbL), champTitulaire(),
+        btn('imprimer', 'Toutes ces grilles (PDF)', () => l.length && imprimerGrilles(l), 's', { 'data-ped': 'jeu-grilles' })));
+      if (!l.length) { zone.append(h('p', { class: 'ped-vide' }, 'Aucune grille pour ces critères.')); return; }
+      zone.append(h('div', { class: 'ped-grille', 'data-ped': 'table-epreuves' }, l.map(g => h('div', { class: 'ped-carte', 'data-ped': 'grille' },
+        h('h3', {}, g.composante), h('p', { class: 'ped-aide' }, g.domaine + ' — ' + String(g.domaine_nom || nomDom(d, g.domaine)).replace(/^Domaine (du |de la |de l’|de l'|des )?/i, '')),
+        h('ul', { class: 'ped-liste' }, (g.criteres || []).map(c => h('li', {}, c))),
+        h('div', { class: 'ped-actions' },
+          btn('voir', 'Voir', () => dialogue('Grille d’observation — ' + g.composante, h('div', {}, h('div', { class: 'ped-doc', html: grilleHtml(d, g, F.msec, Math.min(5, +F.mlignes)) }), blocNotes('grille:' + g.id)),
+            [{ l: 'Fermer' }, { l: 'Imprimer / PDF', icone: 'imprimer', p: true, action: () => { imprimerGrilles([g]); } }]), 's'),
+          btn('imprimer', 'Imprimer', () => imprimerGrilles([g]), 's', { 'data-ped': 'imprimer-grille' }))))));
+    }
+
+    /* --- progressions annuelles (section des petits / des grands) --- */
+    function vueProgressionsMat(d) {
+      filtreSection(false);
+      const P0 = (MD(d).progressions || []).filter(p => p.section === F.msec);
+      zoneFiltres.append(sel('Trimestre', 'mtrim', [['', 'Toute l’année'], ['I', 'Trimestre I'], ['II', 'Trimestre II'], ['III', 'Trimestre III']]));
+      filtreDomaine(d);
+      const P = P0.filter(p => (!F.mtrim || p.trimestre === F.mtrim) && (!F.mdom || p.domaine === F.mdom));
+      const titre = 'Progression annuelle — ' + libSec(F.msec) + ' — ' + (MD(d).annee || '') + (F.mtrim ? ' — trimestre ' + F.mtrim : '') + (F.mdom ? ' — ' + F.mdom : '');
+      const corps = () => '<h1>' + esc(titre) + '</h1><table><thead><tr><th>Trim.</th><th>Mois</th><th>Sem.</th><th>Domaine</th><th>Thème / composante</th><th>Activité</th></tr></thead><tbody>'
+        + P.map(p => '<tr><td>' + esc(p.trimestre || '') + '</td><td>' + esc(p.mois || '') + '</td><td>' + esc(p.semaine || '') + '</td><td>' + esc(p.domaine) + '</td><td>' + esc(p.composante) + '</td><td>' + esc(p.activite) + (p.suite ? ' (suite)' : '') + '</td></tr>').join('')
+        + '</tbody></table><p class="mention">Source : ' + esc((P0[0] || {}).source || '') + '</p>';
+      zone.append(h('div', { class: 'ped-actions' }, h('span', { class: 'ped-aide', style: 'align-self:center' }, `${P.length} activité(s)`), btn('imprimer', 'Imprimer / PDF', () => imprimer(A, titre, corps()), 's', { 'data-ped': 'imprimer-progression' })));
+      const ap = aideProposee(P0); if (ap) zone.append(ap);
+      zone.append(h('p', { class: 'ped-aide' }, 'Activités de chaque semaine, domaine par domaine. Cliquez une activité pour ouvrir sa fiche ; le mois mène à la planification.'));
+      zone.append(h('div', { class: 'ped-tw' }, h('table', { class: 'ped-t', 'data-ped': 'table-progression' },
+        h('thead', {}, h('tr', {}, ['Trim.', 'Mois', 'Sem.', 'Domaine', 'Thème / composante', 'Activité'].map(x => h('th', {}, x)))),
+        h('tbody', {}, P.map(p => h('tr', {}, h('td', { class: 'n' }, p.trimestre || ''),
+          h('td', { class: 'n' }, lien({ onclick: () => { F.mpmois = p.mois; F.mpsem = String(p.semaine || 1); F.mpvue = 'semaine'; sauverF(); onglet = 'planification'; memo.set('onglet', onglet); [...barreOnglets.children].forEach(b => { b.className = b.getAttribute('data-ped-onglet') === onglet ? 'on' : ''; }); rendre(); } }, p.mois || '')),
+          h('td', { class: 'n' }, p.semaine || ''), h('td', { class: 'n' }, p.domaine), h('td', {}, p.composante), h('td', {}, lienActivite(d, p), p.suite ? h('span', { class: 'ped-aide' }, ' (suite)') : null)))))));
+      zone.append(blocNotes('progression:MAT:' + F.msec));
+    }
+
+    /* --- domaines, composantes et sections --- */
+    function vueDomainesMat(d) {
+      const M = MD(d);
+      const nbF = (dom, comp) => d.fiches.filter(f => f.domaine_code === dom && (!comp || f.sous_matiere === comp)).length;
+      const corps = () => '<h1>École maternelle — domaines et composantes</h1><table><thead><tr><th>Section</th><th>Niveau</th><th>Âge</th><th>Durée d’une activité</th></tr></thead><tbody>'
+        + (M.sections || []).map(x => '<tr><td>' + esc(x.nom) + '</td><td>' + esc(x.niveau) + '</td><td>' + esc(x.age) + '</td><td>' + esc(x.duree) + '</td></tr>').join('') + '</tbody></table>'
+        + (M.domaines || []).map(x => '<h2>' + esc(x.code + ' — ' + x.nom) + '</h2><ul>' + (x.composantes || []).map(c => '<li>' + esc(c) + '</li>').join('') + '</ul>').join('')
+        + (M.note_domaines ? '<p class="mention">' + esc(M.note_domaines) + '</p>' : '') + '<p class="mention">Sources : ' + (M.sources || []).map(x => esc(typeof x === 'string' ? x : (x.titre || x.libelle || ''))).join(' ; ') + '</p>';
+      zone.append(h('div', { class: 'ped-actions' }, btn('imprimer', 'Imprimer / PDF', () => imprimer(A, 'Maternelle — domaines et composantes', corps()), 's', { 'data-ped': 'imprimer-domaines' })));
+      zone.append(h('div', { class: 'ped-tw' }, h('table', { class: 'ped-t', 'data-ped': 'table-programmes' }, h('thead', {}, h('tr', {}, ['Section', 'Niveau', 'Âge', 'Durée d’une activité'].map(x => h('th', {}, x)))),
+        h('tbody', {}, (M.sections || []).map(x => h('tr', {}, h('td', {}, h('b', {}, x.nom)), h('td', {}, x.niveau || ''), h('td', {}, x.age || ''), h('td', {}, x.duree || '')))))));
+      const allerFiches = (dom, comp) => { F.mdom = dom; F.mcomp = comp || ''; F.mmois = ''; F.msem = ''; F.q = ''; sauverF(); onglet = 'fiches'; memo.set('onglet', onglet); [...barreOnglets.children].forEach(b => { b.className = b.getAttribute('data-ped-onglet') === onglet ? 'on' : ''; }); page = 0; rendre(); };
+      zone.append(h('div', { class: 'ped-grille', style: 'margin-top:10px' }, (M.domaines || []).map(x => h('div', { class: 'ped-carte', 'data-ped': 'domaine' },
+        h('h3', {}, x.code + ' — ' + String(x.nom || '').replace(/^Domaine (du |de la |de l’|de l'|des )?/i, '')), x.verifie === false ? h('span', { class: 'ped-badge' }, 'intitulé à vérifier') : null,
+        h('ul', { class: 'ped-liste' }, (x.composantes || []).map(c => h('li', {}, lien({ onclick: () => allerFiches(x.code, c) }, c), ' ', h('span', { class: 'ped-aide' }, nbF(x.code, c) + ' fiche(s)')))),
+        h('div', { class: 'ped-actions' }, btn('fiche', `Toutes les fiches du domaine (${nbF(x.code)})`, () => allerFiches(x.code, ''), 's'))))));
+      if (M.note_domaines) zone.append(h('p', { class: 'ped-aide' }, M.note_domaines));
+      zone.append(h('p', { class: 'ped-aide' }, 'Sources : ', (M.sources || []).map(x => typeof x === 'string' ? x : (x.titre || x.libelle || '')).join(' ; ')));
+    }
+
+    /* --- planification : jour (emploi du temps + activités de la semaine), semaine, mois, emploi du temps --- */
+    const racineMot = (t) => norm(t).replace(/[^a-z0-9 ]+/g, ' ').trim().replace(/s\b/g, '');
+    function journeeMat(acts, edt, ji) {
+      const rang = {}; let out = [];
+      for (let j = 0; j <= ji; j++) {
+        const jour = (edt.lignes || []).map(l => {
+          let cell = l[1 + j]; if (cell == null || cell === '') cell = l[1];
+          const x = { heure: l[0], libelle: cell || '' };
+          if (!cell || /^\s*[—–-]\s*$/.test(cell)) { x.libelle = '—'; x.vide = true; return x; }
+          const m = /^(D\d)/.exec(cell); if (!m) return x;
+          const nc = racineMot(cell);
+          const cands = acts.filter(a => a.domaine === m[1] && nc.includes(racineMot(a.composante)));
+          if (cands.length) { const k = m[1] + '|' + cands[0].composante; const i = rang[k] || 0; x.act = cands[i % cands.length]; rang[k] = i + 1; }
+          return x;
+        });
+        if (j === ji) out = jour;
+      }
+      return out;
+    }
+    function vuePlanifMat(d) {
+      const M = MD(d);
+      filtreSection(false);
+      if (!['jour', 'semaine', 'mois', 'edt'].includes(F.mpvue)) F.mpvue = 'semaine';
+      zoneFiltres.append(sel('Vue', 'mpvue', [['jour', 'Journalière'], ['semaine', 'Hebdomadaire'], ['mois', 'Mensuelle'], ['edt', 'Emploi du temps']]));
+      const P = (M.progressions || []).filter(p => p.section === F.msec);
+      const edt = (M.emplois_du_temps || []).find(e => e.section === F.msec) || (M.emplois_du_temps || [])[0];
+      const moisDispo = MOIS.filter(m => P.some(p => p.mois === m));
+      if (!F.mpmois || !moisDispo.includes(F.mpmois)) F.mpmois = moisDispo.includes(moisCourant()) ? moisCourant() : moisDispo[0];
+      const semDispo = uniq(P.filter(p => p.mois === F.mpmois).map(p => p.semaine)).sort((a, b) => a - b);
+      if (!F.mpsem || !semDispo.map(String).includes(String(F.mpsem))) F.mpsem = String(semDispo.includes(Math.floor((new Date().getDate() - 1) / 7) + 1) ? Math.floor((new Date().getDate() - 1) / 7) + 1 : (semDispo[0] || 1));
+      if (!F.pjour) F.pjour = String(Math.min(4, Math.max(0, new Date().getDay() - 1)));
+      if (F.mpvue !== 'edt') zoneFiltres.append(sel('Mois', 'mpmois', moisDispo.map(m => [m, m])));
+      if (F.mpvue === 'jour' || F.mpvue === 'semaine') zoneFiltres.append(sel('Semaine du mois', 'mpsem', semDispo.map(x => [String(x), 'Semaine ' + x])));
+      if (F.mpvue === 'jour') zoneFiltres.append(sel('Jour', 'pjour', JOURS.map(([, l], i) => [String(i), l])));
+      const sem = +F.mpsem || 1;
+      const acts = P.filter(p => p.mois === F.mpmois && p.semaine === sem);
+      const fichesDe = (l) => uniq(l.map(p => ficheProg(d, p)).filter(Boolean));
+      const cleNote = 'plan:MAT:' + F.msec + ':' + (F.mpvue === 'edt' ? 'edt' : F.mpmois + (F.mpvue === 'mois' ? '' : ':S' + sem));
+      const sousTitre = libSec(F.msec) + ' — ' + F.mpmois;
+      const ap = aideProposee(P);
+      const doms = M.domaines || [];
+
+      if (F.mpvue === 'edt') {
+        if (!edt) { zone.append(h('p', { class: 'ped-vide' }, 'Pas d’emploi du temps pour cette section.')); return; }
+        const jours = edt.jours || JOURS.map(j => j[1]);
+        const cell = (l, j) => { const c = l[1 + j]; return c == null || c === '' ? l[1] : c; };
+        const corps = () => '<h1>Emploi du temps — ' + esc(libSec(F.msec)) + '</h1><table><thead><tr><th>Horaire</th>' + jours.map(j => '<th>' + esc(j) + '</th>').join('') + '</tr></thead><tbody>'
+          + (edt.lignes || []).map(l => '<tr><td>' + esc(l[0]) + '</td>' + jours.map((_, j) => '<td>' + esc(cell(l, j)) + '</td>').join('') + '</tr>').join('') + '</tbody></table>'
+          + (edt.note ? '<p class="mention">' + esc(edt.note) + '</p>' : '') + '<p class="mention">Source : ' + esc(edt.source || '') + '</p>' + notesHtml(cleNote);
+        zone.append(h('div', { class: 'ped-actions' }, btn('imprimer', 'Emploi du temps (PDF)', () => imprimer(A, 'Emploi du temps — ' + libSec(F.msec), corps()), 's', { 'data-ped': 'imprimer-edt' })));
+        if (edt.propose) zone.append(h('p', { class: 'ped-note' }, edt.note || 'Emploi du temps proposé — à ajuster en conseil des maîtres.'));
+        zone.append(h('div', { class: 'ped-tw' }, h('table', { class: 'ped-t', 'data-ped': 'table-edt' }, h('thead', {}, h('tr', {}, ['Horaire'].concat(jours).map(x => h('th', {}, x)))),
+          h('tbody', {}, (edt.lignes || []).map(l => h('tr', {}, h('td', { class: 'n' }, l[0]), jours.map((_, j) => h('td', { style: (l[1 + j] === '' && j) ? 'color:#667085' : '' }, cell(l, j)))))))));
+        zone.append(h('p', { class: 'ped-aide' }, 'Source : ' + (edt.source || '')));
+      } else if (F.mpvue === 'jour') {
+        const ji = +F.pjour || 0;
+        if (!edt) { zone.append(h('p', { class: 'ped-vide' }, 'Pas d’emploi du temps pour cette section.')); return; }
+        const cr = journeeMat(acts, edt, ji);
+        const fj = uniq(cr.map(c => c.act && ficheProg(d, c.act)).filter(Boolean));
+        const titre = `Planification journalière — ${libSec(F.msec)} — ${JOURS[ji][1]}, semaine ${sem} de ${F.mpmois}`;
+        zone.append(h('div', { class: 'ped-actions' },
+          btn('imprimer', 'Plan du jour (PDF)', () => imprimer(A, titre, '<h1>' + esc(titre) + '</h1><table><thead><tr><th>Horaire</th><th>Domaine / activité de l’emploi du temps</th><th>Activité de la semaine</th></tr></thead><tbody>'
+            + cr.map(c => '<tr><td>' + esc(c.heure) + '</td><td>' + esc(c.libelle) + '</td><td>' + esc(c.act ? c.act.composante + ' : ' + c.act.activite : '') + '</td></tr>').join('') + '</tbody></table>' + notesHtml(cleNote)), 's', { 'data-ped': 'plan-jour' }),
+          btn('classeur', `Fiches du jour (${fj.length})`, () => classeurMat('Fiches du jour — ' + libSec(F.msec) + ' — ' + JOURS[ji][1] + ', semaine ' + sem + ' de ' + F.mpmois, fj, cleNote), 's', { 'data-ped': 'classeur-jour' })));
+        if (ap) zone.append(ap);
+        zone.append(h('p', { class: 'ped-aide' }, 'Emploi du temps de la section ; les activités de la semaine (progression) sont placées sur les créneaux de leur domaine et de leur thème.'));
+        zone.append(h('div', { class: 'ped-tw' }, h('table', { class: 'ped-t', 'data-ped': 'table-jour' }, h('thead', {}, h('tr', {}, ['Horaire', 'Emploi du temps', 'Activité de la semaine'].map(x => h('th', {}, x)))),
+          h('tbody', {}, cr.map(c => h('tr', {}, h('td', { class: 'n' }, c.heure), h('td', {}, c.libelle), h('td', {}, c.act ? [h('span', { class: 'ped-aide' }, c.act.composante + ' : '), lienActivite(d, c.act)] : h('span', { class: 'ped-aide' }, c.vide ? 'pas de classe' : '—'))))))));
+      } else if (F.mpvue === 'semaine') {
+        const fs = fichesDe(acts);
+        const titre = `Planification hebdomadaire — ${sousTitre}, semaine ${sem}`;
+        zone.append(h('div', { class: 'ped-actions' },
+          btn('imprimer', 'Plan de la semaine (PDF)', () => imprimer(A, titre, '<h1>' + esc(titre) + '</h1><table><thead><tr><th>Domaine</th><th>Thème / composante</th><th>Activité</th></tr></thead><tbody>'
+            + acts.map(p => '<tr><td>' + esc(p.domaine) + '</td><td>' + esc(p.composante) + '</td><td>' + esc(p.activite) + (p.suite ? ' (suite)' : '') + '</td></tr>').join('') + '</tbody></table>' + notesHtml(cleNote)), 's', { 'data-ped': 'plan-semaine' }),
+          btn('classeur', `Classeur de la semaine (${fs.length} fiches)`, () => classeurMat(`Classeur de la semaine ${sem} — ${sousTitre}`, fs, cleNote), 's p', { 'data-ped': 'classeur-semaine' })));
+        if (ap) zone.append(ap);
+        if (!acts.length) zone.append(h('p', { class: 'ped-vide' }, 'Pas d’activité prévue cette semaine.'));
+        zone.append(h('div', { class: 'ped-grille' }, doms.filter(x => acts.some(p => p.domaine === x.code)).map(x => h('div', { class: 'ped-carte', 'data-ped-mat': x.code },
+          h('h3', {}, domCourt(x)), h('ul', { class: 'ped-liste' }, acts.filter(p => p.domaine === x.code).map(p => h('li', {}, h('span', { class: 'ped-aide' }, p.composante + ' : '), lienActivite(d, p), p.suite ? h('span', { class: 'ped-aide' }, ' (suite)') : null)))))));
+      } else {
+        const am = P.filter(p => p.mois === F.mpmois);
+        const sems = uniq(am.map(p => p.semaine)).sort((a, b) => a - b);
+        const fsMois = fichesDe(am);
+        const tri = (am[0] || {}).trimestre;
+        const cellule = (s, dom) => am.filter(p => p.semaine === s && p.domaine === dom);
+        const titre = 'Planification mensuelle — ' + sousTitre + (tri ? ' (trimestre ' + tri + ')' : '');
+        zone.append(h('div', { class: 'ped-actions' },
+          btn('imprimer', 'Planification du mois (PDF)', () => imprimer(A, titre, '<h1>' + esc(titre) + '</h1><table><thead><tr><th>Semaine</th>' + doms.map(x => '<th>' + esc(x.code) + '</th>').join('') + '</tr></thead><tbody>'
+            + sems.map(s => '<tr><td>Semaine ' + s + '</td>' + doms.map(x => '<td>' + cellule(s, x.code).map(p => '<b>' + esc(p.composante) + '</b> : ' + esc(p.activite)).join('<br>') + '</td>').join('') + '</tr>').join('') + '</tbody></table>'
+            + '<p class="mention">' + doms.map(x => esc(x.code + ' : ' + x.nom)).join(' ; ') + '</p>' + notesHtml(cleNote)), 's', { 'data-ped': 'plan-mois' }),
+          btn('classeur', `Classeur du mois (${fsMois.length} fiches${fsMois.length > MAX_LIVRET ? ', ' + MAX_LIVRET + ' premières' : ''})`, () => classeurMat(`Classeur du mois — ${sousTitre}`, fsMois, cleNote), 's', { 'data-ped': 'classeur-mois' })));
+        if (ap) zone.append(ap);
+        zone.append(h('div', { class: 'ped-tw' }, h('table', { class: 'ped-t', 'data-ped': 'table-mois' }, h('thead', {}, h('tr', {}, ['Semaine'].concat(doms.map(x => x.code)).map(x => h('th', {}, x)))),
+          h('tbody', {}, sems.map(s => h('tr', {}, h('td', { class: 'n' }, lien({ onclick: () => { F.mpvue = 'semaine'; F.mpsem = String(s); sauverF(); rendre(); } }, 'Semaine ' + s)),
+            doms.map(x => h('td', {}, cellule(s, x.code).map(p => h('div', {}, h('span', { class: 'ped-aide' }, p.composante + ' : '), lienActivite(d, p)))))))))));
+        zone.append(h('p', { class: 'ped-aide' }, doms.map(x => x.code + ' : ' + x.nom).join(' ; ')));
+      }
+      zone.append(h('div', { class: 'ped-carte' }, h('h3', {}, 'Notes de planification'), blocNotes(cleNote)));
+    }
+
     await rendre();
   }
 
@@ -1007,5 +1322,5 @@
     return true;
   }
 
-  global.Pedagogie = { monter, imprimerJeu, index, cours, completer, completerResumes, fusionnerNotes, inventaireNotes, toutHorsLigne, journee, imprimerSimple: imprimerDefaut, _int: { ficheHtml, resumeHtml, epreuveSujetHtml, epreuveCorrigeHtml, nettoyer, miseEnPage, hauteurMm, eff } };
+  global.Pedagogie = { monter, estMaternelle, sectionMaternelle, imprimerJeu, index, cours, completer, completerResumes, fusionnerNotes, inventaireNotes, toutHorsLigne, journee, imprimerSimple: imprimerDefaut, _int: { ficheHtml, resumeHtml, epreuveSujetHtml, epreuveCorrigeHtml, nettoyer, miseEnPage, hauteurMm, eff } };
 })(window);

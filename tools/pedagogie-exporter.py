@@ -33,6 +33,8 @@ CHAMPS_EXCLUS_FICHE = {"fichier"}          # noms de fichiers d'origine : inutil
 # objectifs, stratégies…) est rangé à part, un fichier par cours et par matière, chargé à l'ouverture d'une fiche ou d'un classeur.
 CHAMPS_LISTE_FICHE = ("id", "cours", "matiere", "sous_matiere", "unite", "intitule", "sa", "seance", "semaine", "duree", "titre", "statut", "contenus")
 # Résumés : même principe ; ces champs (exercices, méthode, exemples…) ne servent qu'à l'affichage d'un résumé et vont dans <COURS>.resumes.json
+# Maternelle (SCOLARIS 2.1.0) : la liste porte en plus la section, le domaine et le calendrier (filtres section → domaine → composante → mois / semaine)
+CHAMPS_LISTE_MAT = CHAMPS_LISTE_FICHE + ("section", "sections", "domaine_code", "domaine_nom", "mois", "trimestre", "a_verifier")
 CHAMPS_CORPS_RESUME = {"exercices", "mention", "methode", "exemple", "vocabulaire", "manuel_note", "sources", "je_retiens", "questions_reponses",
                        "message", "actualisation", "situation", "engagement", "mots_cles", "lecture", "bilan"}
 
@@ -51,6 +53,9 @@ def charger(scolaris, pack):
         with gzip.open(pack, "rt", encoding="utf-8") as f:
             P = json.load(f)
         version_pack = P.get("version") or P.get("version_scolaris")
+        for k in ("maternelle", "programme_en_vigueur"):
+            if P.get(k):
+                C[k] = P[k]
         for k in ("fiches", "resumes", "programmes", "guides", "modeles"):
             if isinstance(P.get(k), list) and P[k]:
                 C[k] = P[k]
@@ -181,6 +186,36 @@ def revisions_cours(C, cours):
     return out
 
 
+def exporter_maternelle(C, tmp, empreintes):
+    """École maternelle (pack 2.1.0) : MAT.json (sections, domaines, progressions, emplois du temps, grilles d'observation,
+    liste des fiches et des repères) ; corps des fiches dans MAT.fiches.dg.json et des repères dans MAT.resumes.json."""
+    M = C["maternelle"]
+    fiches = [{k: v for k, v in f.items() if k not in CHAMPS_EXCLUS_FICHE} for f in C["fiches"] if f.get("cours") == "MAT"]
+    fiches.sort(key=lambda f: (MOIS_SCO.index(f["mois"]) if f.get("mois") in MOIS_SCO else 99, f.get("semaine") or 0,
+                               f.get("domaine_code") or "", f.get("sous_matiere") or "", f.get("titre") or ""))
+    legeres = [{k: f[k] for k in CHAMPS_LISTE_MAT if k in f} for f in fiches]
+    corps = {str(f["id"]): {k: v for k, v in f.items() if k not in CHAMPS_LISTE_MAT} for f in fiches}
+    info = {}
+    oc, ec = ecrire(tmp, "MAT.fiches.dg.json", corps)
+    empreintes.append(ec)
+    info["dg"] = {"fichier": "MAT.fiches.dg.json", "octets": oc, "empreinte": ec, "nb": len(corps)}
+    reperes = [dict(r, cours="MAT", matiere="dg", domaine=r.get("domaine") or r.get("domaine_code")) for r in M.get("reperes") or []]
+    res_leg = [{k: v for k, v in r.items() if k not in CHAMPS_CORPS_RESUME} for r in reperes]
+    res_corps = {str(r["id"]): {k: v for k, v in r.items() if k in CHAMPS_CORPS_RESUME} for r in reperes}
+    orr, err = ecrire(tmp, "MAT.resumes.json", res_corps)
+    empreintes.append(err)
+    info["_resumes"] = {"fichier": "MAT.resumes.json", "octets": orr, "empreinte": err, "nb": len(res_corps)}
+    mat = {k: M.get(k) for k in ("annee", "sections", "domaines", "progressions", "emplois_du_temps", "grilles", "sources", "note_domaines")}
+    d = {"cours": "MAT", "maternelle": mat, "programmes": [], "progression": [], "edt": None, "fiches": legeres, "resumes": res_leg,
+         "epreuves": [], "plan": {}, "guides": [g["id"] for g in C["guides"] if "MAT" in (g.get("cours") or [])],
+         "corps": {m: x["fichier"] for m, x in info.items()}}
+    octets, e = ecrire(tmp, "MAT.json", d)
+    empreintes.append(e)
+    return {"cours": "MAT", "libelle": "Maternelle", "fichier": "MAT.json", "octets": octets, "empreinte": e, "corps": info,
+            "nb": {"fiches": len(fiches), "resumes": len(reperes), "epreuves": 0, "programmes": 0,
+                   "progressions": len(M.get("progressions") or []), "grilles": len(M.get("grilles") or [])}}
+
+
 def ecrire(dossier, nom, obj):
     t = json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
     for a, b in SIGNES.items():
@@ -234,6 +269,8 @@ def main():
         empreintes.append(e)
         cours_info.append({"cours": c, "fichier": c + ".json", "octets": octets, "empreinte": e, "corps": info_corps,
                            "nb": {"fiches": len(fiches), "resumes": len(resumes), "epreuves": len(ep), "programmes": len(progs)}})
+    if C.get("maternelle"):
+        cours_info.append(exporter_maternelle(C, tmp, empreintes))
     guides = [{k: g.get(k) for k in ("id", "matiere", "cours", "titre", "groupe", "html", "source", "niveau", "mention")} for g in C["guides"]]
     og, eg = ecrire(tmp, "guides.json", guides)
     empreintes.append(eg)
@@ -242,7 +279,8 @@ def main():
     index = {"version": version, "genere": date.today().isoformat(), "scolaris": getattr(CFG, "VERSION", ""), "pack": vpack,
              "source": C.get("source"), "mention": "Contenus de SCOLARIS : fiches conçues selon l'APC (à valider par le conseiller pédagogique), "
              "fiches transmises par la CS (crédit de l'auteur conservé), guides officiels MEMP / INFRE.",
-             "matieres": {k: v for k, v in C["matieres"].items() if k != "dg"}, "cours": cours_info,
+             "matieres": {k: v for k, v in C["matieres"].items() if k != "dg" or C.get("maternelle")}, "cours": cours_info,
+             "programme_en_vigueur": C.get("programme_en_vigueur"),
              "guides": {"fichier": "guides.json", "octets": og, "nb": len(guides)},
              # modèles de fiche vierges (non affichés par les applications) : fichier à part, hors du premier chargement
              "modeles": {"fichier": "modeles.json", "nb": len(C.get("modeles") or [])},
