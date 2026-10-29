@@ -1,0 +1,72 @@
+<!doctype html>
+<!-- République du Bénin — Ministère des Enseignements Maternel et Primaire (MEMP) — Application CP -->
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+<script src="js/icones.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Application CP — MEMP Bénin</title>
+  <meta name="description" content="Application des Conseillers Pédagogiques — Ministère des Enseignements Maternel et Primaire de la République du Bénin. Fonctionne hors ligne.">
+  <meta name="theme-color" content="#0b5d3b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Application CP">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="48x48" href="icons/favicon-48.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+  <div id="app"></div>
+  <div id="dl-holder"></div>
+  <noscript><p style="padding:20px;font-family:sans-serif">Cette application nécessite JavaScript.</p></noscript>
+  <script src="lib/jszip.min.js"></script>
+  <script src="lib/pdf-lib.min.js"></script>
+  <script src="js/securite.js"></script>
+  <script src="js/sauvegarde-auto.js"></script>
+  <script src="js/ed25519.js"></script>
+  <script src="js/sync-client.js"></script>
+  <script src="js/sync-commun.js"></script>
+  <script src="js/choix.js" data-geo="data/referentiel_villages.json"></script>
+  <script src="js/xlsx-ecrire.js"></script>
+  <script src="js/uascep.js"></script>
+  <script src="js/pvs-modules.js"></script>
+  <script src="js/pvs.js"></script>
+  <script src="js/logo-ecole.js"></script>
+  <script src="js/guide.js"></script>
+  <script src="js/guide-contenu.js"></script>
+  <script src="js/pedagogie.js"></script>
+  <script src="js/examen-blanc.js"></script>
+  <script type="module" src="js/main.js"></script>
+<!-- Installation de l'application (PC, Android, tablette, iPhone / iPad) -->
+<div id="installBandeau" hidden style="position:fixed;left:12px;right:12px;bottom:12px;z-index:9999;max-width:520px;margin:0 auto;background:#0b5d3b;color:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 6px 24px rgba(0,0,0,.25);font:15px/1.4 system-ui,Segoe UI,Roboto,Arial,sans-serif;display:flex;gap:10px;align-items:center">
+  <span style="font-size:26px" aria-hidden="true"><svg class="ico ico-telephone" data-ico="telephone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span>
+  <span id="installTexte" style="flex:1">Installer l'application sur cet appareil : elle s'ouvrira comme une application et fonctionnera sans Internet.</span>
+  <button id="installOui" type="button" style="background:#fff;color:#0b5d3b;border:0;border-radius:10px;padding:9px 14px;font-weight:700;cursor:pointer">Installer</button>
+  <button id="installNon" type="button" aria-label="Fermer" style="background:transparent;color:#fff;border:0;font-size:20px;cursor:pointer">✕</button>
+</div>
+<script>
+(function () {
+  var b = document.getElementById('installBandeau'), oui = document.getElementById('installOui'), non = document.getElementById('installNon'), txt = document.getElementById('installTexte');
+  var invite = null, cle = 'installRefus:' + location.pathname;
+  var installee = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  var refus = false; try { refus = localStorage.getItem(cle) === '1'; } catch (e) {}
+  function montrer() { if (!installee && !refus) { b.hidden = false; b.style.display = 'flex'; } }
+  function cacher() { b.hidden = true; b.style.display = 'none'; }
+  cacher();
+  /* PC (Chrome, Edge) et Android : invitation native */
+  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); invite = e; montrer(); });
+  oui.addEventListener('click', function () {
+    if (invite) { invite.prompt(); invite.userChoice.then(function () { invite = null; cacher(); }); return; }
+    cacher();
+  });
+  non.addEventListener('click', function () { try { localStorage.setItem(cle, '1'); } catch (e) {} cacher(); });
+  window.addEventListener('appinstalled', cacher);
+  /* iPhone / iPad (Safari) : pas d'invitation automatique, on explique le geste */
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (ios && !installee) { txt.textContent = "Pour installer : touchez le bouton Partager (carré avec une flèche), puis « Sur l'écran d'accueil »."; oui.textContent = 'Compris'; setTimeout(montrer, 1500); }
+})();
+</script>
+</body>
+</html>
