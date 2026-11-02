@@ -249,6 +249,7 @@ function page1EP(R, doc, annee) {
     R.casesSlash(xsSal + 2, y, 2, 21, `sp.${lig}.salles`, fs);
   }
   y += pas * 1.2; R.t(X0, y, '(1) Uniquement pour le privé.', !fin ? 7.5 : 8.5);
+  { const na = R.val('sp.jumelee.AUTRE'), ca = R.val('sp.jumelee_autre_cours'); if (na || ca) R.t(X0 + 190, y, `Autre combinaison jumelée : ${ca || '…'} (${na || '0'} classe(s))`, !fin ? 7.5 : 8.5); }
   pied(R, 1, doc);
 }
 

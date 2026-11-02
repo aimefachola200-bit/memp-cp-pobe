@@ -31,6 +31,26 @@ export function completion(f) {
   return tot ? Math.round(filled / tot * 100) : 0;
 }
 
+/** Provenance d'une fiche (synchronisation 2.0) : dernier envoi reçu (qui, quand) ou saisie sur cet appareil. */
+export function sourceFiche(f) {
+  if (!f) return '';
+  const r = (f.recu || [])[(f.recu || []).length - 1], j = (d) => (d ? new Date(d).toLocaleDateString('fr-FR') : '');
+  if (r) return `Reçue de ${[r.de && r.de.role, r.de && (r.de.role === 'CP' ? r.de.codeZone || r.de.username : r.de.nomCs || r.de.codeCs || r.de.username)].filter(Boolean).join(' ')} le ${j(r.le)}`;
+  return `Saisie sur cet appareil${f.updated ? ' (mise à jour le ' + j(f.updated) + ')' : ''}`;
+}
+/** Corrections traçables : chaque valeur modifiée à la main est consignée (ancienne valeur, nouvelle valeur, auteur, date).
+    Les modifications successives d'une même case par la même personne dans la demi-heure sont regroupées. */
+export function noterCorrections(user, fiche, avant, apres, auto) {
+  const L = fiche.corrections = fiche.corrections || [], le = nowISO(), val = (o, k) => (o[k] ?? auto[k] ?? '');
+  for (const k of new Set([...Object.keys(avant), ...Object.keys(apres)])) {
+    const a = String(val(avant, k)), b = String(val(apres, k)); if (a === b) continue;
+    const der = [...L].reverse().find(x => x.k === k);
+    if (der && der.par === user.username && Date.parse(le) - Date.parse(der.le) < 30 * 60000) { der.apres = b; der.le = le; continue; }
+    L.push({ k, avant: a, apres: b, le, par: user.username, role: user.role, statut: fiche.statut });
+  }
+  if (L.length > 500) L.splice(0, L.length - 500);
+}
+
 export async function changeStatut(user, rec, store, to, action, comment = '') {
   const from = rec.statut;
   rec.statut = to; rec.comment = comment || ''; rec.updated = nowISO();

@@ -107,8 +107,8 @@ async function list(ctx) {
     { label: '\uE001 Nouveau bilan', kind: 'primary', show: u.role !== 'DDEMP', onClick: () => create(u, ctx) },
     { label: '\uE014 Ouvrir', onClick: () => { const s = sel(); s && ctx.go('bilan/' + s.id); } },
     { label: '\uE00A Charger', onClick: async () => { const b = await loadFile(u); if (b) await refresh(); } },
-    { label: '\uE009 PDF', onClick: act(s => exportB(u, s, 'pdf').then(() => false)) }, { label: '\uE006 PDF signé', onClick: act(s => exportB(u, s, 'pdf-signe').then(() => false)) },
-    { label: '\uE009 Excel', onClick: act(s => exportB(u, s, 'xlsx').then(() => false)) }, { label: '\uE009 JSON', onClick: act(s => exportB(u, s, 'json').then(() => false)) },
+    { label: '\uE009 Fiche remplie (PDF)', onClick: act(s => exportB(u, s, 'pdf').then(() => false)) }, { label: '\uE006 PDF signé', onClick: act(s => exportB(u, s, 'pdf-signe').then(() => false)) },
+    { label: '\uE009 Fiche remplie (Excel)', onClick: act(s => exportB(u, s, 'xlsx').then(() => false)) }, { label: '\uE009 JSON', onClick: act(s => exportB(u, s, 'json').then(() => false)) },
     { label: '\uE058 Réinitialiser', onClick: act(s => canEditB(u, s) ? resetB(u, s) : (toast('Réinitialisation non autorisée.', 'err'), false)) },
     { label: '\uE005 Supprimer', onClick: act(s => deleteB(u, s)) },
   ]);
@@ -192,8 +192,8 @@ async function editor(ctx) {
   const reload = () => ctx.reload();
   const actions = () => [
     { label: '\uE00A Charger', show: editable, onClick: async () => { await save(); const nb = await loadFile(u, { target: b }); if (nb) reload(); } },
-    { label: '\uE009 PDF', onClick: async () => { await save(); exportB(u, b, 'pdf'); } }, { label: '\uE006 PDF signé', show: mine(u, b), onClick: async () => { await save(); exportB(u, b, 'pdf-signe'); } },
-    { label: '\uE009 Excel', onClick: async () => { await save(); exportB(u, b, 'xlsx'); } }, { label: '\uE009 JSON', onClick: async () => { await save(); exportB(u, b, 'json'); } },
+    { label: '\uE009 Télécharger la fiche remplie (PDF)', onClick: async () => { await save(); exportB(u, b, 'pdf'); } }, { label: '\uE006 PDF signé', show: mine(u, b), onClick: async () => { await save(); exportB(u, b, 'pdf-signe'); } },
+    { label: '\uE009 Télécharger la fiche remplie (Excel)', onClick: async () => { await save(); exportB(u, b, 'xlsx'); } }, { label: '\uE009 JSON', onClick: async () => { await save(); exportB(u, b, 'json'); } },
     { label: '\uE03C Appareil photo', show: editable, onClick: () => { tab = 'photos'; show(); openCamera({ onCapture: async (data, facing) => { await db.put('photos', { id: uid(), bilanId: b.id, data, facing, legende: '', date: nowISO() }); if (tab === 'photos') show(); } }); } },
     { label: '\uE03D Pré-remplir', show: editable && b.periode !== 'ANNUEL' && b.niveau === 'ZONE', onClick: async () => { const sc = (await scoped('schools', u)).filter(s => !b.codeZone || s.codeZone === b.codeZone); const a = b.actors[0].k; b.data[`t1.${a}.em_e`] = String(sc.filter(s => s.cycle === 'Maternelle').length); b.data[`t1.${a}.ep_e`] = String(sc.filter(s => s.cycle === 'Primaire').length); touch(); show(); toast(`${sc.length} école(s) reprise(s) depuis la base. Complétez les classes et effectifs.`); } },
     { label: 'Σ Consolider', show: editable && (b.periode === 'ANNUEL' || b.niveau === 'CS'), onClick: async () => { if (!(await confirmBox('Recalculer ce bilan à partir des ' + (b.periode === 'ANNUEL' ? 'trois trimestres' : 'bilans de zone') + ' disponibles ? Les valeurs saisies concernées seront remplacées.', 'Consolider'))) return; const n = await consolidateInto(u, b); if (!n) return toast('Aucun bilan source trouvé sur cet appareil.', 'warn'); dirty = true; await save(); toast(`${n} bilan(s) consolidé(s).`); reload(); } },

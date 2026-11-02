@@ -61,7 +61,7 @@ async function liste(ctx) {
       return h('tr', h('td', h('strong', s.nom), h('div', { class: 'muted' }, [s.numZone ? 'Zone ' + s.numZone : '', s.directeur].filter(Boolean).join(' · '))), h('td', typ === 'primaire' ? 'EP' : 'EM'), h('td', s.secteur || ''),
         h('td', rec ? h('span', { class: 'badge Validée' }, `${n} valeur(s) saisie(s)`) : h('span', { class: 'muted' }, 'calculée seulement'), rec && rec.maj ? h('div', { class: 'muted' }, new Date(rec.maj).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })) : null),
         h('td', { style: { whiteSpace: 'nowrap' } }, h('button', { class: 'btn sm primary', onclick: () => ctx.go(`recfiche/${s.id}/${typ}/${annee}`) }, '\uE006 Remplir'), ' ',
-          h('button', { class: 'btn sm', onclick: () => telechargerPdf(s, typ, annee, false).catch(e => toast(e.message, 'err')) }, '\uE00D PDF rempli')));
+          h('button', { class: 'btn sm', onclick: () => telechargerPdf(s, typ, annee, false).catch(e => toast(e.message, 'err')) }, '\uE00D Fiche remplie (PDF)')));
     }
     holder.replaceChildren(schools.length ? h('div', { class: 'gridwrap' }, h('table', { class: 'g' }, h('thead', h('tr', h('th', 'École'), h('th', 'Type'), h('th', 'Secteur'), h('th', 'Fiche ' + annee), h('th', ''))), h('tbody', lignes)))
       : h('p', { class: 'muted' }, 'Aucune école dans votre périmètre : ajoutez d\'abord les écoles (menu « Écoles »).'));
@@ -284,9 +284,9 @@ async function fiche(ctx) {
       if (!(await confirmBox('Vider le formulaire et revenir aux valeurs calculées ? (rien n\'est supprimé tant que vous ne sauvegardez pas)', 'Réinitialiser'))) return;
       form.querySelectorAll('input,select').forEach(e => { if (e.type === 'checkbox') { const m = e.closest('[data-multi]'); e.checked = m ? JSON.parse(m.dataset.auto || '[]').includes(e.value) : e.dataset.auto === '1'; } else { e.value = ''; e.classList.remove('rc-saisi'); } }); recalculer();
     } },
-    { label: '\uE00D PDF rempli', onClick: async () => { if (ecrit && Object.keys(collecter()).length && !(await sauver(true))) return; telechargerPdf(s, typ, annee, false).catch(e => toast(e.message, 'err')); } },
+    { label: '\uE00D Télécharger la fiche remplie (PDF)', onClick: async () => { if (ecrit && Object.keys(collecter()).length && !(await sauver(true))) return; telechargerPdf(s, typ, annee, false).catch(e => toast(e.message, 'err')); } },
     { label: '\uE00D PDF vierge', onClick: () => telechargerPdf(s, typ, annee, true).catch(e => toast(e.message, 'err')) },
-    { label: '\uE015 Excel', onClick: () => exporterExcel().catch(e => toast(e.message, 'err')) },
+    { label: '\uE015 Télécharger la fiche remplie (Excel)', onClick: () => exporterExcel().catch(e => toast(e.message, 'err')) },
     { label: '\uE00A Importer Excel', show: ecrit, onClick: importerExcel },
   ]);
   dessiner();

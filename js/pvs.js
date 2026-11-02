@@ -1887,7 +1887,7 @@
         let ind = {}; if (A.indicateurs) { try { ind = ((await A.indicateurs(r.annee || saisonCourante())) || {})[String(r.entite)] || {}; } catch (e) { ind = {}; } }
         const sig = etat.signaletique.find(x => String(x.entite) === String(r.entite)) || {};
         const man = etat.manuels.filter(x => String(x.entite) === String(r.entite) && (!x.annee || x.annee === r.annee)).reduce((a, x) => a + num(x.nombre), 0);
-        const prop = { effG: ind.effG, effF: ind.effF, classes: ind.groupes, ensPoste: ind.enseignants, salles: vide(sig.salles) ? ind.salles : sig.salles, tablesBancs: ind.tablesBancs,
+        const prop = { effG: ind.effG, effF: ind.effF, classes: ind.groupes, classesSimples: ind.classesSimples, classesJumelees: ind.classesJumelees, classesMultigrades: ind.classesMultigrades, classesAutorisees: ind.classesAutorisees, ensPoste: ind.enseignants, salles: vide(sig.salles) ? ind.salles : sig.salles, tablesBancs: ind.tablesBancs,
           manuels: man || '', latrines: vide(sig.latrines) ? ind.latrines : sig.latrines, pointEau: sig.pointEau || ind.pointEau || '', electricite: sig.electricite || '', latitude: sig.latitude, longitude: sig.longitude };
         Object.entries(prop).forEach(([k, v]) => { if (vide(r[k]) && !vide(v)) r[k] = v; });
       }
@@ -1972,8 +1972,9 @@
         const lignesS = ecs.map(e => { const r = etat.rentree.find(x => String(x.entite) === String(e.cle) && x.annee === f.annee); return { e, r, statut: r ? (ST()[r.statut || 'BROUILLON'] || r.statut) : 'Non reçue' }; })
           .sort((a, b) => String(a.e.lib).localeCompare(String(b.e.lib), 'fr'));
         const compte = {}; lignesS.forEach(x => { compte[x.statut] = (compte[x.statut] || 0) + 1; });
-        const tete = ['N°', 'École', 'Statut', 'Transmise le', 'Décision du', 'Décidé par', 'Motif de renvoi', 'Effectif total'];
-        const val = (x) => [x.e.lib, x.statut, x.r && x.r.dateTransmission ? fr(x.r.dateTransmission) : '', x.r && x.r.dateValidation ? fr(x.r.dateValidation) : '', (x.r && x.r.validePar) || '', (x.r && x.r.motifRenvoi) || '', x.r ? (num(x.r.effG) + num(x.r.effF)) || '' : ''];
+        const tete = ['N°', 'École', 'Statut', 'Transmise le', 'Décision du', 'Décidé par', 'Motif de renvoi', 'Effectif total', 'Classes ouvertes', 'Classes autorisées', 'Écart'];
+        const val = (x) => [x.e.lib, x.statut, x.r && x.r.dateTransmission ? fr(x.r.dateTransmission) : '', x.r && x.r.dateValidation ? fr(x.r.dateValidation) : '', (x.r && x.r.validePar) || '', (x.r && x.r.motifRenvoi) || '', x.r ? (num(x.r.effG) + num(x.r.effF)) || '' : '', x.r && !vide(x.r.classes) ? num(x.r.classes) : '', x.r && !vide(x.r.classesAutorisees) ? num(x.r.classesAutorisees) : '',
+          x.r && !vide(x.r.classes) && !vide(x.r.classesAutorisees) ? (global.ClassesOrg ? global.ClassesOrg.ecart(num(x.r.classesAutorisees), num(x.r.classes)).etat : num(x.r.classes) - num(x.r.classesAutorisees)) : ''];
         zone.append(h('div', { class: 'pvs-barre' }, h('label', {}, 'Année scolaire', sAn),
           h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'excel-suivi', onclick: () => exporter([{ nom: 'Suivi des fiches de rentrée', lignes: [tete.slice(1)].concat(lignesS.map(val)), entete: 0 }], 'suivi-rentree') }, ' Excel')),
         h('p', { class: 'pvs-aide' }, lignesS.length + ' école(s) : ' + Object.entries(compte).map(([k, v]) => k + ' ' + v).join(' · ')),

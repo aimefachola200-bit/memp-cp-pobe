@@ -12,8 +12,9 @@
   if (global.SyncCommun) return;
   const MONTANT = { 'sport:licences': 1, 'sport:competitions': 1, 'sport:matchs': 1, 'sport:resultats': 1, 'sport:palmares': 1, 'sport:performances': 1,
     'examens:candidats': 1, 'examens:concours': 1, 'examens:participants': 1, 'patrimoine:besoins': 1, 'communication:lectures': 1, 'pilotage:indicateurs': 1,
-    'territoire:rentree': 1, 'communication:courrier': 1 };
-  const DESCENDANT = { 'communication:notes': 1, 'communication:echeances': 1, 'communication:agenda': 1, 'territoire:retours': 1 };
+    'territoire:rentree': 1, 'communication:courrier': 1,
+    'territoire:signaletique': 1 };   // fiche signalétique : de l'école vers la CS et le département (les visites de classe restent sur l'appareil)
+  const DESCENDANT = { 'communication:notes': 1, 'communication:echeances': 1, 'communication:agenda': 1, 'territoire:retours': 1, 'territoire:structures': 1 };
   const LES_DEUX = { 'examens:salles': 1 };   // centres d'examen et salles : la CS les envoie au département et aux écoles
   /* Circuit (fiche de rentrée, courrier) : la décision locale prise après la dernière transmission n'est pas écrasée par une copie montante plus ancienne */
   const RANG = { rentree: { BROUILLON: 0, RENVOYEE: 1, TRANSMISE: 1, VALIDEE_CS: 2, VALIDEE_DEPARTEMENT: 3, CLOTUREE: 4 }, courrier: { 'Brouillon': 0, 'Envoyé': 1, 'Reçu': 2, 'Traité': 3, 'Archivé': 4 } };

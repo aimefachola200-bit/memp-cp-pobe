@@ -255,9 +255,9 @@ async function fiches(ctx) {
     { label: '\uE004 Valider', show: u.role !== 'CP' && u.role !== 'DDEMP', kind: 'accent', onClick: act(s => validate(u, s)) },
     { label: '\uE037 Demander correction', show: u.role !== 'CP' && u.role !== 'DDEMP', onClick: act(s => requestCorrection(u, s)) },
     { label: '\uE034 Déverrouiller', show: u.role === 'ADMIN', onClick: act(s => unlock(u, s)) },
-    { label: '\uE009 PDF', onClick: act(s => exportFiche(s, 'pdf').then(() => false)) },
+    { label: '\uE009 Fiche remplie (PDF)', onClick: act(s => exportFiche(s, 'pdf').then(() => false)) },
     { label: '\uE006 PDF signé', onClick: act(s => exportFiche(s, 'pdf', { signed: true }).then(() => false)) },
-    { label: '\uE009 Excel', onClick: act(s => exportFiche(s, 'xlsx').then(() => false)) },
+    { label: '\uE009 Fiche remplie (Excel)', onClick: act(s => exportFiche(s, 'xlsx').then(() => false)) },
     { label: '\uE005 Supprimer', show: u.role !== 'CCS' && u.role !== 'DDEMP', onClick: act(async s => { if (!canEdit(u, s)) { toast('Suppression non autorisée (fiche transmise ou validée).', 'err'); return false; } if (!(await confirmBox('Supprimer cette fiche ?', 'Supprimer', true))) return false; await db.del('fiches', s.id); await addLog(u, { action: 'Suppression fiche', target: s.schoolNom + ' ' + s.annee }); return true; }) },
   ]);
   await refresh();

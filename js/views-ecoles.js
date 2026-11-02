@@ -9,6 +9,7 @@ import { htmlVersXlsx } from './xlsx.js';
 import { bannerBytes } from './pdf.js';
 import { scoped } from './data.js';
 import { sectionsFor, gridValue } from './schema.js';
+import { classesStructure } from './rapports.js';
 import * as E from './effectifs-schema.js';
 import { svgCourbe, PALETTE } from './effectifs-charts.js';
 
@@ -53,7 +54,9 @@ export function structureFiche(fiche) {
     pédagogique ; à défaut le nombre « classes ouvertes » saisi (compté en classes simples). */
 export function classesFiche(fiche, school) {
   const d = (fiche && fiche.data) || {}, em = fiche ? String(fiche.kind || '').startsWith('EM') : (school && school.cycle === 'Maternelle');
-  const st = fiche ? structureFiche(fiche) : { simple: 0, jumelee: 0, multi: 0 }, tot = st.simple + st.jumelee + st.multi;
+  // fiches au format GESCOL : structure lue sur les valeurs (toute combinaison de cours jumelés, « Autre combinaison » comprise)
+  const vg = fiche && fiche.format === 'gescol' ? (fiche.instantane || fiche.valeurs || null) : null, sg = vg ? classesStructure(vg) : null;
+  const st = sg && sg.ouvertes ? { simple: sg.simples, jumelee: sg.jumelees, multi: sg.multigrades } : fiche ? structureFiche(fiche) : { simple: 0, jumelee: 0, multi: 0 }, tot = st.simple + st.jumelee + st.multi;
   const saisie = num(em ? d.sections_ouv : d.classes_ouv), autRaw = em ? d.sections_aut : d.classes_aut;
   const autorisees = autRaw === '' || autRaw === undefined || autRaw === null ? (school && school.classesAutorisees !== '' && school.classesAutorisees != null ? +school.classesAutorisees : null) : num(autRaw);
   const r = tot ? { simples: st.simple, jumelees: st.jumelee, multigrades: st.multi, ouvertes: tot, source: 'structure pédagogique' }

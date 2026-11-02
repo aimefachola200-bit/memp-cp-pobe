@@ -42,7 +42,7 @@ export async function excelRapport(D, doc, annee, v, origine = {}) {
         const jum = Object.fromEntries(b.jumelees);
         for (const [lig, lib] of [['simple', 'Simple'], ['jumelee', 'Jumelée'], ['multi', 'Multigrade']]) {
           ws.set(r, 0, lib, 'td');
-          if (lig === 'jumelee') { ws.set(r, 1, Object.keys(jum).filter(c => v[`sp.jumelee.${c}`]).map(c => `${jum[c]} : ${v[`sp.jumelee.${c}`]}`).join('; ')); ws.merge(r, 1, r, 6); }
+          if (lig === 'jumelee') { ws.set(r, 1, Object.keys(jum).filter(c => v[`sp.jumelee.${c}`]).map(c => `${c === 'AUTRE' && v['sp.jumelee_autre_cours'] ? 'Autre (' + v['sp.jumelee_autre_cours'] + ')' : jum[c]} : ${v[`sp.jumelee.${c}`]}`).join('; ')); ws.merge(r, 1, r, 6); }
           else NIV_EP.forEach((n, j) => ws.set(r, j + 1, v[`sp.${lig}.${n}`] ?? '', 'td'));
           ws.set(r, 7, v[`sp.${lig}.salles`] ?? '', 'td'); r++;
         }

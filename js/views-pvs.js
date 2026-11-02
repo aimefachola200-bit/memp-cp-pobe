@@ -60,7 +60,7 @@ async function indicateurs(u, annee) {
       v.ensCommunautaires = p.filter(x => /ACDPCTD|AME|communaut|volont/i.test(x.statut || '')).length; v.ensAutres = p.length - v.ensFE - v.ensContractuels - v.ensCommunautaires;
     }
     const kind = (s.cycle === 'Maternelle' ? 'EM' : 'EP') + '_RENTREE', f = fiches.find(x => x.schoolId === s.id && x.annee === annee && x.kind === kind);
-    if (f) { const c0 = classesFiche(f, s); if (c0.ouvertes) v.groupes = c0.ouvertes; }   // classes ouvertes (jumelée / multigrade = une classe)
+    if (f) { const cl = classesFiche(f, s); if (cl.ouvertes) { v.groupes = cl.ouvertes; v.classesSimples = cl.simples || 0; v.classesJumelees = cl.jumelees || 0; v.classesMultigrades = cl.multigrades || 0; if (cl.autorisees !== null && cl.autorisees !== undefined && cl.autorisees !== '') v.classesAutorisees = cl.autorisees; } }   // classes ouvertes (jumelée / multigrade = une classe)
     if (f) { const x = INF.indicateurs((() => { const a = INF.vide(); INF.ajouter(a, s, f); return a; })()); if (x.salles_tot) v.salles = x.util || x.salles_tot; if (x.places_ep) v.tablesBancs = Math.round(x.places_ep / 2); if (x.lavage[1]) v.pointEau = x.lavage[0] ? 'Oui' : 'Non'; }
     if (s.cycle !== 'Maternelle') {
       const ff = fiches.find(x => x.schoolId === s.id && x.annee === annee && x.kind === 'EP_FIN'), r = reports.find(x => x.schoolId === s.id && x.annee === annee && x.cours === 'CM2');

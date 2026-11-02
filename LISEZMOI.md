@@ -1,6 +1,6 @@
 # Guide d’utilisation — MEMP-CP, DOSP et MEMP-CP Pobè — applications des conseillers pédagogiques et de la circonscription
 
-_Version 2.4.0_
+_Version 2.5.0_
 
 Rôles : Administrateur · Conseiller pédagogique · Chef de circonscription · DDEMP · DOSP
 
@@ -84,6 +84,9 @@ Une classe, c’est une salle et un maître : une classe jumelée (2 cours, ex. 
 1. Fiches de rentrée et de fin d’année : rubrique « **Structure pédagogique** » (simples par cours, jumelées par paire de cours, multigrades et salles utilisées) ; le nombre de classes ouvertes se remplit seul. Fiche de recensement : rubrique 3.14.
 2. Les fiches (recensement, rentrée, fin d’année, fiche de l’école), les tableaux de bord, les synthèses et les exports (PDF, Excel) reprennent automatiquement les classes simples, jumelées, multigrades, le total des classes ouvertes et les classes autorisées.
 3. Les ratios (élèves par classe, besoin en enseignants, tables-bancs, salles) se calculent sur les classes ouvertes ; les effectifs restent par cours.
+4. Toute combinaison de cours est possible pour une classe jumelée (ex. CI-CE1) : sur les fiches de rentrée et de fin d’année, colonne « **Autre combinaison** » et case « **cours concernés** ».
+5. Chaque fiche se télécharge remplie : boutons « **Télécharger la fiche remplie (PDF)** » et « **(Excel)** ».
+6. Les fiches remontées (école vers circonscription, CP vers CCS puis DOSP) portent leur source et leur date ; les corrections faites ensuite sont tracées (ancienne valeur, nouvelle valeur, auteur, date) dans « **Historique** » ou sur la fiche de l’école.
 
 **Bon à savoir**
 

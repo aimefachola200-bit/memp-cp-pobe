@@ -8,7 +8,7 @@ import { h, nowISO, toast, fmtDateTime, confirmBox, pickFile, readAsBuffer } fro
 import { db } from './db.js';
 import { badge } from './ui.js';
 import { FICHE_TYPES } from './schema.js';
-import { canEdit, canTransmit, canValidate, transmit, validate, requestCorrection, unlock, exportFiche } from './workflow.js';
+import { canEdit, canTransmit, canValidate, transmit, validate, requestCorrection, unlock, exportFiche, sourceFiche, noterCorrections } from './workflow.js';
 import { inScope, addLog } from './data.js';
 import { chargerRapports, KIND_DOC, contexteFiche, appliquer, valeursCalculees, controles, nbLignesPersonnel, validerValeur, tousCalculs, NIV_EP, tauxRemplissage } from './rapports.js';
 import { importerExcel } from './rapports-xlsx.js';
@@ -24,7 +24,7 @@ export async function render(id, ctx) {
   const school = await db.get('schools', fiche.schoolId);
   const editable = canEdit(u, fiche);
   const C = await contexteFiche(D, fiche, school, u, { figer: !editable });
-  let over = { ...C.over }; const auto = C.auto, origine = C.origine, calc = tousCalculs(D, doc);
+  let over = { ...C.over }, dejaSauve = { ...C.over }; const auto = C.auto, origine = C.origine, calc = tousCalculs(D, doc);
   let timer = null, dirty = false, cur = 0;
   ctx.title(T.label || info.titre, `${fiche.schoolNom} — ${fiche.annee}`);
 
@@ -36,6 +36,7 @@ export async function render(id, ctx) {
     h('div', { style: { flex: 1, minWidth: '160px' } }, h('div', { class: 'progress' }, progress), h('small', pct, ' remplie · ', nCtl)), saveState,
     h('div', { class: 'hint', style: { flex: '1 1 100%', margin: 0 } }, 'Les cases sont pré-remplies par l’application (fiche de l’école, personnel enseignant, effectifs des apprenants, fiche précédente) ; ',
       h('span', { class: 'rp-man', style: { padding: '0 4px' } }, 'en jaune'), ' : corrigées à la main ; ', h('span', { class: 'rp-calc', style: { padding: '0 4px' } }, 'en vert'), ' : totaux calculés. Videz une case pour revenir à la valeur proposée.'),
+    h('div', { class: 'sub', 'data-source': 'fiche', style: { flex: '1 1 100%', margin: 0 } }, 'Source : ' + sourceFiche(fiche), (fiche.corrections || []).length ? ` · ${fiche.corrections.length} correction(s) tracée(s) (voir « Historique »)` : ''),
     fiche.comment ? h('div', { class: 'hint', style: { flex: '1 1 100%', margin: 0 } }, h('b', 'Commentaire du CCS : '), fiche.comment) : null,
     !editable ? h('div', { class: 'hint', style: { flex: '1 1 100%', margin: 0 } }, `Fiche en lecture seule (statut « ${fiche.statut} »).`) : null);
   const content = h('div'), navEl = h('div', { class: 'ed-nav no-print' });
@@ -51,6 +52,7 @@ export async function render(id, ctx) {
   async function save(force = false) {
     clearTimeout(timer); if (!dirty && !force) return; dirty = false;
     if (!editable) return;
+    noterCorrections(u, fiche, dejaSauve, over, auto); dejaSauve = { ...over };
     const finales = appliquer(D, fiche, over, auto);
     fiche.instantane = finales; fiche.completion = tauxRemplissage(D, doc, finales); fiche.updated = nowISO();
     await db.put('fiches', fiche);
@@ -112,7 +114,10 @@ export async function render(id, ctx) {
         h('tbody', ligne('simple', 'Simple'), ligne('multi', 'Multigrade')))),
       h('p', { class: 'notes' }, 'Classes jumelées :'),
       h('div', { class: 'gridwrap' }, h('table', { class: 'g' }, h('thead', h('tr', b.jumelees.map(([, lib]) => h('th', lib)), h('th', 'Salles utilisées'))),
-        h('tbody', h('tr', b.jumelees.map(([c, lib]) => cellSaisie(`sp.jumelee.${c}`, `Jumelée ${lib}`)), cellSaisie('sp.jumelee.salles', 'Jumelée – salles'))))));
+        h('tbody', h('tr', b.jumelees.map(([c, lib]) => cellSaisie(`sp.jumelee.${c}`, `Jumelée ${lib}`)), cellSaisie('sp.jumelee.salles', 'Jumelée – salles'))))),
+      b.jumelees.some(([c]) => c === 'AUTRE') ? h('label', { class: 'field', style: { maxWidth: '420px' } }, h('span', 'Autre combinaison : cours concernés (ex. CI-CE1, CP-CM1)'),
+        saisie({ k: 'sp.jumelee_autre_cours', lib: 'Jumelée, autre combinaison – cours concernés', type: 'texte' })) : null,
+      h('p', { class: 'notes' }, 'Une classe jumelée ou multigrade compte pour une seule classe ouverte (jumelées et multigrades comptées une fois).'));
   }
   function personnelBloc(b) {
     const box = h('div', { style: { flex: '1 1 100%' } });
@@ -150,7 +155,17 @@ export async function render(id, ctx) {
     return h('div', l.length ? l.map(([niv, m]) => h('div', { class: 'hint', style: { margin: '6px 0', borderLeftColor: niv === 'danger' ? 'var(--err)' : 'var(--warn)' } }, niv === 'danger' ? '\uE036 ' : '\uE041 ', m))
       : h('p', '\uE004 Aucune incohérence détectée.'));
   }
-  const historyEl = () => h('div', (fiche.history || []).slice().reverse().map(x => h('div', { class: 'result', style: { cursor: 'default' } }, h('b', x.action), ' ', h('small', `${fmtDateTime(x.date)} · ${x.by || ''}${x.role ? ' (' + x.role + ')' : ''}`), x.comment ? h('div', x.comment) : null, x.from ? h('small', `${x.from} → ${x.to}`) : null)));
+  const libCle = (k) => { for (const sc of D.schemas[doc]) for (const b of sc.blocs) if (b.k === k) return (b.num ? b.num + ' ' : '') + (b.lib || k); return k; };
+  const historyEl = () => h('div',
+    h('h4', { class: 'rp-sous' }, 'Provenance'),
+    h('div', { 'data-provenance': '' }, (fiche.recu || []).length ? fiche.recu.map(r => h('div', { class: 'result', style: { cursor: 'default' } }, h('b', 'Reçue'), ' ', h('small', `${fmtDateTime(r.le)} · de ${[r.de && r.de.role, r.de && r.de.username, r.de && (r.de.nomCs || r.de.codeZone)].filter(Boolean).join(' · ')} · importée le ${fmtDateTime(r.recuLe)} · statut « ${r.statut || ''} »`)))
+      : h('p', { class: 'sub' }, sourceFiche(fiche))),
+    h('h4', { class: 'rp-sous' }, 'Corrections tracées'),
+    (fiche.corrections || []).length ? h('div', { class: 'gridwrap' }, h('table', { class: 'g', 'data-corrections': '' }, h('thead', h('tr', ['Date', 'Case', 'Avant', 'Après', 'Par', 'Statut'].map(x => h('th', x)))),
+      h('tbody', fiche.corrections.slice().reverse().slice(0, 200).map(c => h('tr', h('td', fmtDateTime(c.le)), h('td', libCle(c.k)), h('td', c.avant), h('td', c.apres), h('td', `${c.par || ''}${c.role ? ' (' + c.role + ')' : ''}`), h('td', c.statut || ''))))))
+      : h('p', { class: 'sub' }, 'Aucune correction manuelle.'),
+    h('h4', { class: 'rp-sous' }, 'Circuit de la fiche'),
+    h('div', (fiche.history || []).slice().reverse().map(x => h('div', { class: 'result', style: { cursor: 'default' } }, h('b', x.action), ' ', h('small', `${fmtDateTime(x.date)} · ${x.by || ''}${x.role ? ' (' + x.role + ')' : ''}`), x.comment ? h('div', x.comment) : null, x.from ? h('small', `${x.from} → ${x.to}`) : null))));
   const SECTIONS = [...D.schemas[doc].map(s => ({ titre: s.titre, el: () => sectionEl(s) })), { titre: 'Contrôles de cohérence', el: controlesEl }, { titre: 'Historique', el: historyEl }];
   function show(i) {
     cur = i; calcCells.clear(); inputs.clear();
@@ -183,9 +198,9 @@ export async function render(id, ctx) {
   }
   ctx.actions([
     { label: '\uE038 Liste', onClick: back }, { label: '\uE007 Enregistrer', kind: 'primary', show: editable, onClick: async () => { await save(true); toast('Fiche enregistrée.'); } },
-    { label: '\uE009 PDF', onClick: async () => { await save(); await exportFiche(fiche, 'pdf'); } }, { label: '\uE00D PDF vierge', onClick: async () => { await exportFiche(fiche, 'pdf', { vierge: true }); } },
+    { label: '\uE009 Télécharger la fiche remplie (PDF)', onClick: async () => { await save(); await exportFiche(fiche, 'pdf'); } }, { label: '\uE00D PDF vierge', onClick: async () => { await exportFiche(fiche, 'pdf', { vierge: true }); } },
     { label: '\uE006 PDF signé', onClick: async () => { await save(); await exportFiche(fiche, 'pdf', { signed: true }); } },
-    { label: '\uE009 Excel', onClick: async () => { await save(); await exportFiche(fiche, 'xlsx'); } }, { label: '\uE00A Importer Excel', show: editable, onClick: importer },
+    { label: '\uE009 Télécharger la fiche remplie (Excel)', onClick: async () => { await save(); await exportFiche(fiche, 'xlsx'); } }, { label: '\uE00A Importer Excel', show: editable, onClick: importer },
     { label: '↺ Réinitialiser', show: editable, onClick: reinit },
     { label: '\uE00C Transmettre au CCS', show: canTransmit(u, fiche), kind: 'accent', onClick: doAct(f => transmit(u, f)) },
     { label: '\uE004 Valider', show: canValidate(u, fiche), kind: 'accent', onClick: doAct(f => validate(u, f)) },

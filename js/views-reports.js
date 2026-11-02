@@ -32,7 +32,7 @@ async function list(ctx) {
     { label: '\uE00C Transmettre', show: u.role !== 'CCS' && u.role !== 'DDEMP', onClick: act(s => transmit(u, s, 'classReports')) },
     { label: '\uE004 Valider', show: u.role !== 'CP' && u.role !== 'DDEMP', kind: 'accent', onClick: act(s => validate(u, s, 'classReports')) }, { label: '\uE037 Correction', show: u.role !== 'CP' && u.role !== 'DDEMP', onClick: act(s => requestCorrection(u, s, 'classReports')) },
     { label: '\uE034 Déverrouiller', show: u.role === 'ADMIN', onClick: act(s => unlock(u, s, 'classReports')) },
-    { label: '\uE009 PDF', onClick: act(s => exportReport(s, 'pdf').then(() => false)) }, { label: '\uE006 PDF signé', onClick: act(s => exportReport(s, 'pdf', { signed: true }).then(() => false)) }, { label: '\uE009 Excel', onClick: act(s => exportReport(s, 'xlsx').then(() => false)) },
+    { label: '\uE009 Fiche remplie (PDF)', onClick: act(s => exportReport(s, 'pdf').then(() => false)) }, { label: '\uE006 PDF signé', onClick: act(s => exportReport(s, 'pdf', { signed: true }).then(() => false)) }, { label: '\uE009 Fiche remplie (Excel)', onClick: act(s => exportReport(s, 'xlsx').then(() => false)) },
     { label: '\uE005 Supprimer', show: u.role !== 'CCS' && u.role !== 'DDEMP', onClick: act(async s => { if (!canEdit(u, s)) { toast('Suppression non autorisée.', 'err'); return false; } if (!(await confirmBox('Supprimer ce rapport ?', 'Supprimer', true))) return false; await db.del('classReports', s.id); return true; }) },
   ]);
   await refresh();
@@ -85,7 +85,7 @@ async function editor(ctx) {
   const doAct = (fn) => async () => { await save(); Object.assign(rep, await db.get('classReports', rid)); if (await fn(rep)) ctx.reload(); };
   ctx.actions([
     { label: '\uE038 Liste', onClick: async () => { await save(); ctx.go('rapports'); } }, { label: '\uE007 Enregistrer', kind: 'primary', onClick: async () => { dirty = true; await save(); toast('Rapport enregistré.'); } },
-    { label: '\uE009 PDF', onClick: async () => { await save(); await exportReport(rep, 'pdf'); } }, { label: '\uE006 PDF signé', onClick: async () => { await save(); await exportReport(rep, 'pdf', { signed: true }); } }, { label: '\uE009 Excel', onClick: async () => { await save(); await exportReport(rep, 'xlsx'); } },
+    { label: '\uE009 Télécharger la fiche remplie (PDF)', onClick: async () => { await save(); await exportReport(rep, 'pdf'); } }, { label: '\uE006 PDF signé', onClick: async () => { await save(); await exportReport(rep, 'pdf', { signed: true }); } }, { label: '\uE009 Télécharger la fiche remplie (Excel)', onClick: async () => { await save(); await exportReport(rep, 'xlsx'); } },
     { label: '\uE00C Transmettre', show: canTransmit(u, rep), kind: 'accent', onClick: doAct(r => transmit(u, r, 'classReports')) },
     { label: '\uE004 Valider', show: canValidate(u, rep), kind: 'accent', onClick: doAct(r => validate(u, r, 'classReports')) }, { label: '\uE037 Demander correction', show: canValidate(u, rep), onClick: doAct(r => requestCorrection(u, r, 'classReports')) },
   ]);

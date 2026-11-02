@@ -414,7 +414,11 @@
           lib: (r) => 'Fiche de rentrée — ' + (r.entiteLib || '') + ' — ' + (r.annee || ''),
           champs: [
             { k: 'effG', l: 'Effectif garçons', t: 'num' }, { k: 'effF', l: 'Effectif filles', t: 'num' }, { k: 'effT', l: 'Effectif total', t: 'calc', calc: total('effG', 'effF') },
-            { k: 'classes', l: 'Classes (groupes pédagogiques)', t: 'num' }, { k: 'ensPoste', l: 'Enseignants en poste', t: 'num' },
+            { k: 'classesSimples', l: 'Classes simples', t: 'num' }, { k: 'classesJumelees', l: 'Classes jumelées (2 cours, toute combinaison)', t: 'num' },
+            { k: 'classesMultigrades', l: 'Classes multigrades (3 cours et plus)', t: 'num' },
+            { k: 'classes', l: 'Classes ouvertes (total ; jumelées et multigrades comptées une fois)', t: 'num' }, { k: 'classesAutorisees', l: 'Classes autorisées', t: 'num' },
+            { k: 'ecartClasses', l: 'Écart (ouvertes − autorisées)', t: 'calc', calc: (r) => (r.classes === '' || r.classes == null || r.classesAutorisees === '' || r.classesAutorisees == null ? '' : (+r.classes || 0) - (+r.classesAutorisees || 0)) },
+            { k: 'ensPoste', l: 'Enseignants en poste', t: 'num' },
             { k: 'ensManquants', l: 'Enseignants manquants', t: 'num' }, { k: 'salles', l: 'Salles de classe utilisables', t: 'num' },
             { k: 'tablesBancs', l: 'Tables-bancs', t: 'num' }, { k: 'manuels', l: 'Manuels', t: 'num', cache: true },
             { k: 'pointEau', l: "Point d'eau (Oui/Non)", t: 'oui' }, { k: 'latrines', l: 'Latrines (cabines)', t: 'num' }, { k: 'electricite', l: 'Électricité (Oui/Non)', t: 'oui' },

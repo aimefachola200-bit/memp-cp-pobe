@@ -56,6 +56,7 @@ export function* clesStructure(b) {
   for (const n of NIV_EP) yield [`sp.simple.${n}`, `Structure : simple ${n}`];
   yield ['sp.simple.salles', 'Structure : simple – salles utilisées'];
   for (const [c, lib] of b.jumelees) yield [`sp.jumelee.${c}`, `Structure : jumelée ${lib}`];
+  if (b.jumelees.some(([c]) => c === 'AUTRE')) yield ['sp.jumelee_autre_cours', 'Structure : jumelée, autre combinaison – cours concernés (ex. CI-CE1)', 'texte'];
   yield ['sp.jumelee.salles', 'Structure : jumelée – salles utilisées'];
   for (const n of NIV_EP) yield [`sp.multi.${n}`, `Structure : multigrade ${n}`];
   yield ['sp.multi.salles', 'Structure : multigrade – salles utilisées'];
@@ -82,7 +83,7 @@ export function champsEditables(D, doc, nPers, v) {
   for (const s of D.schemas[doc]) for (const b of s.blocs) {
     if (b.t === 'champ' && b.type !== 'titre') add(b.k, b);
     else if (b.t === 'tableau') { for (const [k, lib] of clesTableau(b)) if (!(k in calc)) add(k, { k, lib, type: 'nombre' }); }
-    else if (b.t === 'structure_ep') { for (const [k, lib] of clesStructure(b)) add(k, { k, lib, type: 'nombre' }); }
+    else if (b.t === 'structure_ep') { for (const [k, lib, type] of clesStructure(b)) add(k, { k, lib, type: type || 'nombre' }); }
     else if (b.t === 'personnel') {
       const n = nPers ?? nbLignesPersonnel(D, doc, v || {});
       add('pers_n', { k: 'pers_n', lib: "Nombre de lignes de l'état nominatif", type: 'nombre' });

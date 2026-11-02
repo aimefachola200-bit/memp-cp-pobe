@@ -673,7 +673,7 @@
     const p = patienter(doc, mode === 'pdf' ? 'Préparation du PDF…' : 'Préparation du document Word…');
     try {
       const blob = mode === 'pdf' ? await pdf(s, (i, n) => p.maj('Préparation du PDF… page ' + i + ' / ' + n)) : await docx(s);
-      telechargerBlob(blob, o.nom || nomFichier(s.titre, mode), doc);
+      telechargerBlob(blob, o.nom ? (new RegExp('\\.' + mode + '$', 'i').test(o.nom) ? o.nom : nomFichier(o.nom, mode)) : nomFichier(s.titre, mode), doc);   // nom donné sans extension : « .pdf » / « .docx » ajouté
       p.maj(W0.MempCP ? 'Fichier enregistré dans Téléchargements.' : 'Fichier téléchargé.');
       await attendre(900);
       return true;

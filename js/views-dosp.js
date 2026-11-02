@@ -19,6 +19,7 @@ import { db } from './db.js';
 import { classesFiche } from './views-ecoles.js';   // classes ouvertes : une classe jumelée ou multigrade compte pour une
 import { dataTable, formDialog } from './ui.js';
 import { scoped, inScope, addLog } from './data.js';
+import { sourceFiche } from './workflow.js';
 import { FICHE_TYPES, sectionsFor, gridValue, CLASSES } from './schema.js';
 import { listToXlsx } from './export.js';
 import { newPdf, GREY } from './pdf.js';
@@ -169,7 +170,7 @@ async function envois(ctx) {
   const kindDe = (s) => (s.cycle === 'Maternelle' ? 'EM_' : 'EP_') + st.moment;
   const lignes = () => schools.slice().sort((a, b) => (a.codeZone || '').localeCompare(b.codeZone || '') || a.nom.localeCompare(b.nom, 'fr')).map(s => {
     const f = ficheDe(fiches, s, kindDe(s), st.annee);
-    return { id: s.id, s, f, ecole: s.nom, zone: s.numZone ? 'Zone ' + s.numZone : '—', cycle: s.cycle, secteur: s.secteur, directeur: s.directeur || '', contact: s.contact || '', etat: ETAT_FICHE(f), maj: f ? new Date(f.updated).toLocaleDateString('fr-FR') : '' };
+    return { id: s.id, s, f, ecole: s.nom, zone: s.numZone ? 'Zone ' + s.numZone : '—', cycle: s.cycle, secteur: s.secteur, directeur: s.directeur || '', contact: s.contact || '', etat: ETAT_FICHE(f), maj: f ? new Date(f.updated).toLocaleDateString('fr-FR') : '', source: sourceFiche(f) };
   });
   function dessiner() {
     const L = lignes(), cpt = (e) => L.filter(x => x.etat === e).length;
@@ -182,7 +183,7 @@ async function envois(ctx) {
         { nom: 'Validées', color: PALETTE[2], values: groupes.map(g => L.filter(x => x.zone === g && x.etat === 'Validée').length) },
         { nom: 'Reçues à valider', color: PALETTE[0], values: groupes.map(g => L.filter(x => x.zone === g && x.etat === 'Reçue (à valider)').length) },
         { nom: 'Non reçues', color: PALETTE[3], values: groupes.map(g => L.filter(x => x.zone === g && (x.etat === 'Non reçue' || x.etat === 'En saisie' || x.etat === 'À corriger')).length) }], st.annee),
-      card('Écoles et état de leur fiche', dataTable({ columns: [{ k: 'ecole', l: 'École', w: 220 }, { k: 'zone', l: 'Zone' }, { k: 'cycle', l: 'Cycle' }, { k: 'secteur', l: 'Secteur' }, { k: 'directeur', l: 'Directeur/trice', w: 160 }, { k: 'contact', l: 'Contact' }, { k: 'etat', l: 'État' }, { k: 'maj', l: 'Mise à jour' }],
+      card('Écoles et état de leur fiche', dataTable({ columns: [{ k: 'ecole', l: 'École', w: 220 }, { k: 'zone', l: 'Zone' }, { k: 'cycle', l: 'Cycle' }, { k: 'secteur', l: 'Secteur' }, { k: 'directeur', l: 'Directeur/trice', w: 160 }, { k: 'contact', l: 'Contact' }, { k: 'etat', l: 'État' }, { k: 'maj', l: 'Mise à jour' }, { k: 'source', l: 'Source et date', w: 220 }],
         rows: L, onOpen: (r) => (r.f ? ctx.go('fiche/' + r.f.id) : toast('Fiche non reçue : utilisez « Générer les fiches » dans Écoles ou relancez l’école.', 'warn')) }).el),
       card('Bordereaux d’envoi déjà émis', dataTable({ columns: [{ k: 'numero', l: 'N°', w: 200 }, { k: 'date', l: 'Date' }, { k: 'momentLib', l: 'Objet' }, { k: 'nb', l: 'Fiches', num: true }, { k: 'destinataire', l: 'Destinataire', w: 200 }],
         rows: hist.filter(x => x.annee === st.annee).sort((a, b) => String(b.date).localeCompare(String(a.date))), empty: 'Aucun bordereau pour cette année.' }).el));
@@ -207,7 +208,7 @@ async function envois(ctx) {
         await db.put('dosp', { id: uid(), kind: 'envoi', annee: st.annee, moment: st.moment, momentLib: st.moment === 'RENTREE' ? 'Points de rentrée' : "Rapports de fin d'année", numero, date: today(), destinataire: v.destinataire, nb: ok.length, fiches: ok.map(x => x.f.id), ...base(u) });
         await addLog(u, { action: 'Acheminement à la DDEMP', target: `${ok.length} fiche(s) ${st.annee}` }); toast('Bordereau émis et enregistré.'); envois(ctx);
       } },
-      { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: 'RÉCEPTION DES FICHES — ' + (st.moment === 'RENTREE' ? 'POINTS DE RENTRÉE' : "RAPPORTS DE FIN D'ANNÉE"), subtitle: st.annee, columns: [{ k: 'ecole', l: 'École' }, { k: 'zone', l: 'Zone' }, { k: 'cycle', l: 'Cycle' }, { k: 'secteur', l: 'Secteur' }, { k: 'directeur', l: 'Directeur' }, { k: 'contact', l: 'Contact' }, { k: 'etat', l: 'État' }, { k: 'maj', l: 'Mise à jour' }], rows: lignes() }), clean('Reception_fiches_' + st.annee) + '.xlsx') }]);
+      { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: 'RÉCEPTION DES FICHES — ' + (st.moment === 'RENTREE' ? 'POINTS DE RENTRÉE' : "RAPPORTS DE FIN D'ANNÉE"), subtitle: st.annee, columns: [{ k: 'ecole', l: 'École' }, { k: 'zone', l: 'Zone' }, { k: 'cycle', l: 'Cycle' }, { k: 'secteur', l: 'Secteur' }, { k: 'directeur', l: 'Directeur' }, { k: 'contact', l: 'Contact' }, { k: 'etat', l: 'État' }, { k: 'maj', l: 'Mise à jour' }, { k: 'source', l: 'Source et date', w: 220 }], rows: lignes() }), clean('Reception_fiches_' + st.annee) + '.xlsx') }]);
   }
   dessiner();
 }
@@ -289,13 +290,13 @@ async function besoins(ctx) {
         ['Élèves par salle', fr(t('salles') ? t('eleves') / t('salles') : null), `${t('salles')} salles · manque ${t('mSal')}`], ['Places assises', t('places'), `manque ${t('mPl')} places (≈ ${Math.ceil(t('mPl') / 2)} tables-bancs à 2 places)`]]),
       courbe('Manques par ' + libGroupe(u).toLowerCase(), groupes, [{ nom: 'Enseignants', color: PALETTE[0], values: groupes.map(g => parG(g, 'mEns')) }, { nom: 'Salles de classe', color: PALETTE[3], values: groupes.map(g => parG(g, 'mSal')) }], st.annee),
       courbe('Ratios par ' + libGroupe(u).toLowerCase(), groupes, [{ nom: 'Élèves / maître', color: PALETTE[2], values: groupes.map(g => { const e = parG(g, 'ens'); return e ? Math.round(parG(g, 'eleves') / e * 10) / 10 : 0; }) }, { nom: 'Élèves / salle', color: PALETTE[4], values: groupes.map(g => { const e = parG(g, 'salles'); return e ? Math.round(parG(g, 'eleves') / e * 10) / 10 : 0; }) }], st.annee),
-      card('Moyens et besoins par école', dataTable({ columns: [{ k: 'ecole', l: 'École', w: 200 }, { k: 'zone', l: 'Zone' }, { k: 'eleves', l: 'Élèves', num: true }, { k: 'classes', l: 'Classes', num: true }, { k: 'ens', l: 'Enseignants', num: true }, { k: 'mEns', l: 'Manque ens.', num: true }, { k: 'salles', l: 'Salles', num: true }, { k: 'mSal', l: 'Manque salles', num: true }, { k: 'places', l: 'Places assises', num: true }, { k: 'mPl', l: 'Places manquantes', num: true }, { k: 'epm', l: 'Élèves / maître', num: true }],
+      card('Moyens et besoins par école', dataTable({ columns: [{ k: 'ecole', l: 'École', w: 200 }, { k: 'zone', l: 'Zone' }, { k: 'eleves', l: 'Élèves', num: true }, { k: 'classes', l: 'Classes', num: true }, { k: 'ens', l: 'Enseignants', num: true }, { k: 'mEns', l: 'Manque ens.', num: true }, { k: 'salles', l: 'Salles', num: true }, { k: 'mSal', l: 'Manque salles', num: true }, { k: 'places', l: 'Places assises', num: true }, { k: 'mPl', l: 'Places manquantes', num: true }, { k: 'epm', l: 'Élèves / maître', num: true }, { k: 'source', l: 'Source et date', w: 220 }],
         rows: lignesB(L), totals: totB(L) }).el));
     ctx.actions([{ label: '\uE009 État des besoins (PDF signé)', kind: 'primary', onClick: async () => download(await docOfficiel(u, { titre: 'ÉTAT DES BESOINS EN ENSEIGNANTS, SALLES ET MOBILIER', sousTitre: 'Année scolaire ' + st.annee, orientation: 'landscape', numero: await numeroDoc(u, 'BES'), label: 'État des besoins ' + st.annee,
       blocs: [{ table: { head: ['École', 'Zone', 'Élèves', 'Classes', 'Ens.', 'Manque ens.', 'Salles', 'Manque salles', 'Places', 'Places manq.', 'Élèves/maître'], widths: [3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], rows: [...lignesB(L), totB(L)].map(r => [r.ecole, r.zone || '', ...['eleves', 'classes', 'ens', 'mEns', 'salles', 'mSal', 'places', 'mPl', 'epm'].map(k => String(r[k]))]) } }] }), clean('Besoins_' + st.annee) + '.pdf') },
-    { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: 'BESOINS ET ÉCARTS', subtitle: st.annee, columns: [{ k: 'ecole', l: 'École' }, { k: 'zone', l: 'Zone' }, ...['eleves', 'classes', 'ens', 'mEns', 'salles', 'mSal', 'places', 'mPl'].map(k => ({ k, l: k, num: true }))], rows: [...lignesB(L), totB(L)] }), clean('Besoins_' + st.annee) + '.xlsx') }]);
+    { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: 'BESOINS ET ÉCARTS', subtitle: st.annee, columns: [{ k: 'ecole', l: 'École' }, { k: 'zone', l: 'Zone' }, ...['eleves', 'classes', 'ens', 'mEns', 'salles', 'mSal', 'places', 'mPl'].map(k => ({ k, l: k, num: true })), { k: 'source', l: 'Source et date' }], rows: [...lignesB(L), totB(L)] }), clean('Besoins_' + st.annee) + '.xlsx') }]);
   }
-  const lignesB = (L) => L.map(x => ({ id: x.s.id, ecole: x.s.nom, zone: x.s.numZone ? 'Zone ' + x.s.numZone : '', ...x.m, f: undefined, epm: x.m.ens ? fr(x.m.eleves / x.m.ens) : '—' }));
+  const lignesB = (L) => L.map(x => ({ id: x.s.id, ecole: x.s.nom, zone: x.s.numZone ? 'Zone ' + x.s.numZone : '', ...x.m, source: sourceFiche(x.m.f), f: undefined, epm: x.m.ens ? fr(x.m.eleves / x.m.ens) : '—' }));
   const totB = (L) => { const r = { ecole: 'TOTAL', zone: '' }; for (const k of ['eleves', 'classes', 'ens', 'mEns', 'salles', 'mSal', 'places', 'mPl']) r[k] = L.reduce((a, x) => a + x.m[k], 0); r.epm = r.ens ? fr(r.eleves / r.ens) : '—'; return r; };
   dessiner();
 }

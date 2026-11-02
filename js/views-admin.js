@@ -64,6 +64,8 @@ export async function importPackage(u, text) {
   for (const [store, list] of [['fiches', pkg.payload.fiches || []], ['classReports', pkg.payload.classReports || []], ['bilans', pkg.payload.bilans || []], ['effectifs', pkg.payload.effectifs || []]]) {
     for (const r of list) {
       if (!inScope(u, r)) { stat.hors++; continue; }
+      // provenance (synchronisation 2.0) : chaque réception est consignée — expéditeur, date d'envoi, date d'import, statut
+      r.recu = [...(Array.isArray(r.recu) ? r.recu : []), { de: pkg.from || {}, le: pkg.date || '', recuLe: nowISO(), statut: r.statut || '' }].slice(-20);
       const old = await db.get(store, r.id);
       if (!old) { await db.put(store, r); stat.nouv++; await addLog(u, { action: 'Réception', target: `${r.schoolNom || 'Bilan ' + r.periode} (${r.annee})`, to: r.statut, refId: r.id }); }
       else if ((r.updated || '') > (old.updated || '')) { await db.put(store, r); stat.maj++; await addLog(u, { action: 'Mise à jour reçue', target: `${r.schoolNom || 'Bilan ' + r.periode} (${r.annee})`, from: old.statut, to: r.statut, refId: r.id }); }
