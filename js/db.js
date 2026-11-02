@@ -37,7 +37,8 @@ const rq = (r) => new Promise((res, rej) => { r.onsuccess = () => res(r.result);
 export const db = {
   STORES,
   all: (s) => tx(s, 'readonly', st => rq(st.getAll())),
-  get: (s, id) => tx(s, 'readonly', st => rq(st.get(id))),
+  // v2.6.1 : sans clé (adresse ouverte sans identifiant, ex. #/fiche), rien à lire : undefined au lieu d'une erreur IndexedDB
+  get: (s, id) => (id === undefined || id === null || id === '') ? Promise.resolve(undefined) : tx(s, 'readonly', st => rq(st.get(id))),
   put: (s, o) => tx(s, 'readwrite', st => rq(st.put(o))).then(() => o),
   putMany: (s, arr) => tx(s, 'readwrite', st => { arr.forEach(o => st.put(o)); }).then(() => arr),
   del: (s, id) => tx(s, 'readwrite', st => rq(st.delete(id))),
