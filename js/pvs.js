@@ -201,8 +201,163 @@
     PV_DELIBERATION: (e, ref) => { const r = resultatsCep(e, ref.session, ref.centre, ref.seuil, ref.repechage); return { s: ref.session, ce: ref.centre || '', r: r.res, j: un(e, 'jurys', ref.jury) }; },
     LISTE_ADMIS: (e, ref) => { const r = resultatsCep(e, ref.session, ref.centre, ref.seuil, ref.repechage); return { s: ref.session, ce: ref.centre || '', r: Object.values(r.res).filter(x => /^Admis/.test(x.decision)) }; },
     PALMARES_CONCOURS: (e, ref) => ({ c: un(e, 'concours', ref.id), p: (e.participants || []).filter(x => x.concours === ref.id).map(sansMaj).sort((a, b) => String(a.id).localeCompare(String(b.id))) }),
-    PRIX: (e, ref) => { const p = un(e, 'participants', ref.id); return { p, c: un(e, 'concours', p.concours) }; }
+    PRIX: (e, ref) => { const p = un(e, 'participants', ref.id); return { p, c: un(e, 'concours', p.concours) }; },
+    CEP_SALLES: (e, ref) => ({ s: ref.session, cs: ref.entite, p: ref.parSalle, r: (e.cepSalles || []).filter(r => String(r.entite) === String(ref.entite) && r.saison === ref.session).map(sansMaj).sort((a, b) => (a.ordre || 0) - (b.ordre || 0) || String(a.id).localeCompare(String(b.id))) })
   };
+
+  /* ---------------- CEP : centres d'examen et salles de composition (lettre DDEMP « Dispositions a/s des centres d'examens CEP 2027 ») ---------------- */
+  const CENTRES_CEP_CONNUS = { POBE: ['POBE-CENTRE', 'POBE-NORD', 'OKE-OLA', 'OKE-ATA', 'ONIGBOLO', 'TOWE'] };
+  const SESSION_CEP_DEFAUT = 'JUIN 2027';
+  const majusc = (t) => String(t == null ? '' : t).normalize('NFKD').replace(/[̀-ͯ]/g, '').toUpperCase();
+  /** Nom court de la circonscription pour l'en-tête « CS : … » (« Circonscription scolaire de Pobè » → « POBE ») */
+  const nomCsCourt = (lib) => majusc(lib).replace(/^\s*(CIRCONSCRIPTION SCOLAIRE|CS)\s*(DE|D'|DU|DES)?\s*/, '').trim();
+  const centresConnus = (lib) => { const n = nomCsCourt(lib).replace(/[^A-Z]/g, ''); const k = Object.keys(CENTRES_CEP_CONNUS).find(x => n === x || n.startsWith(x)); return k ? CENTRES_CEP_CONNUS[k] : []; };
+  /** Rapprochement des noms de centre (« Centre de Pobè centre » ↔ « POBE-CENTRE ») */
+  const cleCentre = (t) => majusc(t).replace(/^\s*CENTRE\s+(DE|D'|DU)\s*/, '').replace(/[^A-Z0-9]/g, '');
+  const entierCep = (v) => { const n = parseInt(String(v == null ? '' : v).replace(/\s/g, ''), 10); return Number.isFinite(n) && n >= 0 ? n : 0; };
+  const saisiCep = (v) => !(v === '' || v === null || v === undefined);
+  function calculCep(r, parSalle) {
+    const e = (k) => entierCep(r[k]);
+    const offT = e('offG') + e('offF'), libT = e('libG') + e('libF'), totG = e('offG') + e('libG'), totF = e('offF') + e('libF'), tot = totG + totF, totH = e('offH') + e('libH');
+    const rien = !['offG', 'offF', 'libG', 'libF'].some(k => saisiCep(r[k]));
+    const nec = tot ? Math.ceil(tot / parSalle) : 0, dispo = saisiCep(r.salles) ? e('salles') : null;
+    const ecart = dispo === null || rien ? null : dispo - nec;
+    const statut = ecart === null ? '' : ecart >= 0 ? 'Capacité suffisante' : 'Capacité dépassée : ' + (-ecart) + ' salle(s) manquante(s)';
+    return { offT, libT, totG, totF, tot, totH, nec, dispo, ecart, statut, depasse: ecart !== null && ecart < 0, rien, obs: String(r.observations || '').trim() || statut };
+  }
+  function totauxCep(rows, parSalle) {
+    const t = { offG: 0, offF: 0, offT: 0, offH: 0, libG: 0, libF: 0, libT: 0, libH: 0, totG: 0, totF: 0, tot: 0, totH: 0, salles: 0, nec: 0, depasses: 0 };
+    rows.forEach(r => { const c = calculCep(r, parSalle); ['offG', 'offF', 'offH', 'libG', 'libF', 'libH'].forEach(k => { t[k] += entierCep(r[k]); });
+      t.offT += c.offT; t.libT += c.libT; t.totG += c.totG; t.totF += c.totF; t.tot += c.tot; t.totH += c.totH; t.salles += c.dispo || 0; t.nec += c.nec; if (c.depasse) t.depasses++; });
+    return t;
+  }
+  /** Classeur Excel des tableaux CEP : fusions, formules vivantes (totaux, salles nécessaires, observations), mise en page A4 paysage */
+  const XE = (t) => String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  const COL = (n) => { let s = ''; n += 1; while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); } return s; };
+  function zipStocke(fichiers) {
+    const T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+    const crc = (u) => { let c = 0xFFFFFFFF; for (let i = 0; i < u.length; i++) c = T[(c ^ u[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; };
+    const enc = new TextEncoder(), parts = [], centre = []; let pos = 0;
+    for (const f of fichiers) {
+      const nom = enc.encode(f.nom), data = enc.encode(f.contenu), c = crc(data), l = new DataView(new ArrayBuffer(30)), g = new DataView(new ArrayBuffer(46));
+      l.setUint32(0, 0x04034b50, true); l.setUint16(4, 20, true); l.setUint16(6, 0x0800, true); l.setUint32(14, c, true); l.setUint32(18, data.length, true); l.setUint32(22, data.length, true); l.setUint16(26, nom.length, true);
+      g.setUint32(0, 0x02014b50, true); g.setUint16(4, 20, true); g.setUint16(6, 20, true); g.setUint16(8, 0x0800, true); g.setUint32(16, c, true); g.setUint32(20, data.length, true); g.setUint32(24, data.length, true); g.setUint16(28, nom.length, true); g.setUint32(42, pos, true);
+      parts.push(new Uint8Array(l.buffer), nom, data); centre.push(new Uint8Array(g.buffer), nom); pos += 30 + nom.length + data.length;
+    }
+    const tc = centre.reduce((a, p) => a + p.length, 0), fin = new DataView(new ArrayBuffer(22));
+    fin.setUint32(0, 0x06054b50, true); fin.setUint16(8, fichiers.length, true); fin.setUint16(10, fichiers.length, true); fin.setUint32(12, tc, true); fin.setUint32(16, pos, true);
+    const tout = [...parts, ...centre, new Uint8Array(fin.buffer)], out = new Uint8Array(tout.reduce((a, p) => a + p.length, 0)); let o = 0; for (const p of tout) { out.set(p, o); o += p.length; }
+    return out;
+  }
+  /** cellules : { 'A1': { v | f (formule) + v (valeur en cache), s: style } } ; styles : 1 titre, 2 encadré, 3 en-tête, 4 nombre, 5 texte, 6 total, 7 dépassement, 8 légende, 9 total (libellé), 10 note */
+  function classeurCep(nomFeuille, cellules, fusions, largeurs, nbLignes, nbCols) {
+    const sst = [], idx = new Map(); const si = (t) => { t = String(t); if (!idx.has(t)) { idx.set(t, sst.length); sst.push(t); } return idx.get(t); };
+    const lignes = {}; Object.entries(cellules).forEach(([ref, c]) => { const r = +ref.replace(/^[A-Z]+/, ''); (lignes[r] = lignes[r] || []).push([ref, c]); });
+    const ordreCol = (ref) => ref.replace(/\d+$/, '').split('').reduce((a, ch) => a * 26 + ch.charCodeAt(0) - 64, 0);
+    const rows = Object.keys(lignes).map(Number).sort((a, b) => a - b).map(r => '<row r="' + r + '"' + (r === 1 ? ' ht="24" customHeight="1"' : '') + '>' + lignes[r].sort((a, b) => ordreCol(a[0]) - ordreCol(b[0])).map(([ref, c]) => {
+      const st = c.s ? ' s="' + c.s + '"' : '';
+      if (c.f) { const num = typeof c.v === 'number'; return '<c r="' + ref + '"' + st + (num ? '' : ' t="str"') + '><f>' + XE(c.f) + '</f><v>' + XE(c.v == null ? '' : c.v) + '</v></c>'; }
+      if (c.v === '' || c.v == null) return '<c r="' + ref + '"' + st + '/>';
+      if (typeof c.v === 'number') return '<c r="' + ref + '"' + st + '><v>' + c.v + '</v></c>';
+      return '<c r="' + ref + '"' + st + ' t="s"><v>' + si(c.v) + '</v></c>';
+    }).join('') + '</row>').join('');
+    const bord = '<border><left style="thin"><color rgb="FF000000"/></left><right style="thin"><color rgb="FF000000"/></right><top style="thin"><color rgb="FF000000"/></top><bottom style="thin"><color rgb="FF000000"/></bottom><diagonal/></border>';
+    const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+      + '<fonts count="5"><font><sz val="11"/><name val="Arial"/></font><font><b/><sz val="14"/><name val="Arial"/></font><font><b/><sz val="10"/><name val="Arial"/></font><font><i/><sz val="9"/><name val="Arial"/></font><font><sz val="10"/><name val="Arial"/></font></fonts>'
+      + '<fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFDE2E1"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFF2F2F2"/><bgColor indexed="64"/></patternFill></fill></fills>'
+      + '<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border>' + bord + '</borders>'
+      + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="11">'
+      + '<xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0"/>'
+      + '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+      + '<xf numFmtId="0" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="center"/></xf>'
+      + '<xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>'
+      + '<xf numFmtId="1" fontId="4" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+      + '<xf numFmtId="0" fontId="4" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>'
+      + '<xf numFmtId="1" fontId="2" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+      + '<xf numFmtId="0" fontId="4" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center" wrapText="1"/></xf>'
+      + '<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>'
+      + '<xf numFmtId="0" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+      + '<xf numFmtId="0" fontId="4" fillId="0" borderId="0" xfId="0" applyFont="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf>'
+      + '</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+    const cols = '<cols>' + largeurs.map((w, j) => '<col min="' + (j + 1) + '" max="' + (j + 1) + '" width="' + w + '" customWidth="1"/>').join('') + '</cols>';
+    const feuille = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+      + '<sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><dimension ref="A1:' + COL(nbCols - 1) + nbLignes + '"/><sheetViews><sheetView workbookViewId="0"/></sheetViews><sheetFormatPr defaultRowHeight="18"/>' + cols
+      + '<sheetData>' + rows + '</sheetData>' + (fusions.length ? '<mergeCells count="' + fusions.length + '">' + fusions.map(m => '<mergeCell ref="' + m + '"/>').join('') + '</mergeCells>' : '')
+      + '<pageMargins left="0.4" right="0.4" top="0.5" bottom="0.5" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="landscape" fitToWidth="1" fitToHeight="0"/></worksheet>';
+    const R = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+    const fichiers = [
+      { nom: '[Content_Types].xml', contenu: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>'
+        + '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+        + '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/><Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/></Types>' },
+      { nom: '_rels/.rels', contenu: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="' + R + '/officeDocument" Target="xl/workbook.xml"/></Relationships>' },
+      { nom: 'xl/workbook.xml', contenu: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="' + R + '"><bookViews><workbookView/></bookViews><sheets><sheet name="' + XE(nomFeuille) + '" sheetId="1" r:id="rId1"/></sheets><calcPr calcId="191029" fullCalcOnLoad="1"/></workbook>' },
+      { nom: 'xl/_rels/workbook.xml.rels', contenu: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="' + R + '/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="' + R + '/styles" Target="styles.xml"/><Relationship Id="rId3" Type="' + R + '/sharedStrings" Target="sharedStrings.xml"/></Relationships>' },
+      { nom: 'xl/styles.xml', contenu: styles }, { nom: 'xl/worksheets/sheet1.xml', contenu: feuille }];
+    fichiers.push({ nom: 'xl/sharedStrings.xml', contenu: '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="' + sst.length + '" uniqueCount="' + sst.length + '">' + sst.map(t => '<si><t xml:space="preserve">' + XE(t) + '</t></si>').join('') + '</sst>' });
+    return new Blob([zipStocke(fichiers)], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  }
+  /** d = { session, cs, parSalle, rows, avecNec, detaille } → Blob .xlsx, même disposition que les modèles de la DDEMP */
+  function excelCep(d) {
+    const C = {}, F = [], n = d.rows.length, p = d.parSalle;
+    const set = (ref, v, s, f) => { C[ref] = f ? { f, v, s } : { v, s }; };
+    const obsF = (tot, sal) => 'IF(OR(' + tot + '="",' + sal + '=""),"",IF(' + sal + '>=ROUNDUP(' + tot + '/$PAR$,0),"Capacité suffisante","Capacité dépassée : "&(ROUNDUP(' + tot + '/$PAR$,0)-' + sal + ')&" salle(s) manquante(s)"))';
+    if (!d.detaille) {
+      // modèle A : N° | Nom des Centres | Effectif des candidats | Nombre de salles… | [Salles nécessaires] | Observations
+      const cols = ['N°', 'Nom des Centres', 'Effectif des candidats', 'Nombre de salles de composition en bon état disponible'].concat(d.avecNec ? ['Salles nécessaires'] : [], ['Observations']);
+      const nc = cols.length, last = COL(nc - 1), oc = COL(nc - 1), par = '$' + COL(nc - 1) + '$3';
+      set('A1', 'TABLEAU DE SYNTHESE DES STATISTIQUES', 1); F.push('A1:' + last + '1');
+      set('A3', 'CEP : SESSION DE ' + d.session, 2); set('B3', '', 2); F.push('A3:B3'); set('A4', 'CS : ' + d.cs, 2); set('B4', '', 2); F.push('A4:B4');
+      set(COL(nc - 2) + '3', 'Candidats par salle :', 10); set(oc + '3', p, 6);
+      cols.forEach((t, j) => set(COL(j) + '6', t, 3));
+      d.rows.forEach((r, i) => { const L = 7 + i, c = calculCep(r, p);
+        set('A' + L, i + 1, 4); set('B' + L, r.centre || '', 5); set('C' + L, c.rien ? '' : c.tot, 4); set('D' + L, saisiCep(r.salles) ? entierCep(r.salles) : '', 4);
+        if (d.avecNec) set('E' + L, c.rien ? '' : c.nec, 4, 'IF(C' + L + '="","",ROUNDUP(C' + L + '/' + par + ',0))');
+        const so = c.depasse ? 7 : 5;
+        if (String(r.observations || '').trim()) set(oc + L, String(r.observations).trim(), so); else set(oc + L, c.statut, so, obsF('C' + L, 'D' + L).replace(/\$PAR\$/g, par));
+      });
+      const T = 7 + n, t = totauxCep(d.rows, p);
+      set('A' + T, '', 6); set('B' + T, 'TOTAL', 9); set('C' + T, t.tot, 6, 'SUM(C7:C' + (T - 1) + ')'); set('D' + T, t.salles, 6, 'SUM(D7:D' + (T - 1) + ')');
+      if (d.avecNec) set('E' + T, t.nec, 6, 'SUM(E7:E' + (T - 1) + ')');
+      set(oc + T, '', 6);
+      return classeurCep('Synthèse', C, F, [5, 22, 14, 22].concat(d.avecNec ? [14] : [], [34]), T, nc);
+    }
+    // modèle B : effectifs détaillés (officiels, libres, total : G, F, Total, Dont handicapés)
+    const nc = 16 + (d.avecNec ? 1 : 0), last = COL(nc - 1), oc = COL(nc - 1), par = '$' + oc + '$3';
+    set('A1', 'TABLEAU DE SYNTHESE DES STATISTIQUES', 1); F.push('A1:' + last + '1');
+    set('A3', 'CEP : SESSION DE ' + d.session, 2); ['B3', 'C3', 'D3'].forEach(r => set(r, '', 2)); F.push('A3:D3');
+    set('A4', 'CS : ' + d.cs, 2); ['B4', 'C4', 'D4'].forEach(r => set(r, '', 2)); F.push('A4:D4');
+    set(COL(nc - 2) + '3', 'Candidats par salle :', 10); set(oc + '3', p, 6);
+    const hdr = (ref, t) => set(ref, t, 3);
+    hdr('A6', 'N°'); hdr('B6', 'Nom des Centres'); hdr('C6', 'Effectif des candidats'); hdr('O6', 'Nombre de salles de composition en bon état disponible');
+    if (d.avecNec) hdr('P6', 'Salles nécessaires'); hdr(oc + '6', 'Observations');
+    hdr('C7', 'Candidats officiels'); hdr('G7', 'Candidats libres'); hdr('K7', 'Total (officiels + libres)');
+    ['C', 'G', 'K'].forEach(c0 => { const b = c0.charCodeAt(0) - 65; ['Garçons', 'Filles', 'Total', 'Dont handicapés'].forEach((t, k) => hdr(COL(b + k) + '8', t)); });
+    // cellules vides des zones fusionnées (bordures)
+    for (let r = 6; r <= 8; r++) for (let j = 0; j < nc; j++) { const ref = COL(j) + r; if (!C[ref]) hdr(ref, ''); }
+    F.push('A6:A8', 'B6:B8', 'C6:N6', 'C7:F7', 'G7:J7', 'K7:N7', 'O6:O8', oc + '6:' + oc + '8'); if (d.avecNec) F.push('P6:P8');
+    d.rows.forEach((r, i) => { const L = 9 + i, c = calculCep(r, p), v = (k) => saisiCep(r[k]) ? entierCep(r[k]) : '';
+      const vide2 = (a, b) => (saisiCep(r[a]) || saisiCep(r[b]) ? null : '');
+      set('A' + L, i + 1, 4); set('B' + L, r.centre || '', 5);
+      set('C' + L, v('offG'), 4); set('D' + L, v('offF'), 4); set('E' + L, vide2('offG', 'offF') === '' ? '' : c.offT, 4, 'IF(COUNT(C' + L + ':D' + L + ')=0,"",SUM(C' + L + ':D' + L + '))'); set('F' + L, v('offH'), 4);
+      set('G' + L, v('libG'), 4); set('H' + L, v('libF'), 4); set('I' + L, vide2('libG', 'libF') === '' ? '' : c.libT, 4, 'IF(COUNT(G' + L + ':H' + L + ')=0,"",SUM(G' + L + ':H' + L + '))'); set('J' + L, v('libH'), 4);
+      set('K' + L, vide2('offG', 'libG') === '' ? '' : c.totG, 4, 'IF(COUNT(C' + L + ',G' + L + ')=0,"",SUM(C' + L + ',G' + L + '))');
+      set('L' + L, vide2('offF', 'libF') === '' ? '' : c.totF, 4, 'IF(COUNT(D' + L + ',H' + L + ')=0,"",SUM(D' + L + ',H' + L + '))');
+      set('M' + L, c.rien ? '' : c.tot, 4, 'IF(COUNT(K' + L + ':L' + L + ')=0,"",SUM(K' + L + ':L' + L + '))');
+      set('N' + L, vide2('offH', 'libH') === '' ? '' : c.totH, 4, 'IF(COUNT(F' + L + ',J' + L + ')=0,"",SUM(F' + L + ',J' + L + '))');
+      set('O' + L, v('salles'), 4);
+      if (d.avecNec) set('P' + L, c.rien ? '' : c.nec, 4, 'IF(M' + L + '="","",ROUNDUP(M' + L + '/' + par + ',0))');
+      const so = c.depasse ? 7 : 5;
+      if (String(r.observations || '').trim()) set(oc + L, String(r.observations).trim(), so); else set(oc + L, c.statut, so, obsF('M' + L, 'O' + L).replace(/\$PAR\$/g, par));
+    });
+    const T = 9 + n, t = totauxCep(d.rows, p), z = T - 1;
+    set('A' + T, '', 6); set('B' + T, 'TOTAL', 9);
+    const tv = { C: t.offG, D: t.offF, E: t.offT, F: t.offH, G: t.libG, H: t.libF, I: t.libT, J: t.libH, K: t.totG, L: t.totF, M: t.tot, N: t.totH, O: t.salles, P: t.nec };
+    Object.keys(tv).filter(c0 => c0 !== 'P' || d.avecNec).forEach(c0 => set(c0 + T, tv[c0], 6, 'SUM(' + c0 + '9:' + c0 + z + ')'));
+    set(oc + T, '', 6);
+    set('A' + (T + 2), 'G = Garçons ; F = Filles ; H = Handicapés', 8);
+    return classeurCep('Synthèse', C, F, [5, 18].concat(Array(12).fill(10), [18], d.avecNec ? [12] : [], [30]), T + 2, nc);
+  }
+
   function contenuDocument(etat, type, ref) {
     const f = DOC_CONTENU[type] || ((e, r) => ({ ref: r }));
     return Object.assign({ t: type }, f(etat || {}, ref || {}));
@@ -308,6 +463,41 @@
   }
 
   /* ======================================================== montage ======================================================== */
+  /* ---------- décisions transmises (registre « retours », descendant) ---------- */
+  const normCle = (t) => String(t == null ? '' : t).normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+  const RANG_RENTREE = { BROUILLON: 0, RENVOYEE: 1, TRANSMISE: 1, VALIDEE_CS: 2, VALIDEE_DEPARTEMENT: 3, CLOTUREE: 4 };
+  const RANG_COURRIER_G = { 'Brouillon': 0, 'Envoyé': 1, 'Reçu': 2, 'Traité': 3, 'Archivé': 4 };
+  /** Applique aux fiches de rentrée et au courrier les décisions reçues (ordre : date puis rang du statut ; une décision
+      antérieure à la dernière transmission est ignorée ; une fiche clôturée ne change plus). Rend le nombre de changements. */
+  function appliquerRetours(etat) {
+    const ST = (CAT() && CAT().STATUTS_RENTREE) || {};
+    const code = (x) => x.statutCode || Object.keys(ST).find(k => ST[k] === x.statut) || x.statut;
+    const rang = (x) => (x.objet === 'Courrier' ? RANG_COURRIER_G[x.statut] : RANG_RENTREE[code(x)]) || 0;
+    let n = 0;
+    (etat.retours || []).slice().sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')) || rang(a) - rang(b)).forEach(x => {
+      if (x.objet === 'Fiche de rentrée') {
+        const l = etat.rentree || [];
+        const r = l.find(y => y.id === x.ref) || l.find(y => 'rentree|' + normCle(y.entiteLib) + '|' + (y.annee || '') === x.cle);
+        if (!r || r.statut === 'CLOTUREE') return;
+        if (r.dateTransmission && String(x.date || '') < String(r.dateTransmission)) return;
+        if (r.dateValidation && String(x.date || '') <= String(r.dateValidation)) return;
+        const c = code(x); if (!(c in RANG_RENTREE)) return;
+        Object.assign(r, { statut: c, validePar: x.decidePar || '', dateValidation: x.date || '', maj: new Date().toISOString() });
+        if (c === 'RENVOYEE') r.motifRenvoi = x.motif || '';
+        n++;
+      } else if (x.objet === 'Courrier') {
+        const l = etat.courrier || [];
+        const r = l.find(y => y.id === x.ref) || l.find(y => ['courrier', normCle(y.entiteLib), normCle(y.reference), normCle(y.objet), iso(y.date)].join('|') === x.cle);
+        if (!r || (RANG_COURRIER_G[x.statut] || 0) <= (RANG_COURRIER_G[r.statut || 'Brouillon'] || 0)) return;
+        Object.assign(r, { statut: x.statut, maj: new Date().toISOString() });
+        ['numArrivee', 'dateLecture', 'lecteur'].forEach(k => { if (x[k]) r[k] = x[k]; });
+        if (x.statut === 'Traité') { r.dateTraitement = x.date || ''; r.traitePar = x.decidePar || ''; }
+        n++;
+      }
+    });
+    return n;
+  }
+
   async function monter(racine, A, moduleId) {
     styles();
     const MOD = modules().find(m => m.id === moduleId);
@@ -315,11 +505,13 @@
     let etat = Object.assign({ version: 1 }, (await A.charger()) || {});
     collections().concat(['documents']).forEach(k => { if (!Array.isArray(etat[k])) etat[k] = []; });
     if (!etat.params || typeof etat.params !== 'object') etat.params = {};
+    if (appliquerRetours(etat)) { etat.maj = new Date().toISOString(); await A.enregistrer(etat); }
     let ctx = await A.contexte();
     const memo = A.memo || { get: () => null, set: () => {} };
     const toast = (m) => (A.toast ? A.toast(m) : null);
     const exclus = new Set(A.exclure || []);
-    const onglets = MOD.onglets.filter(o => !exclus.has(MOD.id + '.' + o.id));
+    const nivCompte = () => (ctx.niveaux || NIVEAUX.map(x => x[0]));
+    const onglets = MOD.onglets.filter(o => !exclus.has(MOD.id + '.' + o.id) && (!o.niveauxVue || o.niveauxVue.some(n => nivCompte().includes(n) && ((ctx.entites || {})[n] || []).some(e => ctx.droits && ctx.droits.ecrire && ctx.droits.ecrire(n, e.cle)))));
     let onglet = memo.get(MOD.id + '.onglet') || onglets[0].id;
     if (!onglets.some(o => o.id === onglet)) onglet = onglets[0].id;
     const F = {};   // filtres par rubrique
@@ -450,7 +642,7 @@
       + '.pvs-doc h3{font:bold 11pt Arial,sans-serif;margin:12px 0 4px}.pvs-doc p.c{text-align:center;margin:2px 0}.pvs-doc p.j{text-align:justify;margin:8px 0}'
       + '.pvs-imp{border-collapse:collapse;width:100%;font:8.8pt Arial,sans-serif;margin:6px 0}.pvs-imp th,.pvs-imp td{border:1px solid #555;padding:3px 4px;text-align:left;vertical-align:top;overflow-wrap:break-word}'
       + '.pvs-imp th{background:#E8EEF5!important;color:#1D2939!important;font-weight:700;position:static;text-transform:none;letter-spacing:0}.pvs-imp td.n{text-align:right}.pvs-imp td.c,.pvs-imp th.c{text-align:center}'
-      + '.pvs-sigs{display:flex;flex-wrap:wrap;justify-content:space-between;gap:14px 18px;margin-top:18px;page-break-inside:avoid;break-inside:avoid}'
+      + '.pvs-cep-t tr.dep td{background:#FEF3F2}.pvs-cep-t tr.dep td[data-c=statut],.pvs-cep-t tr.dep td[data-c=obs]{color:#B42318;font-weight:700}.pvs-cep-t tr.tot td{background:#F2F4F7}.pvs-cep-t th{text-align:center}.pvs-sigs{display:flex;flex-wrap:wrap;justify-content:space-between;gap:14px 18px;margin-top:18px;page-break-inside:avoid;break-inside:avoid}'
       + '.pvs-sb{flex:1 1 160px;text-align:center;font:10pt Arial,sans-serif}.pvs-sb-l{font-weight:700}.pvs-sb-z{position:relative;height:112px;display:flex;align-items:center;justify-content:center}'
       + '.pvs-sb-c{position:absolute;left:50%;top:50%;transform:translate(-72%,-50%);opacity:.88}.pvs-sb-c svg{height:100px;width:auto;max-width:210px}.pvs-sb-c svg.rond{width:104px;height:104px}.pvs-sb-c img{max-width:150px;max-height:104px}'
       + '.pvs-sb-s{position:relative;max-height:74px;max-width:170px;mix-blend-mode:multiply}.pvs-sb-n{font-weight:700}.pvs-sb-v{border-top:1px dashed #999;width:150px;margin-top:70px}'
@@ -517,7 +709,8 @@
         const ew = entitesEcrivables(o);
         if (filtre.niveau && filtre.entite && peut(filtre.niveau, filtre.entite)) { r.niveau = filtre.niveau; r.entite = filtre.entite; }
         else if (ew.length) { const pref = ew.find(x => x[0] === (filtre.niveau || (ctx.autorite || {}).niveau)) || ew[0]; r.niveau = pref[0]; r.entite = (pref[1].find(e => String(e.cle) === String((ctx.autorite || {}).cle)) || pref[1][0]).cle; }
-        if (o.annee) r.annee = filtre.saison || saisonCourante(); else r.saison = filtre.saison || saisonCourante();
+        if (o.annee) r.annee = filtre.saison || saisonCourante(); else if (!o.sansSaison) r.saison = filtre.saison || saisonCourante();
+        if (PROPOSER[o.coll]) { try { await PROPOSER[o.coll](r); } catch (e) { console.error(e); } }
         const refF = o.champs.find(c => c.t === 'ref'); if (refF && filtre.ref) r[refF.k] = filtre.ref;
       }
       const ew = entitesEcrivables(o);
@@ -531,10 +724,10 @@
       const form = h('div', { class: 'pvs-form' });
       const lab = (txt, el, ch) => h('label', { class: (ch && (ch.t === 'long' || ch.t === 'multi' || ch.t === 'entites') ? 'large' : '') }, h('span', { class: ch && ch.req ? 'req' : '' }, txt), el, ch && ch.aide ? h('span', { class: 'pvs-aide' }, ch.aide) : null);
       if (ew.length > 1 || ew[0][1].length > 1 || (o.niveaux || []).length > 1) form.append(lab('Niveau', sNiv), lab('Entité', sEnt));
-      form.append(lab(o.annee ? 'Année scolaire' : 'Saison', sSaison));
+      if (!o.sansSaison) form.append(lab(o.annee ? 'Année scolaire' : 'Saison', sSaison));
       const lire = () => {
         const x = Object.assign({}, r, { niveau: sNiv.value, entite: sEnt.value });
-        if (o.annee) x.annee = sSaison.value; else x.saison = sSaison.value;
+        if (o.annee) x.annee = sSaison.value; else if (!o.sansSaison) x.saison = sSaison.value;
         o.champs.forEach(c => { const el = champsEl[c.k]; if (!el || c.t === 'calc') return;
           if (c.t === 'multi' || c.t === 'entites') x[c.k] = [...el.querySelectorAll('input:checked')].map(i => i.value);
           else if (c.t === 'num') x[c.k] = el.value === '' ? '' : num(el.value);
@@ -574,6 +767,14 @@
         champsEl[c.k] = el;
         form.append(lab(c.l, el, c));
       });
+      o.champs.filter(c => c.gps).forEach(c => {
+        const lat = champsEl[c.k], lon = champsEl.longitude;
+        form.append(h('div', { class: 'large' }, h('button', { class: 'pvs-btn s', type: 'button', 'data-pvs': 'position', onclick: () => {
+          if (!navigator.geolocation) { toast('Géolocalisation indisponible sur cet appareil.'); return; }
+          navigator.geolocation.getCurrentPosition((p) => { lat.value = p.coords.latitude.toFixed(6); if (lon) lon.value = p.coords.longitude.toFixed(6); toast('Position enregistrée dans le formulaire.'); },
+            (e) => toast('Position introuvable : ' + (e.message || 'autorisation refusée')), { enableHighAccuracy: true, timeout: 20000 });
+        } }, I('repere') + 'Position actuelle')));
+      });
       const maj = (e) => { const x = lire(); calcEls.forEach(([c, el]) => { el.value = c.calc(x, api); }); o.champs.forEach(c => { if (champsEl[c.k] && champsEl[c.k]._maj && (c.dep || c.t === 'ecole') && !(e && champsEl[c.k].contains(e.target))) champsEl[c.k]._maj(); }); };
       form.addEventListener('change', (e) => { if (e.target === sNiv) majEnt(); maj(e); });
       form.addEventListener('input', () => calcEls.forEach(([c, el]) => { el.value = c.calc(lire(), api); }));
@@ -584,6 +785,8 @@
           const manque = o.champs.filter(c => c.req && (Array.isArray(x[c.k]) ? !x[c.k].length : vide(x[c.k])));
           if (!x.entite) { toast('Choisissez l’entité.'); return false; }
           if (manque.length) { toast('À renseigner : ' + manque.map(c => c.l).join(', ')); return false; }
+          const horsBornes = o.champs.filter(c => c.t === 'num' && !vide(x[c.k]) && ((c.min !== undefined && num(x[c.k]) < c.min) || (c.max !== undefined && num(x[c.k]) > c.max)));
+          if (horsBornes.length) { toast(horsBornes.map(c => c.l + ' : entre ' + c.min + ' et ' + c.max).join(' ; ')); return false; }
           return x;
         } }]);
       if (!res) return null;
@@ -619,8 +822,9 @@
 
     /* ---------- Excel ---------- */
     function feuille(o, rows) {
-      const tete = ['Niveau', 'Entité', o.annee ? 'Année scolaire' : 'Saison'].concat(o.champs.map(c => c.l));
-      const l = rows.map(r => [LIB_NIVEAU[r.niveau] || r.niveau, r.entiteLib || (entite(r.niveau, r.entite) || {}).lib || '', saisonDe(r)].concat(o.champs.map(c => { const v = valeur(c, r, true); return c.t === 'num' && !vide(v) ? num(v) : v; })));
+      const ch = o.champs.filter(c => !c.horsExcel);
+      const tete = ['Niveau', 'Entité'].concat(o.sansSaison ? [] : [o.annee ? 'Année scolaire' : 'Saison'], ch.map(c => c.l));
+      const l = rows.map(r => [LIB_NIVEAU[r.niveau] || r.niveau, r.entiteLib || (entite(r.niveau, r.entite) || {}).lib || ''].concat(o.sansSaison ? [] : [saisonDe(r)], ch.map(c => { const v = valeur(c, r, true); return c.t === 'num' && !vide(v) ? num(v) : v; })));
       return { nom: o.titre.slice(0, 31), lignes: [tete].concat(l), entete: 0 };
     }
     async function exporter(feuilles, nom) {
@@ -653,10 +857,10 @@
         const recueExt = o.coll === 'notes' && (e.externe || !peut(niv, e.cle));
         if (!peut(niv, e.cle) && !recueExt) { rejets.push(`Ligne ${x._ligne} : « ${e.lib} » hors de votre périmètre`); return; }
         const r = { niveau: niv, entite: String(e.cle), entiteLib: e.lib };
-        const s = String(x[o.annee ? 'annee scolaire' : 'saison'] || '').trim() || (F[o.id] || {}).saison || saisonCourante();
-        if (o.annee) r.annee = s; else r.saison = s;
+        const s = o.sansSaison ? '' : String(x[o.annee ? 'annee scolaire' : 'saison'] || '').trim() || (F[o.id] || {}).saison || saisonCourante();
+        if (o.annee) r.annee = s; else if (!o.sansSaison) r.saison = s;
         o.champs.forEach(c => {
-          if (c.t === 'calc') return;
+          if (c.t === 'calc' || c.horsExcel) return;
           const raw = x[norm(c.l)]; if (raw === undefined) return;
           const t = String(raw == null ? '' : raw).trim();
           if (c.t === 'date') r[c.k] = iso(raw);
@@ -691,7 +895,7 @@
       const f = F[o.id] = F[o.id] || { niveau: memo.get(MOD.id + '.niv') || '', entite: '', saison: memo.get(MOD.id + '.saison') || saisonCourante(), q: '', ref: '' };
       const refF = o.champs.find(c => c.t === 'ref');
       return lignes(o.coll).filter(r => (!f.niveau || r.niveau === f.niveau) && (!f.entite || (f.niveau ? String(r.entite) === String(f.entite) : true))
-        && (!f.saison || saisonDe(r) === f.saison) && (!f.ref || !refF || r[refF.k] === f.ref)
+        && (o.sansSaison || !f.saison || saisonDe(r) === f.saison) && (!f.ref || !refF || r[refF.k] === f.ref)
         && (!f.q || norm(o.champs.map(c => valeur(c, r, true)).join(' ') + ' ' + (r.entiteLib || '')).includes(norm(f.q))));
     }
     function barreFiltres(o, apres) {
@@ -711,7 +915,7 @@
       let tq; q.oninput = () => { clearTimeout(tq); tq = setTimeout(() => { f.q = q.value; apres(true); }, 250); };
       return h('div', { class: 'pvs-barre' },
         nivs.length > 1 ? h('label', {}, 'Niveau', sNiv) : null, nivs.length > 1 || entites(nivs[0]).length > 1 ? h('label', {}, 'Entité', nivs.length > 1 ? sEnt : (() => { const s2 = selectListe(entites(nivs[0]).map(e => [e.cle, e.lib]), f.entite, 'Toutes'); s2.onchange = () => { f.niveau = nivs[0]; f.entite = s2.value; apres(); }; return s2; })()) : null,
-        h('label', {}, o.annee ? 'Année scolaire' : 'Saison', sSai), sRef ? h('label', {}, refF.l, sRef) : null, h('label', {}, 'Recherche', q));
+        o.sansSaison ? null : h('label', {}, o.annee ? 'Année scolaire' : 'Saison', sSai), sRef ? h('label', {}, refF.l, sRef) : null, h('label', {}, 'Recherche', q));
     }
     function rubrique(o, zone) {
       const box = h('div', {});
@@ -722,8 +926,8 @@
         else while (box.childNodes.length > 1) box.lastChild.remove();
         const colsN = (o.niveaux || []).length > 1;
         const cols = o.champs.filter(c => !c.cache);
-        const ecrireUneLigne = rows.some(r => peut(r.niveau, r.entite));
-        const ew = entitesEcrivables(o).length > 0;
+        const ecrireUneLigne = !o.lectureSeule && rows.some(r => peut(r.niveau, r.entite) && !(VERROU[o.coll] && VERROU[o.coll](r)));
+        const ew = !o.lectureSeule && entitesEcrivables(o).length > 0;
         const outils = (OUTILS[o.coll] ? OUTILS[o.coll](o, rows) : []).filter(Boolean);
         box.append(h('div', { class: 'pvs-actions' },
           ew ? h('button', { class: 'pvs-btn p', type: 'button', 'data-pvs': 'ajouter', onclick: async () => { if (await formulaire(o)) apres(); } }, '\uE001 Ajouter') : null,
@@ -731,7 +935,7 @@
           ew ? h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'importer', onclick: () => importer(o) }, '\uE00B Importer') : null,
           h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'liste', onclick: () => imprimerListe(o, rows) }, '\uE008 Liste certifiée'),
           ecrireUneLigne ? h('button', { class: 'pvs-btn d', type: 'button', 'data-pvs': 'reinitialiser', onclick: async () => {
-            const cibles = rows.filter(r => peut(r.niveau, r.entite));
+            const cibles = rows.filter(r => peut(r.niveau, r.entite) && !(VERROU[o.coll] && VERROU[o.coll](r)));
             if (!(await confirmer('Réinitialiser — ' + o.titre, `Supprimer les ${cibles.length} ligne(s) affichée(s) (filtres en cours) ? Pensez à exporter l’Excel avant.`, '\uE058 Réinitialiser'))) return;
             const ids = new Set(cibles.map(r => r.id)); etat[o.coll] = etat[o.coll].filter(r => !ids.has(r.id)); await sauver(); apres();
           } }, '\uE058 Réinitialiser') : null, ...outils));
@@ -741,12 +945,12 @@
         const tete = ['N°'].concat(colsN ? ['Niveau'] : [], ['Entité'], cols.map(c => c.l), rang ? ['Rang'] : [], ['']);
         const tb = h('tbody', {});
         rows.slice(0, 1500).forEach((r, i) => {
-          const w = peut(r.niveau, r.entite);
+          const w = !o.lectureSeule && peut(r.niveau, r.entite) && !(VERROU[o.coll] && VERROU[o.coll](r));
           tb.append(h('tr', { 'data-id': r.id }, h('td', { class: 'c' }, i + 1), colsN ? h('td', {}, LIB_NIVEAU[r.niveau] || r.niveau) : null, h('td', {}, r.entiteLib || ''),
             cols.map(c => h('td', { class: c.t === 'num' || c.t === 'calc' ? 'n' : '' }, String(valeur(c, r)))), rang ? h('td', { class: 'c' }, rang[r.id] || '') : null,
             h('td', { class: 'act' },
               (o.docsLigne || []).map(d => h('button', { class: 'pvs-btn s', type: 'button', title: d.l, 'data-pvs': 'doc-' + d.type, onclick: () => DOCS[d.type](r, o) }, d.l.split(' ')[0])),
-              (o.actionsLigne || []).map(a => h('button', { class: 'pvs-btn s', type: 'button', title: a.l, 'data-pvs': 'action-' + a.id, onclick: () => ACTIONS[a.id](r, o) }, a.l.split(' ')[0])),
+              (o.actionsLigne || []).filter(a => !SI[a.id] || SI[a.id](r)).map(a => h('button', { class: 'pvs-btn s', type: 'button', title: a.l, 'data-pvs': 'action-' + a.id, onclick: async () => { const x = await ACTIONS[a.id](r, o); if (x === true) apres(); } }, a.l.split(' ')[0])),
               w ? h('button', { class: 'pvs-btn s', type: 'button', title: 'Modifier', 'data-pvs': 'modifier', onclick: async () => { if (await formulaire(o, r)) apres(); } }, '\uE006') : null,
               w ? h('button', { class: 'pvs-btn s d', type: 'button', title: 'Supprimer', 'data-pvs': 'supprimer', onclick: async () => {
                 if (!(await confirmer('Supprimer', `Supprimer « ${(o.lib && o.lib(r, api)) || 'cette ligne'} » ?`, '\uE005 Supprimer'))) return;
@@ -1267,6 +1471,7 @@
       if (nonEx) out.push({ g: 'at', t: 'Licences', d: nonEx + ' licencié(s) sans visite médicale (saison ' + s + ')', o: 'sante.visites' });
       if (inap) out.push({ g: 'ko', t: 'Licences', d: inap + ' licencié(s) inapte(s) : à retirer des listes de joueurs', o: 'sport.licences' });
       soldes().filter(x => x.solde <= 0).forEach(x => out.push({ g: 'ko', t: 'Stock épuisé', d: x.denree + ' — ' + x.ecoleLib + ' : solde ' + x.solde + ' ' + x.unite, o: 'sante.stocks' }));
+      alertesTerritoire(out);
       return out;
     }
     let seuilAbs = +(memo.get('pvs.seuilAbs') || 6);
@@ -1613,6 +1818,388 @@
             h('tbody', {}, Object.entries(st).map(([k, o]) => h('tr', {}, h('td', {}, k), h('td', { class: 'c' }, o.iG + ' / ' + o.iF), h('td', { class: 'c' }, o.pG + ' / ' + o.pF), h('td', { class: 'c' }, o.aG + ' / ' + o.aF), h('td', { class: 'n' }, tx(o.aG + o.aF, o.pG + o.pF))))))));
       }
     });
+
+    /* ---------- Territoire et suivi administratif (outils/lots/spec-territoire.md) ---------- */
+    const maintenant = () => new Date().toISOString();
+    const qui = () => (A.utilisateur ? A.utilisateur() : '') || A.app || '';
+    const ST = () => CAT().STATUTS_RENTREE;
+    /** Entité de niveau niv, écrite par le compte, dont relève la ligne r (sinon null) */
+    const ecrivableAu = (niv, r) => entites(niv).find(e => peut(niv, e.cle) && (niv === r.niveau ? String(e.cle) === String(r.entite) : dans(r.niveau, r.entite, niv, e.cle))) || null;
+    const enBrouillon = (r) => ['', 'BROUILLON', 'RENVOYEE'].includes(r.statut || '');
+    /** Entités destinataires possibles d'un courrier (niveau choisi, dont relève l'expéditeur) */
+    function destinationsCourrier(r) {
+      const n = r.destNiveau || 'CS';
+      const l = entites(n).filter(e => n !== r.niveau && dans(r.niveau, r.entite, n, e.cle));
+      const m = r.destinataire ? l.filter(e => norm(e.lib) === norm(r.destinataire)) : [];
+      return m.length ? m : l;
+    }
+    const recuPar = (r) => destinationsCourrier(r).find(e => peut(r.destNiveau || 'CS', e.cle)) || null;
+    const emetteur = (r) => peut(r.niveau, r.entite);
+    const numero = (prefixe, coll, champ, filtre) => {
+      const an = String(new Date().getFullYear()), deb = prefixe + '-' + an + '-';
+      const n = (etat[coll] || []).filter(x => filtre(x) && String(x[champ] || '').startsWith(deb)).reduce((m, x) => Math.max(m, +String(x[champ]).slice(deb.length) || 0), 0) + 1;
+      return deb + String(n).padStart(4, '0');
+    };
+    const cleRentree = (r) => 'rentree|' + normCle(r.entiteLib || (entite(r.niveau, r.entite) || {}).lib || r.entite) + '|' + (r.annee || '');
+    const cleCourrier = (r) => 'courrier|' + normCle(r.entiteLib || '') + '|' + normCle(r.reference || '') + '|' + normCle(r.objet || '') + '|' + iso(r.date);
+    function retour(niv, e, x) {
+      etat.retours.push(Object.assign({ id: uid(), cree: auj(), maj: maintenant(), niveau: niv, entite: String(e.cle), entiteLib: e.lib || '', date: maintenant(), decidePar: qui() }, x));
+    }
+    async function motifRenvoi(titre) {
+      const t = h('textarea', { rows: 3, 'data-k': 'motif' });
+      return dialogue(titre, h('div', {}, h('label', { class: 'large' }, h('span', { class: 'req' }, 'Motif du renvoi'), t)), [{ l: 'Annuler', v: null },
+        { l: I('retour') + 'Renvoyer', p: true, id: 'renvoyer', action: () => { const v = t.value.trim(); if (!v) { toast('Le motif est obligatoire.'); return false; } return v; } }]);
+    }
+    async function deciderRentree(r, code, niv, motif) {
+      const e = ecrivableAu(niv, r); if (!e) return false;
+      Object.assign(r, { statut: code, validePar: qui(), dateValidation: maintenant(), maj: maintenant() });
+      if (code === 'RENVOYEE') r.motifRenvoi = motif || '';
+      retour(niv, e, { saison: r.annee || saisonCourante(), objet: 'Fiche de rentrée', cle: cleRentree(r), ref: r.id, destinataire: r.entiteLib || '', statut: ST()[code], statutCode: code, motif: motif || '' });
+      await sauver(); toast('Fiche ' + ST()[code].toLowerCase() + ' : ' + (r.entiteLib || ''));
+      return true;
+    }
+    async function deciderCourrier(r, statut, e, extra) {
+      Object.assign(r, extra || {}, { statut, maj: maintenant() });
+      retour(r.destNiveau || 'CS', e, { saison: r.saison || saisonCourante(), objet: 'Courrier', cle: cleCourrier(r), ref: r.id, destinataire: r.entiteLib || '', statut,
+        numArrivee: r.numArrivee || '', dateLecture: r.dateLecture || '', lecteur: r.lecteur || '' });
+      await sauver();
+    }
+    const SI = {
+      transmettreRentree: (r) => peut('ECOLE', r.entite) && enBrouillon(r),
+      validerRentreeCS: (r) => r.statut === 'TRANSMISE' && !!ecrivableAu('CS', r),
+      validerRentreeDep: (r) => r.statut === 'VALIDEE_CS' && !!ecrivableAu('DDEMP', r),
+      cloturerRentree: (r) => r.statut === 'VALIDEE_DEPARTEMENT' && !!ecrivableAu('DDEMP', r),
+      renvoyerRentree: (r) => (r.statut === 'TRANSMISE' && !!ecrivableAu('CS', r)) || (['VALIDEE_CS', 'VALIDEE_DEPARTEMENT'].includes(r.statut) && !!ecrivableAu('DDEMP', r)),
+      envoyerCourrier: (r) => emetteur(r) && (r.statut || 'Brouillon') === 'Brouillon',
+      ouvrirCourrier: (r) => (r.statut || 'Brouillon') !== 'Brouillon' && (!!recuPar(r) || emetteur(r)),
+      traiterCourrier: (r) => r.statut === 'Reçu' && !!recuPar(r),
+      archiverCourrier: (r) => r.statut === 'Traité' && (!!recuPar(r) || emetteur(r)),
+      validerVisite: (r) => r.statutVisite === 'Rapport rédigé' && ['ZONE', 'CS', 'DDEMP'].some(n => ecrivableAu(n, r)),
+      carte: (r) => !vide(r.latitude) && !vide(r.longitude)
+    };
+    /** Lignes figées (circuit engagé) : ni modification ni suppression */
+    const VERROU = { rentree: (r) => !enBrouillon(r), courrier: (r) => (r.statut || 'Brouillon') !== 'Brouillon' };
+    /** Valeurs proposées à la création d'une ligne */
+    const PROPOSER = {
+      courrier(r) { if (!r.destNiveau || r.destNiveau === r.niveau) r.destNiveau = r.niveau === 'CS' || r.niveau === 'DDEMP' ? 'DDEMP' : 'CS'; },
+      async rentree(r) {
+        if (r.niveau !== 'ECOLE' || !r.entite) return;
+        let ind = {}; if (A.indicateurs) { try { ind = ((await A.indicateurs(r.annee || saisonCourante())) || {})[String(r.entite)] || {}; } catch (e) { ind = {}; } }
+        const sig = etat.signaletique.find(x => String(x.entite) === String(r.entite)) || {};
+        const man = etat.manuels.filter(x => String(x.entite) === String(r.entite) && (!x.annee || x.annee === r.annee)).reduce((a, x) => a + num(x.nombre), 0);
+        const prop = { effG: ind.effG, effF: ind.effF, classes: ind.groupes, ensPoste: ind.enseignants, salles: vide(sig.salles) ? ind.salles : sig.salles, tablesBancs: ind.tablesBancs,
+          manuels: man || '', latrines: vide(sig.latrines) ? ind.latrines : sig.latrines, pointEau: sig.pointEau || ind.pointEau || '', electricite: sig.electricite || '', latitude: sig.latitude, longitude: sig.longitude };
+        Object.entries(prop).forEach(([k, v]) => { if (vide(r[k]) && !vide(v)) r[k] = v; });
+      }
+    };
+    Object.assign(AVANT, {
+      rentree(r) { if (!r.statut) r.statut = 'BROUILLON'; },
+      courrier(r) { if (!r.statut) r.statut = 'Brouillon'; if (!r.destinataire) { const d = destinationsCourrier(r)[0]; if (d) r.destinataire = d.lib; } },
+      structures(r) { if (!r.active) r.active = 'Oui'; }
+    });
+    Object.assign(ACTIONS, {
+      async transmettreRentree(r) {
+        if (!(await confirmer('Transmettre la fiche', 'Transmettre la fiche de rentrée de ' + (r.entiteLib || '') + ' (' + (r.annee || '') + ') à la circonscription ? Elle ne se modifiera plus, sauf si elle est renvoyée.', I('fleche-droite') + 'Transmettre'))) return false;
+        Object.assign(r, { statut: 'TRANSMISE', dateTransmission: maintenant(), maj: maintenant() }); await sauver(); toast('Fiche transmise.'); return true;
+      },
+      validerRentreeCS: (r) => deciderRentree(r, 'VALIDEE_CS', 'CS'),
+      validerRentreeDep: (r) => deciderRentree(r, 'VALIDEE_DEPARTEMENT', 'DDEMP'),
+      async cloturerRentree(r) { if (!(await confirmer('Clôturer la fiche', 'Clôturer la fiche de ' + (r.entiteLib || '') + ' ? Elle ne changera plus.', I('cadenas') + 'Clôturer'))) return false; return deciderRentree(r, 'CLOTUREE', 'DDEMP'); },
+      async renvoyerRentree(r) { const m = await motifRenvoi('Renvoyer la fiche — ' + (r.entiteLib || '')); if (!m) return false; return deciderRentree(r, 'RENVOYEE', r.statut === 'TRANSMISE' ? 'CS' : 'DDEMP', m); },
+      async envoyerCourrier(r) {
+        if (!(await confirmer('Envoyer le courrier', 'Envoyer « ' + (r.objet || '') + ' » à ' + (r.destinataire || LIB_NIVEAU[r.destNiveau] || '') + ' ? Il ne se modifiera plus.', I('fleche-droite') + 'Envoyer'))) return false;
+        Object.assign(r, { statut: 'Envoyé', dateEnvoi: maintenant(), numDepart: r.numDepart || numero('D', 'courrier', 'numDepart', (x) => String(x.entite) === String(r.entite) && x.niveau === r.niveau), maj: maintenant() });
+        await sauver(); toast('Courrier envoyé : ' + r.numDepart); return true;
+      },
+      async ouvrirCourrier(r) {
+        const e = recuPar(r); let change = false;
+        if (e && r.statut === 'Envoyé') {
+          await deciderCourrier(r, 'Reçu', e, { dateLecture: maintenant(), lecteur: qui(), arriveeEntite: String(e.cle),
+            numArrivee: r.numArrivee || numero('A', 'courrier', 'numArrivee', (x) => String(x.arriveeEntite || '') === String(e.cle)) });
+          change = true;
+        }
+        const ligne = (l, v) => v ? h('p', {}, h('b', {}, l + ' : '), String(v)) : null;
+        await dialogue((r.type || 'Courrier') + ' — ' + (r.objet || ''), h('div', { class: 'pvs-courrier' },
+          ligne('De', r.entiteLib), ligne('À', r.destinataire), ligne('Référence', r.reference), ligne('Date', fr(r.date)), ligne('N° de départ', r.numDepart), ligne('N° d’arrivée', r.numArrivee),
+          ligne('Statut', r.statut), ligne('Lu le', r.dateLecture ? fr(r.dateLecture) + (r.lecteur ? ' par ' + r.lecteur : '') : ''),
+          h('div', { style: 'white-space:pre-wrap;border-top:1px solid #EAECF0;margin-top:8px;padding-top:8px' }, r.texte || ''), ligne('Pièces jointes / ampliations', r.pieces), ligne('Signataire', r.signataire)),
+        [{ l: 'Fermer', v: true }]);
+        return change;
+      },
+      async traiterCourrier(r) { const e = recuPar(r); if (!e) return false; await deciderCourrier(r, 'Traité', e, { dateTraitement: maintenant(), traitePar: qui() }); toast('Courrier traité.'); return true; },
+      async archiverCourrier(r) { const e = recuPar(r) || entite(r.niveau, r.entite); if (!e) return false; await deciderCourrier(r, 'Archivé', e); toast('Courrier archivé.'); return true; },
+      async validerVisite(r) {
+        if (!(await confirmer('Valider la visite', 'Valider la visite de ' + (r.enseignant || '') + ' du ' + fr(r.date) + ' ?', I('valider-cercle') + 'Valider'))) return false;
+        Object.assign(r, { statutVisite: 'Validée', valideePar: qui(), dateValidation: maintenant(), maj: maintenant() }); await sauver(); toast('Visite validée.'); return true;
+      },
+      carte(r) { const la = num(r.latitude), lo = num(r.longitude); window.open('https://www.openstreetmap.org/?mlat=' + la + '&mlon=' + lo + '#map=17/' + la + '/' + lo, '_blank', 'noopener'); }
+    });
+    Object.assign(OUTILS, {
+      structures: (o, rows) => {
+        const ew = entitesEcrivables(o);
+        return [ew.length && !lignes('structures').some(r => ew.some(([n, l]) => n === r.niveau && l.some(e => String(e.cle) === String(r.entite))))
+          ? h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'amorcer', onclick: () => amorcerStructures(ew) }, I('institution') + 'Amorcer le référentiel') : null,
+        rows.length ? h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'arbre', onclick: () => arbreStructures(rows) }, I('classeur') + 'Arbre des structures') : null];
+      },
+      rentree: (o, rows) => [h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'suivi', onclick: () => { if (onglets.some(x => x.id === 'suivi')) { onglet = 'suivi'; dessiner(); } else toast('Le suivi est réservé à la circonscription et au département.'); } }, I('graphique') + 'Suivi des fiches')]
+    });
+    async function amorcerStructures(ew) {
+      const [niv, l] = ew[0], e = l[0], rows = [];
+      const ajout = (x) => { if (!rows.some(y => norm(y.nom) === norm(x.nom))) rows.push(Object.assign({ id: uid(), cree: auj(), maj: maintenant(), niveau: niv, entite: String(e.cle), entiteLib: e.lib, ordre: 'Maternel et primaire', active: 'Oui' }, x)); };
+      const memp = 'Ministère des Enseignements Maternel et Primaire';
+      ajout({ nom: memp, sigle: 'MEMP', type: 'Ministère', ordre: 'Tous' });
+      const dep = niv === 'CS' ? (entites('DDEMP')[0] || null) : null;
+      if (dep) ajout({ nom: dep.lib, type: 'Direction départementale', rattachement: memp });
+      ajout({ nom: e.lib, type: niv === 'CS' ? 'Circonscription scolaire' : 'Direction départementale', rattachement: dep ? dep.lib : memp });
+      (niv === 'CS' ? entites('ZONE').filter(z => dans('ZONE', z.cle, 'CS', e.cle)).map(z => ({ nom: z.lib, type: 'Zone pédagogique' }))
+        : entites('CS').map(c => ({ nom: c.lib, type: 'Circonscription scolaire' }))).forEach(x => ajout(Object.assign(x, { rattachement: e.lib })));
+      if (!(await confirmer('Amorcer le référentiel', rows.length + ' structure(s) seront créées : ' + rows.map(r => r.nom).join(' ; ') + '. Les services (' + (niv === 'CS' ? 'divisions' : 'services') + ') s’ajoutent ensuite avec « Ajouter ».', I('institution') + 'Amorcer'))) return;
+      etat.structures.push(...rows); await sauver(); toast('Référentiel amorcé.'); dessiner();
+    }
+    function arbreStructures(rows) {
+      const par = {}; rows.forEach(r => { const k = norm(r.rattachement || ''); (par[k] = par[k] || []).push(r); });
+      const noms = new Set(rows.map(r => norm(r.nom)));
+      const branche = (r, vus) => h('li', {}, h('b', {}, r.nom), r.sigle ? ' (' + r.sigle + ')' : '', ' — ' + (r.type || ''), r.active === 'Non' ? ' — inactive' : '',
+        (par[norm(r.nom)] || []).length && !vus.has(norm(r.nom)) ? h('ul', {}, par[norm(r.nom)].map(x => branche(x, new Set([...vus, norm(r.nom)])))) : null);
+      const racines = rows.filter(r => !r.rattachement || !noms.has(norm(r.rattachement)));
+      dialogue('Arbre des structures', h('ul', { class: 'pvs-arbre' }, racines.map(r => branche(r, new Set()))), [{ l: 'Fermer', v: true }]);
+    }
+    Object.assign(VUES, {
+      suiviRentree(zone) {
+        const f = F.suivi = F.suivi || { annee: memo.get('territoire.suivi') || saisonCourante() };
+        const sAn = selectListe(saisons(), f.annee, null); sAn.onchange = () => { f.annee = sAn.value; memo.set('territoire.suivi', f.annee); dessiner(); };
+        const ecs = ecoles().filter(e => ['ZONE', 'CS', 'DDEMP'].some(n => entites(n).some(x => peut(n, x.cle) && dans('ECOLE', e.cle, n, x.cle)))).filter(e => e.active !== false && !/ferm/i.test(e.etat || ''));
+        const lignesS = ecs.map(e => { const r = etat.rentree.find(x => String(x.entite) === String(e.cle) && x.annee === f.annee); return { e, r, statut: r ? (ST()[r.statut || 'BROUILLON'] || r.statut) : 'Non reçue' }; })
+          .sort((a, b) => String(a.e.lib).localeCompare(String(b.e.lib), 'fr'));
+        const compte = {}; lignesS.forEach(x => { compte[x.statut] = (compte[x.statut] || 0) + 1; });
+        const tete = ['N°', 'École', 'Statut', 'Transmise le', 'Décision du', 'Décidé par', 'Motif de renvoi', 'Effectif total'];
+        const val = (x) => [x.e.lib, x.statut, x.r && x.r.dateTransmission ? fr(x.r.dateTransmission) : '', x.r && x.r.dateValidation ? fr(x.r.dateValidation) : '', (x.r && x.r.validePar) || '', (x.r && x.r.motifRenvoi) || '', x.r ? (num(x.r.effG) + num(x.r.effF)) || '' : ''];
+        zone.append(h('div', { class: 'pvs-barre' }, h('label', {}, 'Année scolaire', sAn),
+          h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'excel-suivi', onclick: () => exporter([{ nom: 'Suivi des fiches de rentrée', lignes: [tete.slice(1)].concat(lignesS.map(val)), entete: 0 }], 'suivi-rentree') }, ' Excel')),
+        h('p', { class: 'pvs-aide' }, lignesS.length + ' école(s) : ' + Object.entries(compte).map(([k, v]) => k + ' ' + v).join(' · ')),
+        lignesS.length ? h('div', { class: 'pvs-tw' }, h('table', { class: 'pvs-t' }, h('thead', {}, h('tr', {}, tete.map(t => h('th', {}, t)))),
+          h('tbody', {}, lignesS.map((x, i) => h('tr', { 'data-statut': x.statut }, h('td', { class: 'c' }, i + 1), val(x).map(v => h('td', {}, String(v)))))))) : h('p', { class: 'pvs-vide' }, 'Aucune école dans votre périmètre.'));
+      },
+      appel(zone, o) {
+        const box = h('div', { class: 'pvs-carte', 'data-pvs': 'appel' }); zone.append(box);
+        const ew = entitesEcrivables(o).flatMap(([n, l]) => l.map(e => [n, e]));
+        if (!ew.length) { box.append(h('p', { class: 'pvs-vide' }, 'Votre compte ne peut pas faire l’appel du personnel.')); return; }
+        const f = F.appel = F.appel || { i: 0, date: auj(), mois: auj().slice(0, 7) };
+        const sEnt = selectListe(ew.map(([n, e], i) => [String(i), LIB_NIVEAU[n] + ' — ' + e.lib]), String(f.i), null);
+        const dIn = h('input', { type: 'date', value: f.date }), mIn = h('input', { type: 'month', value: f.mois });
+        sEnt.onchange = () => { f.i = +sEnt.value; dessiner(); }; dIn.onchange = () => { f.date = dIn.value || auj(); dessiner(); }; mIn.onchange = () => { f.mois = mIn.value; dessiner(); };
+        const [niv, e] = ew[Math.min(f.i, ew.length - 1)];
+        const duRegistre = etat.presencesAgents.filter(r => r.niveau === niv && String(r.entite) === String(e.cle));
+        (async () => {
+          let base = []; if (A.agents) { try { base = (await A.agents(niv, e.cle)) || []; } catch (x) { base = []; } }
+          const agents = []; const ajoute = (nom, fonction) => { if (nom && !agents.some(a => norm(a.nom) === norm(nom))) agents.push({ nom: String(nom), fonction: fonction || '' }); };
+          base.forEach(a => ajoute(a.nom, a.fonction)); duRegistre.forEach(r => ajoute(r.agent, r.fonction));
+          const tb = h('tbody', {});
+          const ligneAgent = (a) => { const r = duRegistre.find(x => x.date === f.date && norm(x.agent) === norm(a.nom)) || {};
+            tb.append(h('tr', { 'data-agent': a.nom }, h('td', {}, a.nom), h('td', {}, h('input', { value: r.fonction || a.fonction || '', 'data-k': 'fonction' })),
+              h('td', {}, (() => { const s2 = selectListe(CAT().STATUTS_PRESENCE, r.statut || 'Présent', null); s2.setAttribute('data-k', 'statut'); return s2; })()),
+              h('td', {}, h('input', { value: r.motif || '', 'data-k': 'motif', placeholder: 'Motif / justificatif' })))); };
+          agents.forEach(ligneAgent);
+          const nouvel = h('input', { placeholder: 'Nom de l’agent', 'data-k': 'nouvel-agent' });
+          box.append(h('div', { class: 'pvs-barre' }, h('label', {}, 'Entité', sEnt), h('label', {}, 'Date', dIn)),
+            h('div', { class: 'pvs-tw' }, h('table', { class: 'pvs-t' }, h('thead', {}, h('tr', {}, ['Agent', 'Fonction', 'Statut', 'Motif / justificatif'].map(t => h('th', {}, t)))), tb)),
+            agents.length ? null : h('p', { class: 'pvs-aide' }, 'Aucun agent connu pour cette entité : ajoutez-les ci-dessous (ils seront repris aux appels suivants).'),
+            h('div', { class: 'pvs-actions' }, nouvel, h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'ajouter-agent', onclick: () => { const v = nouvel.value.trim(); if (!v) return; ajoute(v, ''); ligneAgent(agents[agents.length - 1]); nouvel.value = ''; } }, ' Agent'),
+              h('button', { class: 'pvs-btn p', type: 'button', 'data-pvs': 'enregistrer-appel', onclick: async () => {
+                const lignesA = [...tb.querySelectorAll('tr')]; let n = 0;
+                lignesA.forEach(tr => { const nom = tr.getAttribute('data-agent'), val = (k) => tr.querySelector('[data-k="' + k + '"]').value.trim();
+                  const ex = etat.presencesAgents.find(x => x.niveau === niv && String(x.entite) === String(e.cle) && x.date === f.date && norm(x.agent) === norm(nom));
+                  const x = { niveau: niv, entite: String(e.cle), entiteLib: e.lib, saison: saisonCourante(), date: f.date, agent: nom, fonction: val('fonction'), statut: val('statut') || 'Présent', motif: val('motif'), maj: maintenant() };
+                  if (ex) Object.assign(ex, x); else etat.presencesAgents.push(Object.assign({ id: uid(), cree: auj() }, x)); n++; });
+                await sauver(); toast('Appel du ' + fr(f.date) + ' enregistré (' + n + ' agent(s)).'); dessiner();
+              } }, I('enregistrer') + 'Enregistrer l’appel')));
+          // statistiques du mois : jours pointés, statuts, taux de présence = (Présent + Retard) / jours pointés
+          const STP = CAT().STATUTS_PRESENCE, mois = duRegistre.filter(r => String(r.date || '').slice(0, 7) === f.mois);
+          const parAgent = {}; mois.forEach(r => { const k = r.agent; const x = parAgent[k] = parAgent[k] || { agent: k, jours: 0 }; x.jours++; x[r.statut] = (x[r.statut] || 0) + 1; });
+          const stats = Object.values(parAgent).sort((a, b) => String(a.agent).localeCompare(String(b.agent), 'fr'));
+          const taux = (x) => x.jours ? Math.round(1000 * ((x['Présent'] || 0) + (x['Retard'] || 0)) / x.jours) / 10 : '';
+          const teteS = ['Agent', 'Jours pointés'].concat(STP, ['Taux de présence (%)']);
+          const valS = (x) => [x.agent, x.jours].concat(STP.map(st => x[st] || 0), [taux(x)]);
+          box.append(h('h3', {}, I('graphique') + 'Statistiques du mois'), h('div', { class: 'pvs-barre' }, h('label', {}, 'Mois', mIn),
+            stats.length ? h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'excel-presences', onclick: () => exporter([{ nom: 'Présence du personnel ' + f.mois, lignes: [teteS].concat(stats.map(valS)), entete: 0 }], 'presences-personnel-' + f.mois) }, ' Excel') : null),
+          stats.length ? h('div', { class: 'pvs-tw' }, h('table', { class: 'pvs-t', 'data-pvs': 'stats-presences' }, h('thead', {}, h('tr', {}, teteS.map(t => h('th', {}, t)))), h('tbody', {}, stats.map(x => h('tr', {}, valS(x).map(v => h('td', {}, String(v)))))))) : h('p', { class: 'pvs-vide' }, 'Aucun pointage ce mois-ci.'));
+        })().catch(x => { console.error(x); box.append(h('p', { class: 'pvs-vide' }, 'Erreur : ' + x.message)); });
+      }
+    });
+
+    /* ---------- CEP : centres d'examen et salles de composition ---------- */
+    Object.assign(VUES, {
+      cepSalles(zone) {
+        const P = etat.params.cepSalles = etat.params.cepSalles || {};
+        const f = F.cepSalles = F.cepSalles || { vue: memo.get('cep.vue') || '', session: P.session || SESSION_CEP_DEFAUT, i: 0, nec: memo.get('cep.nec') === '1' };
+        const ecr = entites('CS').filter(e => peut('CS', e.cle)), lect = !ecr.length;
+        const e = ecr[Math.min(f.i, ecr.length - 1)] || entites('CS')[0] || null;
+        const csLib = (e && e.lib) || (A.csNom ? A.csNom() : '') || '';
+        const parSalle = () => Math.min(40, Math.max(30, +((P.parSalle || {})[f.session]) || 30));
+        const ordre = (a, b) => (a.ordre || 0) - (b.ordre || 0) || String(a.centre || '').localeCompare(String(b.centre || ''), 'fr');
+        const lignesCep = () => (etat.cepSalles || []).filter(r => r.saison === f.session && (!e || lect || String(r.entite) === String(e.cle))).sort(ordre);
+        const nouvelle = (centre, k) => ({ id: uid(), cree: auj(), maj: maintenant(), niveau: 'CS', entite: e ? String(e.cle) : '', entiteLib: csLib, saison: f.session, ordre: k + 1, centre });
+        let rows = lignesCep();
+        if (!rows.length) {
+          const noms = centresConnus(csLib || (A.app === 'Mon école' || A.app === 'CS Pobè' ? 'POBE' : ''));
+          if (noms.length && !lect) { etat.cepSalles.push(...noms.map(nouvelle)); sauver(); rows = lignesCep(); }
+          else if (noms.length) rows = noms.map(nouvelle);
+        }
+        if (lect && A.centreEcole) { const c = A.centreEcole(); if (c) { const m = rows.filter(r => cleCentre(r.centre) === cleCentre(c)); if (m.length) rows = m; } }
+        if (!f.vue || (lect && f.vue === 'saisie')) f.vue = lect ? 'officiel' : 'saisie';
+        const box = h('div', { class: 'pvs-cep', 'data-pvs': 'cep-salles' }); zone.append(box);
+        const csCourt = nomCsCourt(csLib) || '……………………………';
+        // barre : session, circonscription, candidats par salle, vues
+        const sSes = h('input', { value: f.session, list: 'pvs-sessions-cep', 'data-k': 'session', style: 'max-width:150px' });
+        const dl = h('datalist', { id: 'pvs-sessions-cep' }, [...new Set([SESSION_CEP_DEFAUT].concat((etat.cepSalles || []).map(r => r.saison)))].map(x => h('option', { value: x })));
+        sSes.onchange = () => { f.session = majusc(sSes.value).trim() || SESSION_CEP_DEFAUT; if (!lect) { P.session = f.session; sauver(); } dessiner(); };
+        const sPar = selectListe(Array.from({ length: 11 }, (_, k) => String(30 + k)), String(parSalle()), null); sPar.setAttribute('data-k', 'parSalle');
+        sPar.disabled = lect; sPar.onchange = () => { P.parSalle = Object.assign({}, P.parSalle, { [f.session]: +sPar.value }); sauver(); dessiner(); };
+        const sCs = ecr.length > 1 ? selectListe(ecr.map((x, k) => [String(k), x.lib]), String(f.i), null) : null; if (sCs) sCs.onchange = () => { f.i = +sCs.value; dessiner(); };
+        const vues = (lect ? [] : [['saisie', 'Saisie des centres']]).concat([['officiel', 'Tableau officiel (DDEMP)'], ['detaille', 'Tableau détaillé']]);
+        box.append(h('div', { class: 'pvs-barre' }, h('label', {}, 'Session (CEP : SESSION DE …)', sSes, dl), sCs ? h('label', {}, 'Circonscription', sCs) : null, h('label', {}, 'Candidats par salle', sPar)),
+          h('p', { class: 'pvs-aide' }, 'CS : ' + csCourt + ' — salles nécessaires = effectif total ÷ ' + parSalle() + ', arrondi au-dessus ; écart = salles disponibles − salles nécessaires.' + (lect ? ' Lecture seule : les chiffres sont saisis par la circonscription.' : '')),
+          h('div', { class: 'pvs-onglets', role: 'tablist' }, vues.map(([id, t]) => h('button', { class: 'pvs-onglet' + (f.vue === id ? ' on' : ''), type: 'button', 'data-cep-vue': id,
+            onclick: () => { f.vue = id; memo.set('cep.vue', id); dessiner(); } }, t))));
+        const p = parSalle(), t = totauxCep(rows, p), C = (r) => calculCep(r, p);
+        const nb = (v) => (v === '' || v === null || v === undefined ? '' : String(v));
+        const ligneTotal = (cells) => h('tr', { class: 'tot', 'data-cep': 'total' }, cells.map(c => h('td', { class: 'c' }, h('b', {}, String(c)))));
+        const zoneT = h('div', {}); box.append(zoneT);
+        const alerteDep = () => t.depasses ? h('p', { class: 'pvs-carte', 'data-cep': 'alerte', style: 'border-color:#FDA29B;background:#FEF3F2' }, I('alerte') + t.depasses + ' centre(s) en capacité dépassée : '
+          + rows.filter(r => C(r).depasse).map(r => r.centre + ' (' + (-C(r).ecart) + ' salle(s) manquante(s))').join(' ; ')) : null;
+        if (f.vue === 'saisie') {
+          const champs = [['offG', 'G'], ['offF', 'F'], ['offH', 'Dont H'], ['libG', 'G'], ['libF', 'F'], ['libH', 'Dont H'], ['salles', 'Salles disponibles']];
+          const tb = h('tbody', {});
+          const maj = () => { const tt = totauxCep(rows, parSalle()); rows.forEach(r => { const c = C(r), tr = tb.querySelector('tr[data-id="' + r.id + '"]'); if (!tr) return;
+            tr.querySelector('[data-c="tot"]').textContent = c.rien ? '' : c.tot; tr.querySelector('[data-c="nec"]').textContent = c.rien ? '' : c.nec;
+            tr.querySelector('[data-c="ecart"]').textContent = c.ecart === null ? '' : c.ecart; tr.querySelector('[data-c="statut"]').textContent = c.statut; tr.classList.toggle('dep', c.depasse); });
+            const tr = tb.querySelector('tr[data-cep="total"]'); if (tr) { const v = [tt.offG, tt.offF, tt.offH, tt.libG, tt.libF, tt.libH, tt.salles, '', tt.tot, tt.nec, tt.salles - tt.nec, tt.depasses ? tt.depasses + ' centre(s) dépassé(s)' : ''];
+              [...tr.children].slice(2).forEach((td, k) => { td.textContent = String(v[k]); }); } };
+          rows.forEach((r, i) => {
+            const inp = (k) => h('input', { type: 'number', min: 0, step: 1, inputmode: 'numeric', value: nb(r[k]), 'data-k': k, class: 'pvs-in', style: 'width:64px' });
+            const c = C(r);
+            tb.append(h('tr', { 'data-id': r.id, class: c.depasse ? 'dep' : '' }, h('td', { class: 'c' }, i + 1), h('td', {}, h('input', { value: r.centre || '', 'data-k': 'centre', class: 'pvs-in', style: 'width:140px' })),
+              champs.map(([k]) => h('td', { class: 'c' }, inp(k))), h('td', {}, h('input', { value: r.observations || '', 'data-k': 'observations', class: 'pvs-in', placeholder: 'Automatique', style: 'width:180px' })),
+              h('td', { class: 'n', 'data-c': 'tot' }, c.rien ? '' : c.tot), h('td', { class: 'n', 'data-c': 'nec' }, c.rien ? '' : c.nec), h('td', { class: 'n', 'data-c': 'ecart' }, c.ecart === null ? '' : c.ecart), h('td', { 'data-c': 'statut' }, c.statut),
+              h('td', {}, h('button', { class: 'pvs-btn s d', type: 'button', title: 'Supprimer le centre', 'data-pvs': 'supprimer-centre', onclick: async () => {
+                if (!(await confirmer('Supprimer le centre', 'Supprimer le centre « ' + (r.centre || '') + ' » et ses chiffres ?', ' Supprimer'))) return;
+                etat.cepSalles = etat.cepSalles.filter(x => x.id !== r.id); await sauver(); dessiner(); } }, ''))));
+          });
+          tb.append(h('tr', { 'data-cep': 'total', class: 'tot' }, h('td', {}), h('td', {}, h('b', {}, 'TOTAL')), [t.offG, t.offF, t.offH, t.libG, t.libF, t.libH, t.salles, '', t.tot, t.nec, t.salles - t.nec, t.depasses ? t.depasses + ' centre(s) dépassé(s)' : ''].map(v => h('td', { class: 'n' }, h('b', {}, String(v)))), h('td', {})));
+          tb.addEventListener('change', async (ev) => {
+            const el = ev.target, tr = el.closest('tr[data-id]'); if (!tr) return;
+            const r = etat.cepSalles.find(x => x.id === tr.getAttribute('data-id')); if (!r) return;
+            const k = el.getAttribute('data-k'), v = el.value.trim();
+            r[k] = (k === 'centre' || k === 'observations') ? v : (v === '' ? '' : entierCep(v)); r.maj = maintenant();
+            if (k !== 'centre' && k !== 'observations' && v !== '') el.value = r[k];
+            await sauver(); maj();
+          });
+          const tete1 = h('tr', {}, h('th', { rowspan: 2 }, 'N°'), h('th', { rowspan: 2 }, 'Nom des Centres'), h('th', { colspan: 3 }, 'Candidats officiels'), h('th', { colspan: 3 }, 'Candidats libres'),
+            h('th', { rowspan: 2 }, 'Salles de composition en bon état disponibles'), h('th', { rowspan: 2 }, 'Observations'), h('th', { rowspan: 2 }, 'Total candidats'), h('th', { rowspan: 2 }, 'Salles nécessaires'), h('th', { rowspan: 2 }, 'Écart'), h('th', { rowspan: 2 }, 'Statut'), h('th', { rowspan: 2 }, ''));
+          const tete2 = h('tr', {}, ['G', 'F', 'Dont H', 'G', 'F', 'Dont H'].map(x => h('th', {}, x)));
+          zoneT.append(h('div', { class: 'pvs-actions' },
+            h('button', { class: 'pvs-btn p', type: 'button', 'data-pvs': 'ajouter-centre', onclick: async () => {
+              const inp = h('input', { 'data-k': 'nouveau-centre', placeholder: 'Ex. : POBE-CENTRE' });
+              const nom = await dialogue('Ajouter un centre', h('label', { class: 'large' }, h('span', { class: 'req' }, 'Nom du centre'), inp), [{ l: 'Annuler', v: null }, { l: ' Ajouter', p: true, id: 'ajouter-centre-ok', action: () => { const v = inp.value.trim(); if (!v) { toast('Saisissez le nom du centre.'); return false; } return v; } }]);
+              if (!nom) return; etat.cepSalles.push(nouvelle(majusc(nom), rows.length)); await sauver(); dessiner(); } }, ' Ajouter un centre'),
+            h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'reprendre-cep', onclick: () => reprendreListesCep(rows) }, I('inscription') + 'Reprendre des listes CEP'),
+            h('button', { class: 'pvs-btn d', type: 'button', 'data-pvs': 'reinitialiser-cep', onclick: () => reinitialiserCep(rows) }, ' Réinitialiser')),
+          alerteDep(),
+          rows.length ? h('div', { class: 'pvs-tw' }, h('table', { class: 'pvs-t pvs-cep-t', 'data-cep': 'saisie' }, h('thead', {}, tete1, tete2), tb)) : h('p', { class: 'pvs-vide' }, 'Aucun centre pour cette session : « Ajouter un centre ».'));
+        } else {
+          const det = f.vue === 'detaille';
+          const cNec = h('input', { type: 'checkbox', checked: f.nec ? true : null, 'data-k': 'avec-nec' }); cNec.onchange = () => { f.nec = cNec.checked; memo.set('cep.nec', f.nec ? '1' : '0'); };
+          zoneT.append(h('div', { class: 'pvs-actions' },
+            h('button', { class: 'pvs-btn p', type: 'button', 'data-pvs': 'cep-pdf', onclick: () => pdfCep(det) }, ' Télécharger PDF'),
+            h('button', { class: 'pvs-btn', type: 'button', 'data-pvs': 'cep-excel', onclick: () => excelCepDl(det) }, ' Télécharger Excel'),
+            h('label', { class: 'pvs-aide', style: 'display:inline-flex;gap:6px;align-items:center' }, cNec, 'Colonne « Salles nécessaires » dans les fichiers')), alerteDep());
+          const tr = (r, i) => { const c = C(r); return h('tr', { 'data-id': r.id, class: c.depasse ? 'dep' : '' }, h('td', { class: 'c' }, i + 1), h('td', {}, r.centre || ''),
+            det ? [r.offG, r.offF, c.rien ? '' : c.offT, r.offH, r.libG, r.libF, c.rien ? '' : c.libT, r.libH, c.rien ? '' : c.totG, c.rien ? '' : c.totF, c.rien ? '' : c.tot, c.rien ? '' : c.totH].map(v => h('td', { class: 'c' }, nb(v)))
+              : [h('td', { class: 'c' }, c.rien ? '' : c.tot)],
+            h('td', { class: 'c' }, nb(r.salles)), h('td', { class: 'c', 'data-c': 'nec' }, c.rien ? '' : c.nec), h('td', { 'data-c': 'obs' }, c.obs)); };
+          const thead = det ? h('thead', {}, h('tr', {}, h('th', { rowspan: 3 }, 'N°'), h('th', { rowspan: 3 }, 'Nom des Centres'), h('th', { colspan: 12 }, 'Effectif des candidats'), h('th', { rowspan: 3 }, 'Nombre de salles de composition en bon état disponible'), h('th', { rowspan: 3, class: 'ecran' }, 'Salles nécessaires'), h('th', { rowspan: 3 }, 'Observations')),
+            h('tr', {}, h('th', { colspan: 4 }, 'Candidats officiels'), h('th', { colspan: 4 }, 'Candidats libres'), h('th', { colspan: 4 }, 'Total (officiels + libres)')),
+            h('tr', {}, [0, 1, 2].flatMap(() => ['G', 'F', 'Total', 'Dont H']).map(x => h('th', {}, x))))
+            : h('thead', {}, h('tr', {}, ['N°', 'Nom des Centres', 'Effectif des candidats', 'Nombre de salles de composition en bon état disponible'].map(x => h('th', {}, x)), h('th', { class: 'ecran' }, 'Salles nécessaires'), h('th', {}, 'Observations')));
+          const tot = det ? [t.offG, t.offF, t.offT, t.offH, t.libG, t.libF, t.libT, t.libH, t.totG, t.totF, t.tot, t.totH] : [t.tot];
+          zoneT.append(h('div', { class: 'pvs-tw' }, h('table', { class: 'pvs-t pvs-cep-t', 'data-cep': f.vue }, thead, h('tbody', {}, rows.map(tr), ligneTotal(['', 'TOTAL'].concat(tot, [t.salles, t.nec, ''])))),
+            det ? h('p', { class: 'pvs-aide', style: 'font-style:italic' }, 'G = Garçons ; F = Filles ; H = Handicapés') : null));
+        }
+        async function reprendreListesCep(rs) {
+          const an = (String(f.session).match(/\d{4}/) || [''])[0];
+          let l = []; if (A.cepParCentre) { try { l = (await A.cepParCentre(f.session)) || []; } catch (x) { l = []; } }
+          (etat.candidats || []).filter(c => (!an || String(c.session || '').includes(an)) && c.statut !== 'Exclu').forEach(c => l.push({ centre: libRef('centres', c.centre), sexe: c.sexe, libre: /libre/i.test(c.type || c.categorie || ''), handicape: /^o/i.test(c.handicape || '') }));
+          l = l.filter(x => x.centre);
+          if (!l.length) { toast('Aucun candidat avec un centre de composition dans les listes CEP' + (an ? ' (' + an + ')' : '') + '.'); return; }
+          const g = {}; l.forEach(x => { const k = cleCentre(x.centre); const y = g[k] = g[k] || { centre: x.centre, offG: 0, offF: 0, offH: 0, libG: 0, libF: 0, libH: 0 };
+            const pre = x.libre ? 'lib' : 'off'; y[pre + (x.sexe === 'F' ? 'F' : 'G')]++; if (x.handicape) y[pre + 'H']++; });
+          const conn = Object.keys(g).filter(k => rs.some(r => cleCentre(r.centre) === k)), nouv = Object.keys(g).filter(k => !conn.includes(k));
+          const ok = await dialogue('Reprendre des listes CEP', h('div', {}, h('p', {}, l.length + ' candidat(s) trouvé(s) : ' + Object.values(g).map(y => y.centre + ' ' + (y.offG + y.offF + y.libG + y.libF)).join(' ; ') + '.'),
+            h('p', { class: 'pvs-aide' }, 'Les effectifs des centres reconnus sont remplacés ; les salles et les observations sont gardées.' + (nouv.length ? ' Centres ajoutés : ' + nouv.map(k => g[k].centre).join(', ') + '.' : ''))),
+          [{ l: 'Annuler', v: false }, { l: I('inscription') + 'Reprendre', p: true, v: true, id: 'reprendre-ok' }]);
+          if (!ok) return;
+          conn.forEach(k => { const r = etat.cepSalles.find(x => rs.some(y => y.id === x.id) && cleCentre(x.centre) === k); Object.assign(r, { offG: g[k].offG, offF: g[k].offF, offH: g[k].offH, libG: g[k].libG, libF: g[k].libF, libH: g[k].libH, maj: maintenant() }); });
+          nouv.forEach((k, j) => etat.cepSalles.push(Object.assign(nouvelle(majusc(g[k].centre), rs.length + j), { offG: g[k].offG, offF: g[k].offF, offH: g[k].offH, libG: g[k].libG, libF: g[k].libF, libH: g[k].libH })));
+          await sauver(); toast('Effectifs repris des listes CEP.'); dessiner();
+        }
+        async function reinitialiserCep(rs) {
+          const def = centresConnus(csLib);
+          const choix = await dialogue('Réinitialiser — ' + f.session, h('p', {}, 'Que voulez-vous réinitialiser ? Pensez à télécharger l’Excel avant.'), [{ l: 'Annuler', v: null },
+            { l: 'Vider les chiffres', v: 'chiffres', id: 'reinit-chiffres' }].concat(def.length ? [{ l: 'Centres par défaut', v: 'defaut', id: 'reinit-defaut' }] : [], [{ l: 'Supprimer tous les centres', d: true, v: 'tout', id: 'reinit-tout' }]));
+          if (!choix) return;
+          const ids = new Set(rs.map(r => r.id));
+          if (choix === 'chiffres') etat.cepSalles.filter(r => ids.has(r.id)).forEach(r => { ['offG', 'offF', 'offH', 'libG', 'libF', 'libH', 'salles', 'observations'].forEach(k => { r[k] = ''; }); r.maj = maintenant(); });
+          else { etat.cepSalles = etat.cepSalles.filter(r => !ids.has(r.id)); if (choix === 'defaut') etat.cepSalles.push(...def.map(nouvelle)); }
+          await sauver(); toast('Réinitialisation faite.'); dessiner();
+        }
+        const nomFichier = (det, ext) => 'tableau-synthese-cep-' + norm(f.session).replace(/[^a-z0-9]+/gi, '-') + '-cs-' + norm(csCourt).replace(/[^a-z0-9]+/gi, '-') + (det ? '-detaille' : '-officiel') + ext;
+        function excelCepDl(det) {
+          const blob = excelCep({ session: f.session, cs: csCourt, parSalle: p, rows, avecNec: f.nec, detaille: det });
+          A.telecharger(nomFichier(det, '.xlsx'), blob);
+        }
+        async function pdfCep(det) {
+          const th = (x, a) => '<th' + (a || '') + '>' + esc(x) + '</th>', td = (x, a) => '<td' + (a || '') + '>' + esc(x == null ? '' : x) + '</td>';
+          const avecNec = f.nec;
+          const tete = det
+            ? '<tr>' + th('N°', ' rowspan="3"') + th('Nom des Centres', ' rowspan="3"') + th('Effectif des candidats', ' colspan="12"') + th('Nombre de salles de composition en bon état disponible', ' rowspan="3"') + (avecNec ? th('Salles nécessaires', ' rowspan="3"') : '') + th('Observations', ' rowspan="3"') + '</tr>'
+              + '<tr>' + th('Candidats officiels', ' colspan="4"') + th('Candidats libres', ' colspan="4"') + th('Total (officiels + libres)', ' colspan="4"') + '</tr>'
+              + '<tr>' + [0, 1, 2].map(() => ['G', 'F', 'Total', 'Dont H'].map(x => th(x)).join('')).join('') + '</tr>'
+            : '<tr>' + ['N°', 'Nom des Centres', 'Effectif des candidats', 'Nombre de salles de composition en bon état disponible'].map(x => th(x)).join('') + (avecNec ? th('Salles nécessaires') : '') + th('Observations') + '</tr>';
+          const corpsL = rows.map((r, i) => { const c = C(r), z = (v) => (c.rien ? '' : v);
+            return '<tr>' + td(i + 1) + td(r.centre || '', ' class="g"') + (det ? [r.offG, r.offF, z(c.offT), r.offH, r.libG, r.libF, z(c.libT), r.libH, z(c.totG), z(c.totF), z(c.tot), z(c.totH)].map(v => td(nb(v))).join('') : td(z(c.tot)))
+              + td(nb(r.salles)) + (avecNec ? td(z(c.nec)) : '') + td(c.obs, ' class="g' + (c.depasse ? ' dep' : '') + '"') + '</tr>'; }).join('');
+          const totL = '<tr class="tot">' + td('') + td('TOTAL') + (det ? [t.offG, t.offF, t.offT, t.offH, t.libG, t.libF, t.libT, t.libH, t.totG, t.totF, t.tot, t.totH] : [t.tot]).map(v => td(v)).join('') + td(t.salles) + (avecNec ? td(t.nec) : '') + td('') + '</tr>';
+          const css = '<style>@page{size:A4 landscape;margin:12mm}.cep{font:10pt Arial,Helvetica,sans-serif;color:#000}.cep h1{font:bold 15pt Arial,Helvetica,sans-serif;text-align:center;margin:2mm 0 4mm;text-transform:uppercase}'
+            + '.cep .boite{border:1.3px solid #000;display:inline-block;padding:1.5mm 4mm;min-width:72mm;font-weight:bold;line-height:1.8;margin-bottom:4mm}.cep table.t{border-collapse:collapse;width:100%}'
+            + '.cep table.t th,.cep table.t td{border:1px solid #000;padding:1.7mm 1.2mm;text-align:center;vertical-align:middle;font-size:' + (det ? '8.4' : '10') + 'pt}.cep table.t th{font-weight:bold;font-size:' + (det ? '7.6' : '9.4') + 'pt}'
+            + '.cep table.t td.g{text-align:left}.cep table.t td.dep{font-weight:bold}.cep tr.tot td{font-weight:bold}.cep .leg{font:italic 8pt Arial,Helvetica,sans-serif;margin:1.5mm 0 0}.cep .note{font-size:8pt;color:#333;margin:1mm 0 0}'
+            + '.cep .bas{display:flex;justify-content:space-between;align-items:flex-end;gap:6mm;margin-top:2mm;break-inside:avoid;page-break-inside:avoid}.cep .bas>.q{flex:1 1 auto;min-width:0}.cep .bas>.q .pvs-qrb{margin:0;font-size:7pt}'
+            + '.cep .bas>.s{flex:0 0 78mm;text-align:center}.cep .bas>.s p{text-align:center!important;margin:0 0 1mm!important}.cep .bas .pvs-sb{width:auto;margin:0}.cep .bas .pvs-sb-z{min-height:18mm}</style>';
+          const v = await sigVisa('CS', e ? e.cle : '', '');
+          const pied = await sceau('CEP_SALLES', { entite: e ? String(e.cle) : '', session: f.session, parSalle: p }, { entite: csLib, objet: 'CEP ' + f.session + (det ? ' — tableau détaillé' : ' — tableau de synthèse'), signataire: v.nom || 'Le Chef de la Circonscription Scolaire' });
+          const html = CSS_DOC + css + '<div class="pvs-doc cep"><h1>TABLEAU DE SYNTHESE DES STATISTIQUES</h1><div class="boite">CEP : SESSION DE ' + esc(f.session) + '<br>CS : ' + esc(csCourt) + '</div>'
+            + '<table class="t"><thead>' + tete + '</thead><tbody>' + corpsL + totL + '</tbody></table>'
+            + (det ? '<p class="leg">G = Garçons ; F = Filles ; H = Handicapés</p>' : '')
+            + '<p class="note">Candidats par salle retenus : ' + p + ' — salles nécessaires = effectif total ÷ ' + p + ', arrondi au-dessus.</p>'
+            + '<div class="bas"><div class="q">' + pied + '</div><div class="s">' + faitA() + blocSig('Le Chef de la Circonscription Scolaire', v.nom, v.signature, v.cachet) + '</div></div></div>';
+          const titre = 'Tableau de synthèse CEP ' + f.session + ' — CS ' + csCourt;
+          if (global.DocExport && global.DocExport.telecharger) return global.DocExport.telecharger('pdf', titre, html, nomFichier(det, ''));
+          return (A.imprimer || imprimerDefaut)(titre, async () => html, { portrait: false });
+        }
+      }
+    });
+    /** Alertes du suivi administratif : courrier non lu, fiches de rentrée à valider ou renvoyées, visites */
+    function alertesTerritoire(out) {
+      const nl = lignes('courrier').filter(r => r.statut === 'Envoyé' && recuPar(r));
+      if (nl.length) out.push({ g: 'at', t: 'Courrier non lu', d: nl.length + ' courrier(s) reçu(s) non ouvert(s) : ' + nl.slice(0, 3).map(r => r.objet + ' (de ' + r.entiteLib + ')').join(' ; '), o: 'communication.courrier' });
+      lignes('rentree').filter(r => r.statut === 'RENVOYEE' && peut('ECOLE', r.entite)).forEach(r => out.push({ g: 'ko', t: 'Fiche de rentrée renvoyée', d: (r.entiteLib || '') + ' (' + (r.annee || '') + ') : ' + (r.motifRenvoi || 'à corriger'), o: 'territoire.rentree' }));
+      const av = lignes('rentree').filter(r => SI.validerRentreeCS(r) || SI.validerRentreeDep(r));
+      if (av.length) out.push({ g: 'at', t: 'Fiches de rentrée à valider', d: av.length + ' fiche(s) : ' + av.slice(0, 4).map(r => r.entiteLib).join(', '), o: 'territoire.rentree' });
+      lignes('visitesClasse').forEach(r => {
+        if (r.statutVisite === 'Planifiée') { const j = jours(r.date); if (j !== null && j < 0) out.push({ g: 'ko', t: 'Visite planifiée dépassée', d: (r.enseignant || '') + ' — ' + (r.entiteLib || '') + ' — prévue le ' + fr(r.date), o: 'inspection.visites' }); }
+        const k = jours(r.prochaineVisite); if (k !== null && k >= 0 && k <= 14) out.push({ g: 'at', t: 'Prochaine visite', d: (r.enseignant || '') + ' — ' + (r.entiteLib || '') + ' — ' + fr(r.prochaineVisite) + ' (dans ' + k + ' j)', o: 'inspection.visites' });
+      });
+    }
     /* ---------- dessin du module ---------- */
     const api = { accuses, etat: () => etat, ctx: () => ctx, libRef, entite, peut, lignes, sauver, toast, dialogue, confirmer, h, esc, fr, iso, num, uid, auj, nomComplet, saisonCourante,
       ecolesDe, superieure, dans, sigUascep, sigVisa, blocSig, document_, tableDoc, exporter, feuille, formulaire, valeur, classement, scoreMatch, vainqueur, proposerPalmares, DOCS };
@@ -1628,14 +2215,14 @@
       z.append(zone); racine.append(z);
       try {
         if (o.vue === 'pilotage') { pilotage(zone).catch(e => { console.error(e); zone.append(h('p', { class: 'pvs-vide' }, 'Erreur : ' + e.message)); }); return; }
-        if ((MOD.id === 'communication' && o.id !== 'alertes') || MOD.id === 'sante') bandeauAlertes(zone).catch(e => console.error(e));
+        if ((MOD.id === 'communication' && o.id !== 'alertes') || MOD.id === 'sante' || MOD.id === 'territoire') bandeauAlertes(zone).catch(e => console.error(e));
         if (o.vue && VUES[o.vue]) VUES[o.vue](zone, o);
-        if (o.coll) rubrique(o, zone);
+        if (o.coll && !o.sansTable) rubrique(o, zone);
       } catch (e) { console.error(e); zone.append(h('p', { class: 'pvs-vide' }, 'Erreur : ' + e.message)); }
     }
     dessiner();
     return { rafraichir: async () => { ctx = await A.contexte(); uasCache = null; dessiner(); }, etat: () => etat, api };
   }
 
-  global.PVS = { monter, contenuDocument, resultatsCep, canon, classement, scoreMatch, vainqueur, tourniquet, rangsPerformances, rangsPoints, iso, fr, norm, niveauDe, saisonCourante, LIB_NIVEAU, VISA_DEFAUT, barres };
+  global.PVS = { monter, appliquerRetours, normCle, calculCep, totauxCep, excelCep, nomCsCourt, centresConnus, cleCentre, CENTRES_CEP_CONNUS, contenuDocument, resultatsCep, canon, classement, scoreMatch, vainqueur, tourniquet, rangsPerformances, rangsPoints, iso, fr, norm, niveauDe, saisonCourante, LIB_NIVEAU, VISA_DEFAUT, barres };
 })(typeof window !== 'undefined' ? window : globalThis);

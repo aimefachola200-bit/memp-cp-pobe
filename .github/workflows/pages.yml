@@ -22,6 +22,8 @@ jobs:
         run: node tools/verifier-filigrane.mjs .
       - name: Test des anciennetés (31/12 de la seconde année)
         run: node tools/test-anciennete.mjs
+      - name: Test du suivi administratif (fiche de rentrée, courrier)
+        run: node tools/test-territoire.cjs
       - name: Régénérer la liste des fichiers du cache hors ligne
         run: node tools/gen-assets.mjs
       - name: Publier sur la branche gh-pages

@@ -24,6 +24,16 @@
   const UNITE_EPREUVE = (e) => /saut|lancer/i.test(e || '') ? 'm' : /course en sac|relais trad/i.test(e || '') ? 's' : 's';
   const DISTINCTIONS = ['Médaille d’or', 'Médaille d’argent', 'Médaille de bronze', 'Coupe', 'Trophée', 'Prix spécial', 'Prix du fair-play', 'Meilleur buteur / marqueur', 'Meilleur joueur / joueuse', 'Mention', 'Participation'];
 
+  /* Territoire et suivi administratif (spécification outils/lots/spec-territoire.md) */
+  const STATUTS_RENTREE = { BROUILLON: 'Brouillon', TRANSMISE: 'Transmise', VALIDEE_CS: 'Validée CS', VALIDEE_DEPARTEMENT: 'Validée département', CLOTUREE: 'Clôturée', RENVOYEE: 'Renvoyée' };
+  const STATUTS_COURRIER = ['Brouillon', 'Envoyé', 'Reçu', 'Traité', 'Archivé'];
+  const TYPES_COURRIER = ['Rapport', 'Demande', 'Compte rendu', 'Note de service', 'Circulaire', 'Convocation', 'Décision', 'Lettre', 'Autre'];
+  const STATUTS_VISITE = ['Planifiée', 'Réalisée', 'Rapport rédigé', 'Validée'];
+  const STATUTS_PRESENCE = ['Présent', 'Absent', 'Retard', 'Congé', 'Mission', 'Formation', 'Maladie'];
+  const SANCTIONS = ['Avertissement oral', 'Avertissement écrit', 'Travail d’intérêt scolaire', 'Convocation des parents', 'Exclusion temporaire (décision du conseil des maîtres)', 'Aucune', 'Autre'];
+  const TYPES_STRUCTURE = ['Ministère', 'Direction centrale', 'Direction départementale', 'Service', 'Circonscription scolaire', 'Division', 'Zone pédagogique', 'Autre'];
+  const ORDRES = ['Maternel et primaire', 'Secondaire', 'Technique et professionnel', 'Tous'];
+
   const MATIERES = ['Français', 'Mathématiques', 'Éducation scientifique et technologique', 'Éducation sociale', 'Éducation artistique', 'Éducation physique et sportive', 'Anglais', 'Langue nationale', 'Autre'];
   /** Grille APC d'observation de classe : 10 critères notés de 0 à 4 (total /40 ramené sur 20) */
   const GRILLE_APC = [['c1', 'Préparation et fiche pédagogique'], ['c2', 'Situation de départ et motivation'], ['c3', 'Clarté des consignes'],
@@ -178,6 +188,20 @@
             { k: 'signataire', l: 'Signataire (nom et qualité)', t: 'txt', cache: true },
             { k: 'accuses', l: 'Accusés de réception', t: 'calc', calc: (r, api) => (api ? api.accuses(r) : '') }],
           docsLigne: [{ type: 'NOTE', l: IC('document') + 'Note signée' }, { type: 'ACCUSES', l: IC('valider-cercle') + 'État des accusés de réception' }] },
+        { id: 'courrier', titre: 'Courrier administratif', coll: 'courrier', niveaux: NIVEAUX, unique: ['reference', 'objet'],
+          aide: 'Courrier montant (école → circonscription → département) : « Envoyer » le numérote au départ (D-AAAA-0001) ; son ouverture par le destinataire vaut accusé de lecture daté (arrivée A-AAAA-0001). Un courrier envoyé ne se modifie plus. Les notes de service vers les écoles restent dans « Notes, circulaires et convocations ».',
+          lib: (r) => [r.type, r.reference ? 'n° ' + r.reference : '', r.objet].filter(Boolean).join(' — '),
+          champs: [
+            { k: 'type', l: 'Type', t: 'choix', o: TYPES_COURRIER, def: 'Rapport', req: true },
+            { k: 'reference', l: 'Référence (n°)', t: 'txt' }, { k: 'date', l: 'Date', t: 'date', req: true }, { k: 'objet', l: 'Objet', t: 'txt', req: true },
+            { k: 'destNiveau', l: 'Niveau du destinataire', t: 'choix', o: ['CS', 'DDEMP', 'ZONE', 'UP', 'ECOLE'], def: 'CS', req: true },
+            { k: 'destinataire', l: 'Destinataire', t: 'txt', aide: 'Vide = l’entité de ce niveau dont relève l’expéditeur' },
+            { k: 'texte', l: 'Texte', t: 'long', req: true, cache: true }, { k: 'pieces', l: 'Pièces jointes / ampliations', t: 'long', cache: true },
+            { k: 'signataire', l: 'Signataire (nom et qualité)', t: 'txt', cache: true },
+            { k: 'statutLib', l: 'Statut', t: 'calc', horsExcel: true, calc: (r) => r.statut || 'Brouillon' },
+            { k: 'numeros', l: 'N° départ / arrivée', t: 'calc', horsExcel: true, calc: (r) => [r.numDepart, r.numArrivee].filter(Boolean).join(' / ') }],
+          actionsLigne: [{ id: 'envoyerCourrier', l: IC('fleche-droite') + 'Envoyer' }, { id: 'ouvrirCourrier', l: IC('courrier') + 'Ouvrir (accusé de lecture)' },
+            { id: 'traiterCourrier', l: IC('valider') + 'Marquer traité' }, { id: 'archiverCourrier', l: IC('classeur') + 'Archiver' }] },
         { id: 'echeances', titre: 'Échéances et rappels', coll: 'echeances', niveaux: NIVEAUX, unique: ['objet', 'dateLimite'],
           lib: (r) => r.objet || '',
           champs: [
@@ -231,6 +255,14 @@
             { k: 'circonstances', l: 'Circonstances', t: 'long', cache: true }, { k: 'soins', l: 'Premiers soins', t: 'long', cache: true },
             { k: 'orientation', l: 'Orientation', t: 'choix', o: ['Retour en classe', 'Renvoyé(e) à la maison', 'Centre de santé', 'Hôpital'] },
             { k: 'parentInforme', l: 'Parent informé', t: 'oui' }, { k: 'suivi', l: 'Suivi', t: 'long', cache: true }] },
+        { id: 'incidents', titre: 'Incidents de discipline', coll: 'incidentsDiscipline', niveaux: ['ECOLE'], unique: ['eleve', 'date'],
+          aide: 'Registre interne de l’école (jamais transmis). Les châtiments corporels sont interdits : seules les sanctions éducatives de la liste sont prévues ; l’exclusion temporaire relève du conseil des maîtres.',
+          lib: (r) => [r.eleve, r.date].filter(Boolean).join(' — '),
+          champs: [
+            { k: 'eleve', l: 'Élève', t: 'txt', req: true }, { k: 'date', l: "Date de l'incident", t: 'date', req: true }, { k: 'lieu', l: 'Lieu', t: 'txt' },
+            { k: 'description', l: 'Description', t: 'long', req: true, cache: true }, { k: 'sanction', l: 'Sanction', t: 'choix', o: SANCTIONS, def: 'Avertissement oral' },
+            { k: 'decidePar', l: 'Décidé par', t: 'txt' }, { k: 'parents', l: 'Parents informés (Oui/Non)', t: 'oui', def: 'Non' },
+            { k: 'suivi', l: 'Suivi / observations', t: 'long', cache: true }] },
         { id: 'cantine', titre: 'Cantine : journal des repas', coll: 'cantine', niveaux: ['ECOLE'], unique: ['date', 'repas'],
           lib: (r) => (r.date || '') + ' ' + (r.repas || ''),
           champs: [
@@ -292,8 +324,11 @@
             ...GRILLE_APC.map(([k, l]) => ({ k, l, t: 'num', cache: true, aide: 'Note de 0 à 4' })),
             { k: 'note', l: 'Note (/20)', t: 'calc', calc: noteGrille }, { k: 'appreciation', l: 'Appréciation', t: 'calc', calc: (r) => appreciation(noteGrille(r)) },
             { k: 'pointsForts', l: 'Points forts', t: 'long', cache: true }, { k: 'insuffisances', l: 'Insuffisances', t: 'long', cache: true },
-            { k: 'recommandations', l: 'Recommandations', t: 'long', cache: true }],
-          docsLigne: [{ type: 'CR_VISITE', l: IC('document') + 'Compte rendu de visite' }] },
+            { k: 'recommandations', l: 'Recommandations', t: 'long', cache: true },
+            { k: 'statutVisite', l: 'Statut de la visite', t: 'choix', o: STATUTS_VISITE, def: 'Réalisée' },
+            { k: 'prochaineVisite', l: 'Date de la prochaine visite', t: 'date', cache: true }],
+          docsLigne: [{ type: 'CR_VISITE', l: IC('document') + 'Compte rendu de visite' }],
+          actionsLigne: [{ id: 'validerVisite', l: IC('valider-cercle') + 'Valider la visite' }] },
         { id: 'recommandations', titre: 'Suivi des recommandations', coll: 'recommandations', niveaux: NIVEAUX, vue: 'suiviReco', unique: ['recommandation', 'destinataire'],
           lib: (r) => String(r.recommandation || '').slice(0, 60),
           champs: [
@@ -354,7 +389,7 @@
         { id: 'besoins', titre: 'Besoins exprimés', coll: 'besoinsMat', niveaux: NIVEAUX, unique: ['designation'],
           lib: (r) => r.designation || '',
           champs: [
-            { k: 'designation', l: 'Désignation', t: 'txt', req: true }, { k: 'categorie', l: 'Catégorie', t: 'choix', o: ['Construction', 'Réhabilitation', 'Mobilier', 'Manuels', 'Matériel didactique', 'Matériel sportif', 'Équipement', 'Personnel', 'Autre'], def: 'Mobilier' },
+            { k: 'designation', l: 'Désignation', t: 'txt', req: true }, { k: 'categorie', l: 'Catégorie', t: 'choix', o: ['Construction', 'Réhabilitation', 'Mobilier', 'Manuels', 'Matériel didactique', 'Matériel sportif', 'Équipement', 'Personnel', 'Enseignant', 'Infrastructure', 'Eau, hygiène et assainissement', 'Autre'], def: 'Mobilier' },
             { k: 'quantite', l: 'Quantité', t: 'num' }, { k: 'priorite', l: 'Priorité', t: 'choix', o: ['Haute', 'Moyenne', 'Basse'], def: 'Moyenne' },
             { k: 'coutEstime', l: 'Coût estimé (FCFA)', t: 'num' }, { k: 'justification', l: 'Justification', t: 'long', cache: true },
             { k: 'statut', l: 'Statut', t: 'choix', o: ['Exprimé', 'Transmis', 'Satisfait partiellement', 'Satisfait'], def: 'Exprimé' }] },
@@ -369,10 +404,70 @@
           docsLigne: [{ type: 'PV_RECEPTION', l: IC('attestation') + 'PV de réception' }] }
       ]
     },
+    /* ===================================================== LOT D ===================================================== */
+    {
+      id: 'territoire', lot: 'D', titre: 'Territoire et suivi administratif', icone: IC('carte').trim(),
+      desc: 'Fiche statistique de rentrée validée par la circonscription puis le département, suivi des fiches reçues, fiche signalétique de l’école (position GPS, eau, latrines, électricité, autorisation et agrément), présence du personnel, référentiel des structures, décisions transmises.',
+      onglets: [
+        { id: 'rentree', titre: 'Fiche statistique de rentrée', coll: 'rentree', niveaux: ['ECOLE'], annee: true, unique: ['niveau'],
+          aide: 'Une fiche par école et par année. « Transmettre » l’envoie à la circonscription ; elle ne se modifie plus à l’école, sauf si elle est renvoyée. La circonscription valide puis le département valide et clôture ; un renvoi demande un motif.',
+          lib: (r) => 'Fiche de rentrée — ' + (r.entiteLib || '') + ' — ' + (r.annee || ''),
+          champs: [
+            { k: 'effG', l: 'Effectif garçons', t: 'num' }, { k: 'effF', l: 'Effectif filles', t: 'num' }, { k: 'effT', l: 'Effectif total', t: 'calc', calc: total('effG', 'effF') },
+            { k: 'classes', l: 'Classes (groupes pédagogiques)', t: 'num' }, { k: 'ensPoste', l: 'Enseignants en poste', t: 'num' },
+            { k: 'ensManquants', l: 'Enseignants manquants', t: 'num' }, { k: 'salles', l: 'Salles de classe utilisables', t: 'num' },
+            { k: 'tablesBancs', l: 'Tables-bancs', t: 'num' }, { k: 'manuels', l: 'Manuels', t: 'num', cache: true },
+            { k: 'pointEau', l: "Point d'eau (Oui/Non)", t: 'oui' }, { k: 'latrines', l: 'Latrines (cabines)', t: 'num' }, { k: 'electricite', l: 'Électricité (Oui/Non)', t: 'oui' },
+            { k: 'latitude', l: 'Latitude', t: 'num', cache: true }, { k: 'longitude', l: 'Longitude', t: 'num', cache: true },
+            { k: 'observations', l: 'Observations', t: 'long', cache: true },
+            { k: 'statutLib', l: 'Statut', t: 'calc', horsExcel: true, calc: (r) => STATUTS_RENTREE[r.statut || 'BROUILLON'] || r.statut || '' }],
+          actionsLigne: [{ id: 'transmettreRentree', l: IC('fleche-droite') + 'Transmettre' }, { id: 'validerRentreeCS', l: IC('valider-cercle') + 'Valider (circonscription)' },
+            { id: 'validerRentreeDep', l: IC('valider-cercle') + 'Valider (département)' }, { id: 'cloturerRentree', l: IC('cadenas') + 'Clôturer' },
+            { id: 'renvoyerRentree', l: IC('retour') + 'Renvoyer (motif)' }] },
+        { id: 'suivi', titre: 'Suivi des fiches de rentrée', vue: 'suiviRentree', niveauxVue: ['ZONE', 'CS', 'DDEMP'] },
+        { id: 'signaletique', titre: 'Fiche signalétique de l’école', coll: 'signaletique', niveaux: ['ECOLE'], sansSaison: true, unique: ['niveau'],
+          aide: 'Coordonnées en degrés décimaux (latitude -90 à 90, longitude -180 à 180). Point d’eau, électricité, salles et latrines saisis ici priment sur ceux du patrimoine pour la fiche de rentrée.',
+          lib: (r) => 'Fiche signalétique — ' + (r.entiteLib || ''),
+          champs: [
+            { k: 'latitude', l: 'Latitude', t: 'num', gps: true, min: -90, max: 90 }, { k: 'longitude', l: 'Longitude', t: 'num', min: -180, max: 180 },
+            { k: 'statutJuridique', l: 'Statut juridique', t: 'choix', o: ['Public', 'Privé laïc', 'Privé confessionnel', 'Communautaire'] },
+            { k: 'numeroAutorisation', l: 'N° d’autorisation', t: 'txt', cache: true }, { k: 'dateAutorisation', l: 'Date d’autorisation', t: 'date', cache: true },
+            { k: 'numeroAgrement', l: 'N° d’agrément', t: 'txt', cache: true }, { k: 'dateAgrement', l: 'Date d’agrément', t: 'date', cache: true },
+            { k: 'salles', l: 'Salles', t: 'num' }, { k: 'latrines', l: 'Latrines', t: 'num' }, { k: 'pointEau', l: 'Point d’eau', t: 'oui' }, { k: 'electricite', l: 'Électricité', t: 'oui' }],
+          actionsLigne: [{ id: 'carte', l: IC('carte') + 'Voir sur la carte' }] },
+        { id: 'presences', titre: 'Présence du personnel', coll: 'presencesAgents', niveaux: NIVEAUX, vue: 'appel', unique: ['date', 'agent'],
+          lib: (r) => [r.agent, r.date].filter(Boolean).join(' — '),
+          champs: [
+            { k: 'date', l: 'Date', t: 'date', req: true }, { k: 'agent', l: 'Agent', t: 'txt', req: true }, { k: 'fonction', l: 'Fonction', t: 'txt' },
+            { k: 'statut', l: 'Statut', t: 'choix', o: STATUTS_PRESENCE, def: 'Présent', req: true }, { k: 'motif', l: 'Motif / justificatif', t: 'txt' }] },
+        { id: 'structures', titre: 'Référentiel des structures', coll: 'structures', niveaux: ['CS', 'DDEMP'], sansSaison: true, unique: ['nom'],
+          lib: (r) => r.nom || '',
+          champs: [
+            { k: 'nom', l: 'Nom de la structure', t: 'txt', req: true }, { k: 'sigle', l: 'Sigle / code', t: 'txt' },
+            { k: 'type', l: 'Type', t: 'choix', o: TYPES_STRUCTURE, def: 'Service', req: true }, { k: 'ordre', l: "Ordre d'enseignement", t: 'choix', o: ORDRES, def: 'Maternel et primaire' },
+            { k: 'rattachement', l: 'Structure de rattachement', t: 'txt' }, { k: 'departement', l: 'Département', t: 'txt' }, { k: 'commune', l: 'Commune', t: 'txt' },
+            { k: 'responsable', l: 'Responsable', t: 'txt' }, { k: 'telephone', l: 'Téléphone', t: 'txt' }, { k: 'active', l: 'Active', t: 'oui', def: 'Oui' }] },
+        { id: 'retours', titre: 'Décisions transmises', coll: 'retours', niveaux: NIVEAUX, lectureSeule: true, unique: ['cle', 'statut', 'date'],
+          aide: 'Décisions de la circonscription et du département sur les fiches de rentrée et le courrier ; elles redescendent aux entités concernées par la synchronisation.',
+          lib: (r) => [r.objet, r.destinataire, r.statut].filter(Boolean).join(' — '),
+          champs: [
+            { k: 'objet', l: 'Objet', t: 'choix', o: ['Fiche de rentrée', 'Courrier'] }, { k: 'cle', l: 'Clé', t: 'txt', cache: true }, { k: 'destinataire', l: 'Destinataire', t: 'txt' },
+            { k: 'statut', l: 'Statut', t: 'txt' }, { k: 'date', l: 'Date', t: 'date' }, { k: 'decidePar', l: 'Décidé par', t: 'txt' },
+            { k: 'motif', l: 'Motif / observations', t: 'long' }] }
+      ]
+    },
     {
       id: 'examens', lot: 'C', titre: 'Examens et concours', icone: IC('examen').trim(),
       desc: 'CEP de bout en bout : épreuves, centres, jurys, candidats, numéros de table et salles, saisie des notes, délibération, résultats et statistiques, relevés de notes, convocations, listes d’admis ; concours scolaires (dictée, calcul mental, culture générale, génies en herbe, dessin, chant) et palmarès.',
       onglets: [
+        { id: 'salles', titre: 'CEP 2027 — Centres et salles', coll: 'cepSalles', niveaux: ['CS'], vue: 'cepSalles', sansTable: true, unique: ['centre'],
+          aide: 'Point des candidats par centre d’examen et des salles de composition disponibles (lettre de la DDEMP « Dispositions a/s des centres d’examens CEP 2027 »). Salles nécessaires = effectif total ÷ candidats par salle, arrondi au-dessus.',
+          lib: (r) => r.centre || '',
+          champs: [
+            { k: 'centre', l: 'Nom des Centres', t: 'txt', req: true },
+            { k: 'offG', l: 'Candidats officiels — Garçons', t: 'num' }, { k: 'offF', l: 'Candidats officiels — Filles', t: 'num' }, { k: 'offH', l: 'Candidats officiels — Dont handicapés', t: 'num' },
+            { k: 'libG', l: 'Candidats libres — Garçons', t: 'num' }, { k: 'libF', l: 'Candidats libres — Filles', t: 'num' }, { k: 'libH', l: 'Candidats libres — Dont handicapés', t: 'num' },
+            { k: 'salles', l: 'Nombre de salles de composition en bon état disponible', t: 'num' }, { k: 'observations', l: 'Observations', t: 'long' }] },
         { id: 'epreuves', titre: 'Épreuves', coll: 'epreuves', niveaux: ['CS', 'ZONE', 'DDEMP', 'ECOLE', 'UP'], vue: 'epreuvesDefaut', unique: ['session', 'epreuve'],
           lib: (r) => r.epreuve || '',
           champs: [{ k: 'session', l: 'Session', t: 'txt', req: true, def: SESSION() }, { k: 'epreuve', l: 'Épreuve', t: 'txt', req: true }, { k: 'coefficient', l: 'Coefficient', t: 'num', def: 1 },
@@ -471,8 +566,9 @@
     PV_DELIBERATION: { lib: 'Procès-verbal de délibération', sig: 'président, vice-président, secrétaire du jury + visa de l’autorité', code: 'PD' },
     LISTE_ADMIS: { lib: 'Liste des candidats admis', sig: 'président du jury + visa de l’autorité', code: 'LA' },
     PALMARES_CONCOURS: { lib: 'Palmarès du concours', sig: 'organisateur + autorité de l’entité', code: 'PC' },
-    PRIX: { lib: 'Diplôme de lauréat (concours)', sig: 'autorité de l’entité organisatrice', code: 'PX' }
+    PRIX: { lib: 'Diplôme de lauréat (concours)', sig: 'autorité de l’entité organisatrice', code: 'PX' },
+    CEP_SALLES: { lib: 'Tableau de synthèse des statistiques — CEP (centres d’examen et salles de composition)', sig: 'Chef de la circonscription scolaire', code: 'SC' }
   };
 
-  global.PVS_CATALOGUE = { MATIERES, GRILLE_APC, noteGrille, appreciation, SESSION, EPREUVES_CEP, NIVEAUX, DISCIPLINES, CATEGORIES, GENRES, COURS, FORMULES, PHASES, EPREUVES, UNITE_EPREUVE, DISTINCTIONS, MODULES, INDICATEURS, DOCUMENTS, categorieAge };
+  global.PVS_CATALOGUE = { STATUTS_RENTREE, STATUTS_COURRIER, TYPES_COURRIER, STATUTS_VISITE, STATUTS_PRESENCE, SANCTIONS, TYPES_STRUCTURE, ORDRES, MATIERES, GRILLE_APC, noteGrille, appreciation, SESSION, EPREUVES_CEP, NIVEAUX, DISCIPLINES, CATEGORIES, GENRES, COURS, FORMULES, PHASES, EPREUVES, UNITE_EPREUVE, DISTINCTIONS, MODULES, INDICATEURS, DOCUMENTS, categorieAge };
 })(typeof window !== 'undefined' ? window : globalThis);

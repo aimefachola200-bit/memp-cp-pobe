@@ -14,14 +14,15 @@ import * as INF from './views-infra.js';
 import * as E from './effectifs-schema.js';
 
 const I = (n) => (window.Icones ? window.Icones.code(n) + ' ' : '');
-export const MODULES = { sport: 'sport', pilotage: 'pilotage', communication: 'communication', sante: 'sante', inspection: 'inspection', patrimoine: 'patrimoine', examens: 'examens' };
+export const MODULES = { sport: 'sport', pilotage: 'pilotage', communication: 'communication', sante: 'sante', inspection: 'inspection', patrimoine: 'patrimoine', examens: 'examens', territoire: 'territoire' };
 const TITRES = { sport: ['Sport scolaire', 'Licences, compétitions, calendrier, feuilles de match, classements, palmarès et qualifiés'],
   pilotage: ['Tableau de bord du pilotage', 'Indicateurs par école, UP, zone, circonscription et département'],
   communication: ['Communication et alertes', 'Notes de service, circulaires, convocations, accusés de réception, échéances, messages aux parents, agenda'],
   sante: ['Santé, cantine et inclusion', 'Visites médicales, infirmerie, cantine et stocks, besoins spécifiques, filles, décrochage'],
   inspection: ['Inspection et formation', 'Visites de classe (grille APC), recommandations, plans de formation, animations pédagogiques'],
   patrimoine: ['Patrimoine et matériel', 'Bâtiments, tables-bancs, manuels, matériel, besoins, dotations et PV de réception'],
-  examens: ['Examens et concours', 'CEP : épreuves, centres, jurys, candidats, notes, délibération, résultats ; concours scolaires'] };
+  examens: ['Examens et concours', 'CEP : épreuves, centres, jurys, candidats, notes, délibération, résultats ; concours scolaires'],
+  territoire: ['Territoire et suivi administratif', 'Fiche signalétique des écoles (GPS, eau, latrines, électricité, agrément), présence du personnel, référentiel des structures, décisions transmises'] };
 
 /** Pièce PVS signée : registre « docs » (store pvs), empreinte SHA-256 du contenu vérifiable */
 export async function signerPvs(doc, u) {
@@ -72,6 +73,11 @@ export async function adaptateurPvs(u) {
   const base = await adaptateurUascep(u);
   return Object.assign({}, base, {
     app: 'MEMP-CP', sansTitre: true,
+    // fiche de rentrée : déjà couverte par les fiches de collecte (circuit CP → CCS) ; incidents de discipline : registre propre à l'école
+    exclure: ['territoire.rentree', 'territoire.suivi', 'sante.incidents'],
+    /** Agents d'une entité pour l'appel : personnel actif de l'école (les agents de la CS / DDEMP s'ajoutent à la main) */
+    agents: async (niv, cle) => niv !== 'ECOLE' ? [] : (await scoped('personnel', u)).filter(p => String(p.schoolId) === String(cle) && !/retrait|décéd|decede/i.test(p.situation || ''))
+      .map(p => ({ nom: [String(p.nom || '').toUpperCase(), p.prenoms].filter(Boolean).join(' '), fonction: p.fonction || '' })),
     charger: async () => (await db.setting('pvs')) || null,
     enregistrer: async (etat) => { await db.setting('pvs', etat); },
     signer: (doc) => signerPvs(doc, u),

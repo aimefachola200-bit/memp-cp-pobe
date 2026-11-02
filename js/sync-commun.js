@@ -11,8 +11,19 @@
   'use strict';
   if (global.SyncCommun) return;
   const MONTANT = { 'sport:licences': 1, 'sport:competitions': 1, 'sport:matchs': 1, 'sport:resultats': 1, 'sport:palmares': 1, 'sport:performances': 1,
-    'examens:candidats': 1, 'examens:concours': 1, 'examens:participants': 1, 'patrimoine:besoins': 1, 'communication:lectures': 1, 'pilotage:indicateurs': 1 };
-  const DESCENDANT = { 'communication:notes': 1, 'communication:echeances': 1, 'communication:agenda': 1 };
+    'examens:candidats': 1, 'examens:concours': 1, 'examens:participants': 1, 'patrimoine:besoins': 1, 'communication:lectures': 1, 'pilotage:indicateurs': 1,
+    'territoire:rentree': 1, 'communication:courrier': 1 };
+  const DESCENDANT = { 'communication:notes': 1, 'communication:echeances': 1, 'communication:agenda': 1, 'territoire:retours': 1 };
+  const LES_DEUX = { 'examens:salles': 1 };   // centres d'examen et salles : la CS les envoie au département et aux écoles
+  /* Circuit (fiche de rentrée, courrier) : la décision locale prise après la dernière transmission n'est pas écrasée par une copie montante plus ancienne */
+  const RANG = { rentree: { BROUILLON: 0, RENVOYEE: 1, TRANSMISE: 1, VALIDEE_CS: 2, VALIDEE_DEPARTEMENT: 3, CLOTUREE: 4 }, courrier: { 'Brouillon': 0, 'Envoyé': 1, 'Reçu': 2, 'Traité': 3, 'Archivé': 4 } };
+  const CIRCUIT = { rentree: ['statut', 'validePar', 'dateValidation', 'motifRenvoi'], courrier: ['statut', 'dateLecture', 'lecteur', 'numArrivee', 'arriveeEntite', 'dateTraitement', 'traitePar'] };
+  function garderDecision(c, anc, d) {
+    if (!anc || !CIRCUIT[c]) return;
+    const garder = c === 'rentree' ? !!(anc.dateValidation && (!d.dateTransmission || String(anc.dateValidation) >= String(d.dateTransmission)))
+      : (RANG.courrier[anc.statut || 'Brouillon'] || 0) > (RANG.courrier[d.statut || 'Brouillon'] || 0);
+    if (garder) CIRCUIT[c].forEach(k => { if (anc[k] !== undefined) d[k] = anc[k]; });
+  }
   const SANS_IMAGES = (o) => { const x = Object.assign({}, o); ['signature', 'signatureLe', 'cachetImage', 'photo', 'image'].forEach(k => delete x[k]); if (x.logo && x.logo.image) x.logo = Object.assign({}, x.logo, { image: '' }); return x; };
   const SANS_ELEVE = (o) => { const x = Object.assign({}, o); Object.keys(x).forEach(k => { if (/^(eleve|eleveId|eleve_id|apprenant|apprenantId|matriculeEleve|npiEleve)$/.test(k)) delete x[k]; }); delete x.maj; return x; };
   const norm = (t) => String(t == null ? '' : t).normalize('NFKD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/\b(EPP|EPM|EM|EP|ECOLE|CS|LE|LA|LES|DE|DU|DES)\b/g, ' ').replace(/[^A-Z0-9]+/g, ' ').trim();
@@ -51,7 +62,7 @@
         }));
       }
       if (P) onglets().forEach(({ type, coll }) => {
-        const sens = MONTANT[type.slice(4)] ? 'montant' : DESCENDANT[type.slice(4)] ? 'descendant' : null;
+        const sens = MONTANT[type.slice(4)] ? 'montant' : DESCENDANT[type.slice(4)] ? 'descendant' : LES_DEUX[type.slice(4)] ? 'les deux' : null;
         if (!sens) return;   // santé, besoins spécifiques, inspection individuelle… : ne quittent pas l'appareil
         (P[coll] || []).forEach(r => {
           const d = SANS_ELEVE(r); let ec = null;
@@ -114,7 +125,10 @@
         if (o.supprime) { P[c] = P[c].filter(r => r.id !== id); changeP = true; return { cle: 'rg:' + c + ':' + id }; }
         const d = Object.assign({}, o.donnees); delete d._ecoleNom;
         if (d.niveau === 'ECOLE') { const li = local(o.donnees.entite, o.donnees._ecoleNom); if (li !== null) d.entite = String(li); }
-        upsert(P[c], id, d); changeP = true; return { cle: 'rg:' + c + ':' + id };
+        garderDecision(c, P[c].find(r => r.id === id), d);
+        upsert(P[c], id, d); changeP = true;
+        if ((c === 'retours' || c === 'rentree' || c === 'courrier') && global.PVS && global.PVS.appliquerRetours) global.PVS.appliquerRetours(P);
+        return { cle: 'rg:' + c + ':' + id };
       }
       if (t === 'version' && N) {
         const d = o.donnees || {}; if (!d.type || !d.cle) return {};
@@ -128,5 +142,5 @@
     }
     return { objets, appliquer, debut, fin };
   }
-  global.SyncCommun = { creer, MONTANT, DESCENDANT, norm };
+  global.SyncCommun = { creer, MONTANT, DESCENDANT, LES_DEUX, norm };
 })(typeof window !== 'undefined' ? window : globalThis);
