@@ -1,0 +1,384 @@
+/* République du Bénin — Ministère des Enseignements Maternel et Primaire — Application CP */
+:root{
+  --green:#0b5d3b; --green-d:#08432a; --green-l:#e6f2ec; --yellow:#fcd116; --red:#e8112d;
+  --bg:#f3f5f4; --card:#fff; --ink:#18211d; --mute:#5b6a63; --line:#d6ddd9; --ok:#1c7c4a; --warn:#b86e00; --err:#c0172b;
+  --sb:268px; --radius:10px; --shadow:0 1px 3px rgba(0,0,0,.12);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif; color:var(--ink);
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#121714;--card:#1b231e;--ink:#e8efe9;--mute:#9fb0a6;--line:#33403a;--green-l:#173326}
+  img.emblem{background:#fff;border-radius:6px}
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-size:15px}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{margin:.2em 0}
+a{color:var(--green)}
+.hidden{display:none!important}
+
+/* ---------- Connexion ---------- */
+.login-wrap{min-height:100%;display:grid;place-items:center;padding:16px;background:linear-gradient(180deg,var(--green-l),var(--bg))}
+.login-card{width:min(440px,100%);background:var(--card);border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.15);overflow:hidden}
+.login-card .banner{display:block;width:100%;background:#fff;padding:8px 8px 2px}
+.tricolor{display:flex;height:6px}.tricolor i{flex:1}.tricolor i:nth-child(1){background:#008751}.tricolor i:nth-child(2){background:var(--yellow)}.tricolor i:nth-child(3){background:var(--red)}
+.login-body{padding:18px 22px 22px}
+.login-body h1{font-size:1.25rem;color:var(--green)}
+.login-body p.sub{color:var(--mute);margin:.2em 0 1em;font-size:.9rem}
+.hint{background:var(--green-l);border-left:4px solid var(--green);padding:8px 10px;border-radius:6px;font-size:.82rem;color:var(--ink);margin-top:14px}
+
+/* ---------- Coque ---------- */
+.shell{display:flex;min-height:100vh}
+.sidebar{width:var(--sb);background:var(--green);color:#fff;position:fixed;inset:0 auto 0 0;display:flex;flex-direction:column;z-index:30;overflow-y:auto}
+.sb-head{padding:14px 14px 10px;text-align:center;border-bottom:1px solid rgba(255,255,255,.15)}
+.sb-head img{width:150px;max-width:70%;background:#fff;border-radius:8px;padding:4px}
+.sb-head b{display:block;margin-top:6px;font-size:1rem;letter-spacing:.3px}
+.sb-head span{font-size:.72rem;opacity:.85}
+.nav{padding:8px;flex:1}
+.nav .grp{font-size:.68rem;text-transform:uppercase;letter-spacing:.08em;opacity:.7;margin:12px 8px 4px}
+.nav button{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:transparent;border:0;color:#fff;padding:10px 12px;border-radius:8px;cursor:pointer;font-size:.93rem}
+.nav button:hover{background:rgba(255,255,255,.12)}
+.nav button.on{background:var(--yellow);color:#1b1b00;font-weight:600}
+.nav .ic{width:1.3em;text-align:center}
+.sb-foot{padding:10px 12px;border-top:1px solid rgba(255,255,255,.15);font-size:.8rem}
+.sb-foot .who{display:block;margin-bottom:6px;opacity:.95}
+.main{margin-left:var(--sb);flex:1;min-width:0;display:flex;flex-direction:column;min-height:100vh}
+.topbar{display:flex;align-items:center;gap:10px;background:#fff;color:#111;border-bottom:1px solid var(--line);padding:4px 10px;position:sticky;top:0;z-index:20}
+.topbar img.emblem{height:62px;max-width:100%;object-fit:contain;object-position:left center}
+.topbar .grow{flex:1;min-width:0}
+.burger{display:none}
+.titlebar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px 4px}
+.titlebar h2{font-size:1.25rem;margin:0;color:var(--green)}
+.titlebar .sub{color:var(--mute);font-size:.85rem}
+.actionbar{display:flex;gap:8px;flex-wrap:wrap;padding:8px 16px;background:var(--card);border-block:1px solid var(--line);position:sticky;top:62px;z-index:15}
+.actionbar:empty{display:none}
+.view{padding:12px 16px 40px;flex:1}
+.statusbar{padding:6px 16px;font-size:.8rem;color:var(--mute);border-top:1px solid var(--line);background:var(--card)}
+
+/* ---------- Boutons / champs ---------- */
+.btn{border:1px solid var(--line);background:var(--card);padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--green)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+.btn.primary:hover{background:var(--green-d)}
+.btn.accent{background:var(--yellow);border-color:#c9a400;color:#1b1b00}
+.btn.danger{background:var(--err);border-color:var(--err);color:#fff}
+.btn.sm{padding:4px 9px;font-size:.82rem}
+.btn.ghost{background:transparent}
+.icon-btn{background:transparent;border:0;font-size:1.1rem;cursor:pointer;padding:4px 8px;border-radius:6px}
+.icon-btn:hover{background:rgba(0,0,0,.08)}
+.sidebar .btn{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25);color:#fff}
+.field{display:flex;flex-direction:column;gap:4px;margin:0 0 10px}
+.field>span{font-size:.8rem;color:var(--mute);font-weight:600}
+.input,.field input,.field select,.field textarea,.search{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+.field textarea{min-height:80px;resize:vertical}
+.input:focus,.field input:focus,.field select:focus,.field textarea:focus,.search:focus{outline:2px solid var(--green);outline-offset:0}
+.field.check{flex-direction:row;align-items:center;gap:8px}.field.check input{width:auto}
+.field.ro input{background:var(--green-l)}
+.field .err{color:var(--err);font-size:.75rem}
+.chk{display:inline-flex;align-items:center;gap:4px;font-size:.85rem}
+.grid12{display:grid;grid-template-columns:repeat(12,1fr);gap:0 12px}
+.c12{grid-column:span 12}.c6{grid-column:span 6}.c4{grid-column:span 4}.c3{grid-column:span 3}
+@media (max-width:700px){.c6,.c4,.c3{grid-column:span 12}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-bottom:12px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--green);border-radius:var(--radius);padding:12px 14px}
+.stat b{display:block;font-size:1.7rem;color:var(--green)}.stat span{color:var(--mute);font-size:.82rem}
+.stat.y{border-left-color:var(--yellow)}.stat.r{border-left-color:var(--red)}
+
+/* ---------- Tableau ---------- */
+.tbl-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.tbl-tools .search{max-width:340px}
+.tbl-tools .count{color:var(--mute);font-size:.85rem}
+.tbl-wrap{overflow:auto;border:1px solid var(--line);border-radius:var(--radius);background:var(--card);max-height:calc(100vh - 290px);min-height:160px}
+table.t{border-collapse:separate;border-spacing:0;width:100%;font-size:.88rem}
+table.t th{position:sticky;top:0;background:var(--green);color:#fff;text-align:left;padding:8px 10px;white-space:nowrap;cursor:pointer;user-select:none;z-index:2}
+table.t th.num,table.t td.num{text-align:center}
+table.t td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+table.t tbody tr{cursor:pointer}
+table.t tbody tr:nth-child(even){background:rgba(11,93,59,.04)}
+table.t tbody tr:hover{background:var(--green-l)}
+table.t tbody tr.sel{background:#fff3b0!important;color:#111;outline:2px solid #c9a400;outline-offset:-2px}
+table.t tfoot td{font-weight:700;background:var(--green-l);position:sticky;bottom:0}
+.pager{display:flex;gap:8px;align-items:center;justify-content:flex-end;padding:8px 0;font-size:.85rem}
+.empty{padding:28px;text-align:center;color:var(--mute)}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.76rem;font-weight:600;background:#e8e8e8;color:#333}
+.badge.Brouillon,.badge.Prévue{background:#e8ecef}.badge.Transmise{background:#fff0c2;color:#6b4a00}.badge.Validée,.badge.Réalisée{background:#d3f0de;color:#0e5a32}.badge.corriger,.badge.Reportée{background:#fddada;color:#8a1020}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.tab{padding:7px 13px;border-radius:999px;border:1px solid var(--line);background:var(--card);cursor:pointer;font-size:.88rem}
+.tab.on{background:var(--green);color:#fff;border-color:var(--green)}
+
+/* ---------- Modales ---------- */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);display:grid;place-items:center;z-index:100;padding:10px}
+.dialog{background:var(--card);border-radius:12px;width:min(560px,100%);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.35)}
+.dialog.wide{width:min(980px,100%)}
+.dialog-head{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line);background:var(--green);color:#fff;border-radius:12px 12px 0 0}
+.dialog-head h3{font-size:1.05rem}.dialog-head .icon-btn{color:#fff}
+.dialog-body{padding:14px 16px;overflow:auto}
+.dialog-foot{display:flex;gap:8px;justify-content:flex-end;padding:10px 16px;border-top:1px solid var(--line);flex-wrap:wrap}
+#toasts{position:fixed;right:12px;bottom:12px;display:flex;flex-direction:column;gap:8px;z-index:200;max-width:min(92vw,380px)}
+.toast{background:#18211d;color:#fff;padding:10px 14px;border-radius:8px;box-shadow:var(--shadow);border-left:5px solid var(--ok);font-size:.9rem}
+.toast.err{border-left-color:var(--err)}.toast.warn{border-left-color:var(--yellow)}
+
+/* ---------- Éditeur de fiche ---------- */
+.ed{display:grid;grid-template-columns:230px 1fr;gap:14px;align-items:start}
+.ed-nav{position:sticky;top:122px;background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:6px;max-height:calc(100vh - 150px);overflow:auto}
+.ed-nav button{display:block;width:100%;text-align:left;background:transparent;border:0;padding:8px 10px;border-radius:6px;cursor:pointer;font-size:.86rem}
+.ed-nav button.on{background:var(--green);color:#fff}
+.ed-nav button:hover:not(.on){background:var(--green-l)}
+.ed-nav select{display:none}
+@media (max-width:1000px){.ed{grid-template-columns:1fr}.ed-nav{position:static;max-height:none;display:flex;gap:4px;overflow-x:auto}.ed-nav button{white-space:nowrap;width:auto}}
+.progress{height:8px;background:var(--line);border-radius:6px;overflow:hidden;min-width:120px}
+.progress i{display:block;height:100%;background:var(--green)}
+.gridwrap{overflow:auto;border:1px solid var(--line);border-radius:8px}
+table.g{border-collapse:collapse;font-size:.84rem;min-width:100%}
+table.g th{background:var(--green-l);border:1px solid var(--line);padding:5px 6px;text-align:center;font-weight:600}
+table.g td{border:1px solid var(--line);padding:0;min-width:58px}
+table.g td.lab{padding:6px 8px;background:var(--bg);font-weight:600;min-width:170px;position:sticky;left:0}
+table.g input{width:100%;border:0;padding:7px 6px;text-align:center;background:transparent;min-width:52px}
+table.g input:focus{outline:2px solid var(--green);outline-offset:-2px;background:#fffbe0;color:#111}
+table.g td.calc{background:rgba(11,93,59,.1);text-align:center;font-weight:700;padding:6px}
+table.g select{width:100%;border:0;padding:6px;background:transparent;min-width:90px}
+table.g .multi{display:flex;gap:6px;flex-wrap:wrap;padding:4px 6px;min-width:170px}
+table.p td.n{padding:6px;text-align:center;background:var(--bg);font-weight:600}
+.notes{font-size:.78rem;color:var(--mute);margin:6px 0}
+.sec-title{background:var(--green);color:#fff;padding:8px 12px;border-radius:8px 8px 0 0;margin:0;font-size:1rem}
+.sec-body{border:1px solid var(--line);border-top:0;border-radius:0 0 8px 8px;padding:12px;background:var(--card)}
+
+.sig-canvas{width:100%;max-width:600px;border:2px dashed var(--green);border-radius:8px;background:#fff;touch-action:none;cursor:crosshair}
+.pre{white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace;font-size:.82rem;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;max-height:60vh;overflow:auto}
+mark{background:#fff0a0;color:#000;padding:0 1px;border-radius:2px}
+.result{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:8px;background:var(--card);cursor:pointer}
+.result:hover{border-color:var(--green)}
+.result small{color:var(--mute)}
+.reg-img{max-width:100%;border:1px solid var(--line);border-radius:6px;background:#fff}
+.verdict{padding:14px;border-radius:10px;font-weight:600;margin-top:10px}
+.verdict.ok{background:#d3f0de;color:#0e5a32}.verdict.bad{background:#fddada;color:#8a1020}.verdict.unk{background:#fff0c2;color:#6b4a00}
+.print-only{display:none}
+
+/* ---------- Mobile / tablette ---------- */
+@media (max-width:900px){
+  .sidebar{transform:translateX(-100%);transition:transform .2s;width:min(84vw,300px)}
+  body.nav-open .sidebar{transform:none;box-shadow:0 0 0 100vmax rgba(0,0,0,.45)}
+  .main{margin-left:0}
+  .burger{display:inline-block;font-size:1.4rem}
+  .topbar img.emblem{height:44px}
+  .actionbar{top:54px}
+  .tbl-wrap{max-height:calc(100vh - 330px)}
+}
+@media print{
+  .sidebar,.topbar .burger,.actionbar,.statusbar,.tbl-tools,.pager,.no-print{display:none!important}
+  .main{margin:0}.topbar{position:static;border:0}.view{padding:0}
+  .tbl-wrap{max-height:none;overflow:visible}
+  html,body{background:#fff;color:#000}
+}
+
+/* ---------- Bilans & appareil photo ---------- */
+table.g tr.tot td{background:#fff2cc;font-weight:700}
+table.g td.lab{background:#f2f2f2;font-weight:600;text-align:left;min-width:96px;position:sticky;left:0}
+table.g input[type=number]{width:62px;min-width:0;text-align:center}
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.photo{margin:0;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--card);display:flex;flex-direction:column;gap:6px}
+.photo img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:6px}.photo figcaption{font-size:.75rem;color:var(--mute)}
+.cam-stage{background:#000;border-radius:10px;overflow:hidden;display:grid;place-items:center;min-height:200px}
+.cam-video{width:100%;max-height:56vh;object-fit:contain;background:#000}.cam-video.mirror{transform:scaleX(-1)}
+.cam-info{font-size:.85rem;color:var(--mute);margin:6px 0}.cam-bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0}
+.cam-snap{font-size:1.05rem;padding:10px 18px}.cam-shots{display:flex;gap:6px;overflow-x:auto}.cam-shots img{height:58px;border-radius:4px;border:1px solid var(--line)}
+
+/* Œil « afficher / masquer le mot de passe » */
+.mdp-boite,.field>span.mdp-boite{position:relative;display:block;width:100%;font-size:inherit;font-weight:inherit;color:inherit}
+.mdp-boite input{width:100%;padding-right:46px!important}
+.mdp-oeil{position:absolute;top:50%;right:4px;transform:translateY(-50%);width:40px;height:40px;display:flex;align-items:center;justify-content:center;
+  border:0;background:transparent;color:var(--mute);border-radius:8px;cursor:pointer;padding:0}
+.mdp-oeil:hover,.mdp-oeil:focus-visible{color:var(--green);background:var(--green-l)}
+.mdp-oeil[aria-pressed="true"]{color:var(--green)}
+/* Bandeau officiel de l'écran de connexion : toujours en entier, quelle que soit la largeur */
+.login-card img.emblem{display:block;width:100%;height:auto;max-width:100%}
+/* Textes extraits des documents (lignes de points du sommaire, longs mots) : retour à la ligne, jamais de débordement */
+.result,.result small,.reg-text,.doc-text,pre{overflow-wrap:anywhere;word-break:break-word}
+pre{white-space:pre-wrap}
+/* Emplois du temps officiels */
+table.t.edt td{vertical-align:top;padding:2px}
+table.t.edt td.edt-h{min-width:92px}
+table.t.edt th{min-width:150px}
+.edt-cell{width:100%;min-width:140px;overflow:hidden;border:1px solid transparent;border-radius:6px;background:transparent;padding:5px 6px;font-size:.84rem;line-height:1.35;resize:vertical;color:inherit}
+.edt-cell:focus{border-color:var(--green);background:var(--card);outline:none}
+.edt-cell[readonly]{resize:none}
+td.edt-h .edt-cell{font-weight:700;min-width:84px}
+tr.edt-pause td{background:var(--green-l);text-align:center;letter-spacing:.08em}
+/* Règlement intérieur */
+.reglement{max-width:900px}
+.reg-bloc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-bottom:8px;cursor:pointer;overflow-wrap:anywhere}
+.reg-bloc.sel{outline:2px solid var(--green);outline-offset:1px}
+.reg-bloc h3{margin:0;color:var(--green);font-size:1rem}
+.reg-bloc h4{margin:0 0 4px;font-size:.95rem}
+.reg-bloc p{margin:.25em 0;line-height:1.5}
+.reg-titre{background:var(--green-l);border-color:var(--green)}
+.reg-preambule{border-left:4px solid var(--yellow)}
+/* Calendrier scolaire */
+.cal-liste{display:grid;gap:8px;max-width:900px}
+.cal-l{background:var(--card);border:1px solid var(--line);border-left:8px solid #ccc;border-radius:10px;padding:9px 12px;line-height:1.45}
+.cal-l .sub{color:var(--mute);font-size:.86rem}
+@media print{.reg-bloc{break-inside:avoid;border:0;padding:4px 0}.edt-cell{border:0;resize:none}}
+.sec-h{font-size:1.05rem;color:var(--green);margin:14px 0 8px}
+.doc-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+button.card.doc-lien{text-align:left;cursor:pointer;font:inherit;color:inherit;margin:0}
+button.card.doc-lien:hover,button.card.doc-lien:focus-visible{border-color:var(--green);outline:none}
+.card{overflow-wrap:anywhere}
+/* Espace CP de zone */
+.espace-tete h3{margin:0 0 4px;color:var(--green)}
+.espace-liens{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+table.t.planif th{min-width:120px}
+table.t.fiche-carriere th{text-align:left;width:38%;background:var(--green-l);color:var(--ink)}
+table.t.planif th:first-child,table.t.planif td.edt-h:first-child{min-width:54px;width:54px}table.t.planif td.edt-h{min-width:86px}
+/* ---------- Effectifs des apprenants ---------- */
+.seg{display:flex;gap:4px}
+.eff-wrap h4{margin:0 0 8px;color:var(--green)}
+table.eff{border-collapse:collapse;font-size:.8rem;min-width:100%}
+table.eff th{background:var(--green);color:#fff;border:1px solid rgba(255,255,255,.35);padding:4px 6px;text-align:center;font-weight:600}
+table.eff thead th:first-child{position:sticky;left:0;z-index:3}
+table.eff td{border:1px solid var(--line);padding:2px 3px;text-align:center;min-width:44px}
+table.eff td.eff-l{text-align:left;min-width:230px;max-width:340px;position:sticky;left:0;background:var(--card);z-index:1;padding:4px 8px}
+table.eff td.calc{background:var(--green-l);font-weight:700}
+table.eff td.na{background:rgba(0,0,0,.06)}
+table.eff tr.eff-stat td{background:#fff8e1;font-weight:700}
+table.eff small.eff-pc{display:block;color:#64748b;font-size:10px;font-weight:400;white-space:nowrap}
+table.eff tr.eff-grp td{background:#d9eadf;color:var(--green-d);font-weight:700;text-align:left;padding:5px 8px;position:sticky;left:0;z-index:1}
+table.eff input.eff-in{width:52px;padding:4px 2px;border:1px solid var(--line);border-radius:4px;text-align:center;background:var(--card)}
+table.eff input.eff-in:focus{outline:2px solid var(--green);background:#fff8c4;color:#111}
+table.eff input.eff-in:disabled{background:transparent;border-color:transparent;color:inherit;opacity:1}
+.eff-ident{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:6px 16px;margin:8px 0}
+.eff-ident small{display:block;color:var(--mute);font-size:.72rem}
+.eff-ident b{font-weight:600}
+@media print{table.eff input.eff-in{border:none}table.eff td.eff-l,table.eff tr.eff-grp td,table.eff thead th:first-child{position:static}.eff-wrap{break-inside:avoid-page}}
+
+.card-courbe{background:var(--card);border-radius:8px;padding:6px;margin:10px 0}
+.card-courbe svg text{fill:currentColor}
+@media print{.card-courbe{break-inside:avoid}}
+/* fiches de rapport (modèle GESCOL) */
+.rp-man,input.rp-man,select.rp-man{background:#fff3b0 !important}
+.rp-calc,td.rp-calc{background:rgba(11,93,59,.12)}
+input.rp-err{outline:2px solid var(--err)}
+h4.rp-sous{margin:10px 0 4px;font-size:.95rem;color:var(--mute)}
+table.g td input{min-width:44px}
+table.sect tr.sect-st td{background:rgba(11,93,59,.07);font-weight:600}
+table.sect tr.sect-tot td{background:#fff2cc;font-weight:800}
+.sect-card{margin-top:14px}
+
+/* =====================================================================
+   1.12 — Présentation alignée sur SCOLARIS et GESCOL (téléphone, tablette, PC)
+   Menu latéral bleu nuit fixe (tiroir [menu] sous 1000 px), barre du haut blanche
+   « titre + année », bleu institutionnel, tableaux et indicateurs sobres.
+   ===================================================================== */
+:root{--green:#1F4E79;--green-d:#12324F;--green-l:#EEF4FA;--bg:#F4F6F9;--ink:#1D2939;--mute:#667085;--line:#D0D5DD;--ok:#1B7F3B;--warn:#B54708;--err:#B42318;--sb:260px;--shadow:none;
+  font-family:"Segoe UI",Roboto,Arial,system-ui,sans-serif}
+@media (prefers-color-scheme: dark){:root{--bg:#F4F6F9;--card:#fff;--ink:#1D2939;--mute:#667085;--line:#D0D5DD;--green-l:#EEF4FA}}
+html,body{font-size:14.5px}
+.login-wrap{background:var(--bg)}
+.login-card{border:1px solid var(--line);box-shadow:none}
+.login-body h1{color:var(--ink)}
+.sidebar{background:#12324F;color:#DCE6F2}
+.sb-head{display:grid;grid-template-columns:38px 1fr;column-gap:10px;align-items:center;text-align:left;padding:12px 14px;border-bottom-color:rgba(255,255,255,.1)}
+.sb-head img{grid-row:span 2;width:38px;max-width:none;height:38px;object-fit:contain;padding:2px;border-radius:8px}
+.sb-head b{margin:0;font-size:15px;color:#fff;line-height:1.2}
+.sb-head span{display:block;color:#9FB6CE;font-size:11px;opacity:1;line-height:1.3}
+.nav{padding:8px 8px 20px}
+.nav .grp{color:#E8EEF5;opacity:.75;font-weight:700}
+.nav button{color:#C9D7E6;padding:8px 10px;border-radius:7px;font-size:14px}
+.nav button:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav button.on{background:#2E6DA4;color:#fff;font-weight:600}
+.sb-foot{border-top-color:rgba(255,255,255,.1);color:#9FB6CE}
+.topbar{height:56px;padding:0 20px;gap:14px;box-shadow:0 1px 3px rgba(16,24,40,.05)}
+.bh-titre{display:flex;flex-direction:column;line-height:1.2;min-width:0}
+.bh-titre strong{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:15px}
+.bh-titre small{color:var(--mute);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bh-user{margin-left:auto;font-size:13px;white-space:nowrap;color:var(--ink)}
+.burger{border:1px solid var(--line)!important;border-radius:7px!important;color:var(--green)!important;padding:2px 10px!important}
+.titlebar h2{color:var(--ink);font-size:20px}
+.actionbar{top:56px}
+.stat{border-left:1px solid var(--line)}
+.stat b{color:var(--ink);font-size:24px}
+.stat span{text-transform:uppercase;font-size:12px;letter-spacing:.03em}
+.stat.y{border-left:3px solid #B54708}.stat.r{border-left:3px solid var(--err)}
+table.t th{background:#F9FAFB;color:#475467;font-size:12.5px;text-transform:uppercase;letter-spacing:.02em;border-bottom:1px solid var(--line)}
+table.t tbody tr:nth-child(even){background:#FCFCFD}
+table.t tbody tr:hover{background:#FAFBFD}
+.btn.accent{background:#2E6DA4;border-color:#2E6DA4;color:#fff}
+@media (max-width:1000px){
+  .sidebar{transform:translateX(-100%);transition:transform .2s;width:min(84vw,280px)}
+  body.nav-open .sidebar{transform:none;box-shadow:0 0 0 100vmax rgba(16,24,40,.45)}
+  .main{margin-left:0}
+  .burger{display:inline-block;font-size:20px}
+  .topbar{padding:0 12px}
+  .bh-user{font-size:12px}
+  .actionbar{top:56px}
+}
+@media (max-width:600px){.bh-user{display:none}}
+/* Tuiles d'accès rapide du tableau de bord (SCOLARIS) */
+.tuiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,160px),1fr));gap:12px;margin-bottom:14px}
+.tuile{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px;cursor:pointer;min-height:96px;font:inherit}
+.tuile:hover{border-color:#2E6DA4;background:#FAFCFF}
+.tuile-ic{font-size:24px;line-height:1.2}
+.tuile b{color:var(--green);font-size:15px;line-height:1.25}
+.tuile small{color:var(--mute);font-size:12.5px;line-height:1.3}
+@media (max-width:420px){.tuiles{grid-template-columns:1fr 1fr}}
+/* 1.13 — Zones pédagogiques et UP */
+.zu table.t td{vertical-align:top}
+.zu td.zu-nom{white-space:nowrap}
+.zu td.zu-pers{min-width:150px}
+.zu td.zu-liste{min-width:280px;max-width:520px;font-size:.8rem;color:var(--mute);line-height:1.35}
+.zu td.zu-liste b{color:var(--ink)}
+@media (max-width:700px){.zu td.zu-liste{min-width:220px}.zu td.zu-pers{min-width:120px}}
+.zu .zu-autre{color:#B54708;font-size:.78rem}
+.zu td.zu-liste .zu-autre{font-size:inherit}
+/* =====================================================================
+   1.14 — En-têtes fixes : la rubrique reste visible pendant le défilement
+   --hdr = hauteur de la barre du haut + barre d'actions (mesurée en direct, js/main.js).
+   Les tableaux défilent avec la page ; js/entetes.js garde la ligne d'en-tête de chaque tableau juste sous les barres
+   et sous le titre de sa rubrique (qui reste lui aussi affiché). La première colonne (noms, libellés) reste à gauche
+   quand on fait défiler un tableau large sur téléphone.
+   ===================================================================== */
+:root{--hdr:110px}
+.tbl-wrap,.gridwrap,.rc-tw,.fixe-wrap{overflow-x:auto;max-height:none;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.tbl-wrap thead,.gridwrap thead,.rc-tw thead,.fixe-wrap thead{position:relative;z-index:6;will-change:transform}
+thead.entete-flottante{box-shadow:0 -4px 0 var(--card),0 3px 6px rgba(16,24,40,.18)}
+table.t th{position:static}
+table.g thead th{background:#E3ECF5;color:var(--ink)}
+table.rc-t thead th{background:#E3ECF5}
+/* première colonne figée (tableaux de saisie et listes) */
+table.g tbody td:first-child,table.g tbody th:first-child,table.eff tbody td:first-child,table.rc-t tbody td:first-child,table.rc-t tbody th:first-child,table.fixe1 tbody td:first-child{position:sticky;left:0;z-index:2;background:#F8FAFC;box-shadow:1px 0 0 var(--line)}
+table.g thead tr th:first-child,table.eff thead tr th:first-child,table.rc-t thead tr th:first-child,table.fixe1 thead tr th:first-child{position:sticky;left:0;z-index:7}
+table.t.fixe1 thead tr th:first-child{background:#F9FAFB}
+table.t.fixe1 tbody td:first-child{background:#fff}
+table.t.fixe1 tbody tr:nth-child(even) td:first-child{background:#FCFCFD}
+/* titres de rubrique (fiches de recensement, de rentrée, de fin d'année, effectifs, cartes de chiffres) */
+.sec-title,.eff-wrap>h4,.card>h3.fixe,.rubrique-fixe{position:sticky;top:var(--hdr);z-index:8}
+.sec-title{box-shadow:0 2px 4px rgba(16,24,40,.12)}
+.eff-wrap>h4,.card>h3.fixe,.rubrique-fixe{background:var(--card);margin:0 -14px 8px;padding:8px 14px;border-bottom:1px solid var(--line)}
+.actionbar{top:var(--hbar,56px)}
+.ed-nav{top:calc(var(--hdr) + 6px);max-height:calc(100dvh - var(--hdr) - 20px)}
+@media print{thead{transform:none!important;box-shadow:none!important}.sec-title,.eff-wrap>h4,.rubrique-fixe,.card>h3.fixe{position:static!important}}
+/* 1.14 — Planification des activités du CP */
+table.planning{font-size:.8rem}
+table.planning th{min-width:150px}
+table.planning thead th:first-child{min-width:96px}
+table.planning td.lab{min-width:96px;white-space:nowrap}
+table.planning td.pl-cel{min-width:150px;padding:6px;vertical-align:top;cursor:pointer;line-height:1.35;background:#fff}
+table.planning td.pl-cel:hover,table.planning td.pl-cel:focus{outline:2px solid #2E6DA4;outline-offset:-2px;background:#FAFCFF}
+table.planning td.pl-cel .pl-vide{color:#98A2B3}
+table.planning td.pl-conge,table.planning tr.pl-ferme td{background:#F2F4F7;color:var(--mute);font-style:italic;text-align:center}
+table.planning td.pl-evt{min-width:200px;padding:4px 6px;vertical-align:top;font-size:.76rem;color:var(--mute)}
+table.planning .pl-badge{display:block;white-space:normal;margin:2px 0;text-align:left}
+table.planning .pl-obs{width:100%;border:1px dashed var(--line);border-radius:5px;padding:4px 6px;font-size:.78rem;margin-top:2px;background:transparent}
+table.planning td.pl-sem{min-width:170px;vertical-align:top;padding:5px;cursor:pointer;font-size:.76rem;line-height:1.3;background:#fff}
+table.planning .pl-ligne{border-left:3px solid #2E6DA4;padding-left:5px;margin:3px 0}
+table.planning td.pl-visite-de-classe{border-left:4px solid #1B7F3B}table.planning td.pl-unite-pedagogique{border-left:4px solid #2E6DA4}
+table.planning td.pl-formation-groupee,table.planning td.pl-conference-pedagogique{border-left:4px solid #7A5AF8}table.planning td.pl-reunion{border-left:4px solid #B54708}
+table.planning.an th{min-width:46px}table.planning.an td.pl-evt{min-width:260px}
+/* écoles de la zone */
+table.ez td{vertical-align:middle}table.ez td small.sub{font-size:.72rem}
+/* barre d'actions sur une seule ligne défilante sur téléphone : elle ne mange plus l'écran au-dessus des tableaux */
+@media (max-width:600px){
+  .actionbar{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:thin;padding:6px 10px;-webkit-overflow-scrolling:touch}
+  .actionbar .btn{flex:none;padding:6px 10px;font-size:.84rem}
+  .card>h3.fixe,.eff-wrap>h4,.rubrique-fixe{font-size:.9rem;padding:6px 10px;margin:0 -14px 6px}
+}

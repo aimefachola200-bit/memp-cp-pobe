@@ -1,0 +1,463 @@
+{
+ "annee": "2026-2027",
+ "source": "Direction de l’Inspection et de l’Innovation Pédagogiques — Planning d’exécution des thèmes d’unité pédagogique, conférences pédagogiques et formations groupées",
+ "nb": "Conformément à l’arrêté N°003/MEMP/DC/SGM/DPAF/DEM/DEP/DIIP/SP 041 SGG25 du 17 février 2026, dérouler par trimestre, un thème de conférence pédagogique et un thème de formation groupée.",
+ "up_maternelle": [
+  {
+   "n": 1,
+   "theme": "Renouvellement des bureaux",
+   "axes": [],
+   "prep": "-",
+   "interp": "-",
+   "date": "2026-10-09",
+   "obs": ""
+  },
+  {
+   "n": 2,
+   "theme": "Chasser les facteurs chronophages à l’école : stratégies organisationnelles et pédagogiques au service de la réussite scolaire",
+   "axes": [
+    "Clarification conceptuelle",
+    "Typologie des « voleurs de temps »",
+    "Diagnostic des facteurs chronophages",
+    "Leviers organisationnels, pédagogiques, institutionnels et recommandations pratiques"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2026-10-23",
+   "obs": "Animation libre"
+  },
+  {
+   "n": 3,
+   "theme": "Le projet pédagogique à l’enseignement maternel : élaboration et mise en œuvre",
+   "axes": [
+    "Clarification conceptuelle",
+    "Intérêt du projet pédagogique à l’EM",
+    "Étapes d’élaboration d’un projet pédagogique",
+    "Démarche de mise en œuvre",
+    "Implications pédagogiques"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2026-11-06",
+   "obs": "Animation libre"
+  },
+  {
+   "n": 4,
+   "theme": "La pédagogie différenciée et l’adaptation des pratiques en classe inclusive",
+   "axes": [
+    "Clarification conceptuelle",
+    "Principes de la pédagogie différenciée",
+    "Stratégies d’adaptation pédagogique (méthodes actives, supports variés, évaluation adaptée)",
+    "Technologies d’assistance (tablettes, logiciels spécialisés, etc.)",
+    "Gestion de la diversité et valorisation des talents de tous"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2026-11-20",
+   "obs": "Animation libre"
+  },
+  {
+   "n": 5,
+   "theme": "Impact de l’utilisation du coin bibliothèque sur le développement cognitif de l’enfant",
+   "axes": [
+    "Clarification conceptuelle",
+    "Importance de l’exploitation du coin bibliothèque",
+    "Aménagement et accessibilité du coin bibliothèque",
+    "Rôle de l’enseignant dans l’animation du coin bibliothèque",
+    "Impact du coin bibliothèque dans le développement socio-cognitif de l’enfant"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2026-12-04",
+   "obs": "Animation mixte"
+  },
+  {
+   "n": 6,
+   "theme": "La place du matériel dans la mise en œuvre de l’Observation à l’EM",
+   "axes": [
+    "Clarification conceptuelle",
+    "Importance du matériel dans la mise en œuvre de l’Observation",
+    "Choix et préparation du matériel en fonction des objectifs de l’activité",
+    "Utilisation du matériel par l’enfant au cours de l’activité",
+    "Rôle de l’enseignant dans l’exploitation du matériel"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2027-01-15",
+   "obs": "Animation libre"
+  },
+  {
+   "n": 7,
+   "theme": "Les activités de vie pratique à l’EM : fondements et démarche de mise en œuvre",
+   "axes": [
+    "Clarification conceptuelle",
+    "Fondements et objectifs des activités de vie pratique",
+    "Typologie des activités de vie pratique",
+    "Démarche de mise en œuvre",
+    "Implications pédagogiques"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2027-01-29",
+   "obs": "Animation mixte"
+  },
+  {
+   "n": 8,
+   "theme": "La satisfaction des besoins de l’enfant à l’EM : enjeux, difficultés et approches de solution",
+   "axes": [
+    "Clarification conceptuelle",
+    "Besoins fondamentaux de l’enfant à la maternelle",
+    "Nécessité de la prise en compte des besoins fondamentaux de l’enfant",
+    "Difficultés liées à la satisfaction des besoins de l’enfant",
+    "Approches de solution pour une prise en charge efficace des besoins fondamentaux de l’enfant"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2027-02-12",
+   "obs": "Animation libre"
+  },
+  {
+   "n": 9,
+   "theme": "La dramatisation du conte à l’EM : démarche de mise en œuvre",
+   "axes": [
+    "Clarification conceptuelle",
+    "Importance de la dramatisation dans le développement du langage et de l’imaginaire de l’enfant",
+    "Étapes de la dramatisation d’un conte",
+    "Démarche de mise en œuvre",
+    "Implications pédagogiques"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2027-03-05",
+   "obs": "Animation mixte"
+  },
+  {
+   "n": 10,
+   "theme": "Le jeu comme levier d’apprentissage à l’école maternelle : apports des sciences cognitives et pratiques pédagogiques",
+   "axes": [
+    "Clarification conceptuelle",
+    "Jeu et exploration de l’environnement",
+    "Apports des sciences cognitives et apprentissage par le jeu",
+    "Jeu et intentions pédagogiques",
+    "Posture de l’animateur et accompagnement de l’enfant",
+    "Implications pédagogiques"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2027-03-19",
+   "obs": "Animation libre"
+  },
+  {
+   "n": 11,
+   "theme": "La poésie à l’EM : démarche de mise en œuvre",
+   "axes": [
+    "Clarification conceptuelle",
+    "Importance de la poésie dans le développement du langage de l’enfant",
+    "Critères de choix d’une poésie adaptée à l’EM",
+    "Démarche de mise en œuvre",
+    "Implications pédagogiques"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2027-04-23",
+   "obs": "Animation mixte"
+  },
+  {
+   "n": 12,
+   "theme": "Bilan",
+   "axes": [],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2027-05-07",
+   "obs": ""
+  }
+ ],
+ "up_primaire": [
+  {
+   "n": 1,
+   "theme": "Renouvellement des bureaux",
+   "axes": [],
+   "prep": "-",
+   "interp": "-",
+   "date": "2026-10-09",
+   "obs": ""
+  },
+  {
+   "n": 2,
+   "theme": "Chasser les facteurs chronophages à l’école : stratégies organisationnelles et pédagogiques au service de la réussite scolaire",
+   "axes": [
+    "Clarification conceptuelle",
+    "Typologie des « voleurs de temps »",
+    "Diagnostic des facteurs chronophages",
+    "Leviers organisationnels, pédagogiques, institutionnels et recommandations pratiques"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2026-10-23",
+   "obs": "Animation libre"
+  },
+  {
+   "n": 3,
+   "theme": "Construction des figures symétriques par rapport à un point, à une droite et par glissement",
+   "axes": [
+    "Compréhension des notions de symétrie axiale, symétrie centrale et symétrie par glissement",
+    "Identification et utilité des instruments géométriques",
+    "Construction des figures symétriques par les enseignants (exercices pratiques)"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2026-11-06",
+   "obs": "Animation libre"
+  },
+  {
+   "n": 4,
+   "theme": "La pédagogie différenciée et l’adaptation des pratiques en classe inclusive",
+   "axes": [
+    "Clarification conceptuelle",
+    "Principes de la pédagogie différenciée",
+    "Stratégies d’adaptation pédagogique (méthodes actives, supports variés, évaluation adaptée)",
+    "Technologies d’assistance (tablettes, logiciels spécialisés, etc.)",
+    "Gestion de la diversité et valorisation des talents de tous"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2026-11-20",
+   "obs": "Animation libre"
+  },
+  {
+   "n": 5,
+   "theme": "L’enseignement-apprentissage-évaluation de la géométrie au CM",
+   "axes": [
+    "Clarification conceptuelle",
+    "Explicitation de la compétence disciplinaire concernée",
+    "Démarche disciplinaire de la géométrie",
+    "Implications pédagogiques"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2026-12-04",
+   "obs": "Animation mixte"
+  },
+  {
+   "n": 6,
+   "theme": "La mise en œuvre de la lecture individuelle au niveau 1 à l’EP : démarche pratique",
+   "axes": [
+    "Clarification conceptuelle",
+    "Objectifs de la lecture individuelle au niveau 1",
+    "Démarche de mise en œuvre",
+    "Implications pédagogiques"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2027-01-15",
+   "obs": "Animation mixte"
+  },
+  {
+   "n": 7,
+   "theme": "Le vocabulaire fonctionnel au CE1 : importance et démarche d’enseignement",
+   "axes": [
+    "Clarification conceptuelle",
+    "Importance du vocabulaire fonctionnel dans les apprentissages",
+    "Critères de sélection du vocabulaire fonctionnel",
+    "Démarche d’enseignement-apprentissage-évaluation",
+    "Implications pédagogiques"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2027-01-29",
+   "obs": "Animation mixte"
+  },
+  {
+   "n": 8,
+   "theme": "Le tâtonnement scientifique dans l’enseignement de la mesure au CM : démarche de mise en œuvre",
+   "axes": [
+    "Clarification conceptuelle",
+    "Principes du tâtonnement scientifique",
+    "Étapes de la démarche au CM",
+    "Implications pédagogiques"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2027-02-12",
+   "obs": "Animation mixte"
+  },
+  {
+   "n": 9,
+   "theme": "La dictée préparée : importance et démarche de mise en œuvre",
+   "axes": [
+    "Clarification conceptuelle",
+    "Importance de la dictée préparée dans l’apprentissage de l’orthographe",
+    "Étapes de préparation",
+    "Démarche de mise en œuvre",
+    "Implications pédagogiques"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2027-03-05",
+   "obs": "Animation mixte"
+  },
+  {
+   "n": 10,
+   "theme": "L’enseignement-apprentissage de l’EPS au niveau 1 : spécificités au CE1",
+   "axes": [
+    "Clarification conceptuelle",
+    "Objectifs et importance",
+    "Organisation de la classe et de l’espace au CE1",
+    "Implications pédagogiques"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2027-03-19",
+   "obs": "Animation mixte"
+  },
+  {
+   "n": 11,
+   "theme": "La poésie au CM : préparation et mise en œuvre",
+   "axes": [
+    "Clarification conceptuelle",
+    "Critères de choix d’une poésie au CM",
+    "Étapes de préparation d’une séance de poésie",
+    "Démarche de mise en œuvre",
+    "Implications pédagogiques"
+   ],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2027-04-23",
+   "obs": "Animation mixte"
+  },
+  {
+   "n": 12,
+   "theme": "Bilan",
+   "axes": [],
+   "prep": "PM",
+   "interp": "PM",
+   "date": "2027-05-07",
+   "obs": ""
+  }
+ ],
+ "conferences": [
+  {
+   "n": 1,
+   "theme": "La place des ressources numériques dans la réussite de l’acte pédagogique",
+   "axes": [
+    "Clarification conceptuelle",
+    "Typologie des ressources numériques mobilisables en classe",
+    "Apports et limites des ressources numériques dans l’acte pédagogique",
+    "Implications pédagogiques"
+   ],
+   "date": "PM",
+   "obs": ""
+  },
+  {
+   "n": 2,
+   "theme": "Des déchets aux ressources : apprendre à transformer les déchets en ressources pour protéger l’environnement",
+   "axes": [
+    "Clarification conceptuelle",
+    "Types de déchets",
+    "Gestion des déchets et leur transformation pour l’environnement",
+    "Impacts des déchets aux ressources dans l’environnement",
+    "Implications pédagogiques"
+   ],
+   "date": "PM",
+   "obs": ""
+  },
+  {
+   "n": 3,
+   "theme": "Le leadership du directeur d’école : enjeux et responsabilités pour une gestion réussie",
+   "axes": [
+    "Clarification conceptuelle",
+    "Enjeux du leadership pédagogique et administratif du directeur",
+    "Documents administratifs et outils de gestion de l’école",
+    "Responsabilités du directeur pour une gestion réussie"
+   ],
+   "date": "PM",
+   "obs": ""
+  },
+  {
+   "n": 4,
+   "theme": "La gestion des erreurs des apprenants dans le processus enseignement-apprentissage-évaluation",
+   "axes": [
+    "Clarification conceptuelle",
+    "Typologie des erreurs des apprenants",
+    "Stratégies de gestion et de remédiation des erreurs",
+    "Implications pédagogiques"
+   ],
+   "date": "PM",
+   "obs": ""
+  },
+  {
+   "n": 5,
+   "theme": "L’utilisation pédagogique de l’intelligence artificielle par l’enseignant",
+   "axes": [
+    "Clarification conceptuelle",
+    "Potentialités de l’IA pour la préparation et l’animation des enseignements",
+    "Précautions et limites d’usage",
+    "Implications pédagogiques"
+   ],
+   "date": "PM",
+   "obs": ""
+  }
+ ],
+ "formations": [
+  {
+   "n": 1,
+   "theme": "La Pédagogie Explicite en français et en mathématiques au CI – CP : fondements cognitifs et démarche de mise en œuvre en classe",
+   "axes": [
+    "Apport des sciences cognitives et les quatre piliers de l’apprentissage",
+    "Étapes du processus d’enseignement – apprentissage en français au CI – CP",
+    "Démarche disciplinaire des mathématiques au CI – CP",
+    "Articulation des piliers de l’apprentissage avec les étapes du français et la démarche des mathématiques au CI – CP"
+   ],
+   "date": "PM",
+   "obs": "Ce thème est à développer obligatoirement au cours du premier trimestre de l’année scolaire 2026-2027"
+  },
+  {
+   "n": 2,
+   "theme": "La pédagogie de l’intégration : approches et mise en œuvre",
+   "axes": [
+    "Clarification conceptuelle",
+    "Fondements de la pédagogie de l’intégration",
+    "Démarche de mise en œuvre en classe",
+    "Implications pédagogiques"
+   ],
+   "date": "PM",
+   "obs": ""
+  },
+  {
+   "n": 3,
+   "theme": "La gestion de la remédiation en évaluation formative",
+   "axes": [
+    "Clarification conceptuelle",
+    "Étapes de l’évaluation formative",
+    "Stratégies de remédiation adaptées aux besoins des apprenants",
+    "Implications pédagogiques"
+   ],
+   "date": "PM",
+   "obs": ""
+  },
+  {
+   "n": 4,
+   "theme": "La différenciation pédagogique : focus sur les groupes de besoins",
+   "axes": [
+    "Clarification conceptuelle",
+    "Critères de constitution des groupes de besoins",
+    "Démarche de mise en œuvre de la différenciation pédagogique",
+    "Implications pédagogiques"
+   ],
+   "date": "PM",
+   "obs": ""
+  },
+  {
+   "n": 5,
+   "theme": "L’accord du participe passé employé avec l’auxiliaire avoir et des verbes pronominaux",
+   "axes": [
+    "Rappel des règles de base",
+    "Cas particuliers d’accord",
+    "Démarche d’enseignement-apprentissage-évaluation",
+    "Exercices d’application"
+   ],
+   "date": "PM",
+   "obs": ""
+  }
+ ]
+}
