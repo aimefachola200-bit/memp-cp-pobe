@@ -33,10 +33,10 @@ async function accueil(ctx) {
   // Tuiles d'accès rapide (comme le tableau de bord de SCOLARIS / GESCOL)
   const dosp = VARIANT.profil === 'dosp' || u.role === 'DOSP';
   const T = dosp
-    ? [['\uE011', 'Mon espace DOSP', 'Travail du jour', 'espacedosp'], ['\uE00F', 'Tableau synoptique', 'Chiffres consolidés', 'synodosp'], ['\uE00B', 'Fiches reçues', 'Réception et acheminement', 'envois'],
+    ? [['\uE01F', 'Listes de classe', 'Effectifs par cours et par école', 'listes'], ['\uE011', 'Mon espace DOSP', 'Travail du jour', 'espacedosp'], ['\uE00F', 'Tableau synoptique', 'Chiffres consolidés', 'synodosp'], ['\uE00B', 'Fiches reçues', 'Réception et acheminement', 'envois'],
        ['\uE015', 'Suivi-évaluation', 'Indicateurs de la CS', 'suivieval'], ['\uE03F', 'Besoins et écarts', 'Enseignants, salles, places', 'besoins'], ['\uE020', 'Candidats au CEP', 'Par sexe, public / privé', 'cep'],
        ['\uE00D', 'Documents officiels', 'Calendrier, planifications…', 'documents']]
-    : [['\uE01E', 'Mon espace CP', 'Zone et écoles', 'espace'], ['\uE029', 'Saisie manuelle', 'Fiches, personnel, directeurs', 'saisie'], ['\uE011', 'Fiches de recensement', 'EP, EM — modèle GESCOL', 'recensement'],
+    : [['\uE01F', 'Listes de classe', 'Effectifs par cours et par école', 'listes'], ['\uE01E', 'Mon espace CP', 'Zone et écoles', 'espace'], ['\uE029', 'Saisie manuelle', 'Fiches, personnel, directeurs', 'saisie'], ['\uE011', 'Fiches de recensement', 'EP, EM — modèle GESCOL', 'recensement'],
        ['\uE00E', 'Fiches de collecte', 'Rentrée, fin d’année', 'fiches'], ['\uE00F', 'Tableau synoptique', 'Chiffres de la zone', 'synocp'], ['\uE020', 'Candidats au CEP', 'Par sexe, public / privé', 'cep'],
        ['\uE00D', 'Documents officiels', 'Calendrier, planifications…', 'documents']];
   const tuiles = h('div', { class: 'tuiles' }, T.map(([ic, t, d, r]) => h('button', { class: 'tuile', type: 'button', onclick: () => ctx.go(r) }, h('span', { class: 'tuile-ic' }, ic), h('b', t), h('small', d))));

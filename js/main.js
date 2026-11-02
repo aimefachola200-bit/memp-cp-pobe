@@ -44,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => oeilPartout(document));
 
 const NAV = [
   { g: null, id: 'accueil', ic: '\uE000', t: 'Tableau de bord' },
+  { id: 'listes', ic: '\uE01F', t: 'Listes de classe (effectifs par cours)' },
   { id: 'espacedosp', ic: '\uE011', t: 'Mon espace de travail DOSP', seul: 'dosp' },
   { id: 'espace', ic: '\uE01E', t: 'Espace CP de zone', pasDosp: true },
   { id: 'synocp', ic: '\uE00F', t: 'Tableau synoptique du CP', pasDosp: true },
@@ -99,7 +100,7 @@ const NAV = [
   { id: 'parametres', ic: '\uE051', t: 'Paramètres & à propos' },
   { id: 'guide', ic: '\uE07B', t: 'Guide d’utilisation' },
 ];
-const ROUTES = { synchronisation: 'views-sync', guide: 'views-guide', zonesup: 'views-zonesup', uascep: 'views-uascep', pvssport: 'views-pvs', pvspilotage: 'views-pvs', pvscommunication: 'views-pvs', pvssante: 'views-pvs', pvsinspection: 'views-pvs', pvspatrimoine: 'views-pvs', pvsexamens: 'views-pvs', pvsterritoire: 'views-pvs', examenblanc: 'views-examen', pedagogie: 'views-pedagogie', accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles', cep: 'views-cep',
+const ROUTES = { listes: 'views-listes', synchronisation: 'views-sync', guide: 'views-guide', zonesup: 'views-zonesup', uascep: 'views-uascep', pvssport: 'views-pvs', pvspilotage: 'views-pvs', pvscommunication: 'views-pvs', pvssante: 'views-pvs', pvsinspection: 'views-pvs', pvspatrimoine: 'views-pvs', pvsexamens: 'views-pvs', pvsterritoire: 'views-pvs', examenblanc: 'views-examen', pedagogie: 'views-pedagogie', accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles', cep: 'views-cep',
   synoptique: 'views-more', activites: 'views-more', planningcp: 'views-planning', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', synocp: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', carriere: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
   saisie: 'views-saisie', recensement: 'views-recensement', recfiche: 'views-recensement', synodosp: 'views-synodosp', whatsapp: 'views-whatsapp', espacedosp: 'views-dosp', envois: 'views-dosp', prevision: 'views-dosp', besoins: 'views-dosp', suivieval: 'views-dosp', capacites: 'views-dosp', plandosp: 'views-dosp', docsdosp: 'views-dosp', identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
 

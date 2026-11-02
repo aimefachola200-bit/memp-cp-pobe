@@ -475,6 +475,19 @@ async function personnel(ctx, vueInitiale) {
         L("Participation à l'UP", s.participation_up ? s.participation_up + ' %' : ''), L("Note d'évaluation", s.note_evaluation ? s.note_evaluation + '/20' : ''), L('Téléphone', s.telephone), L('Observations', s.obs)))),
       actions: [{ label: '\uE006 Modifier', onClick: () => setTimeout(modifier, 50) }, { label: 'Fermer', kind: 'primary' }] });
   }
+  /** Modèle officiel « Mes agents » d'EducMaster (copie inchangée, outils/lots/spec-educmaster.md), pour UNE école */
+  async function agentsEducMaster() {
+    const ids = [...new Set(t.visible.map(p => p.schoolId).filter(Boolean))];
+    let sid = ids.length === 1 ? ids[0] : '';
+    if (!sid) { const v = await formDialog({ title: 'Excel EducMaster (agents)', fields: [{ k: 'schoolId', l: 'École', t: 'select', options: schoolOptions(), req: true }], values: {} }); if (!v) return; sid = v.schoolId; }
+    const s = schools.find(x => x.id === sid); if (!s) return;
+    const l = (await scoped('personnel', u)).filter(p => p.schoolId === sid && !/retrait|décéd|decede|parti|mut/i.test(p.situation || ''));
+    if (!l.length) return toast('Aucun agent pour cette école.', 'warn');
+    await import('./modele-xlsx.js');
+    const b = await window.ModeleXlsx.EducMaster.agents('assets/educmaster/', l.map(p => ({ matricule: p.matricule, idAnpe: p.id_anpe || '', nom: p.nom, prenoms: p.prenoms, sexe: p.sexe, dateNaiss: p.date_naissance,
+      lieuNaiss: p.lieu_naissance, tel: p.telephone, email: p.email, ifu: p.ifu || '', datePriseService: p.date_prise_service })));
+    download(b, clean('EducMaster_agents_' + s.nom) + '.xlsx');
+  }
   async function modeleEducMaster() {
     const C = [['matricule', 'Matricule'], ['npi', 'NPI'], ['nom', 'Nom'], ['prenoms', 'Prénoms'], ['sexe', 'Sexe'], ['dn', 'Date de naissance'], ['ln', 'Lieu de naissance'], ['statut', 'Statut'], ['qualite', 'Qualité'],
       ['corps', 'Corps'], ['emploi', 'Emploi'], ['grade', 'Grade'], ['ir', 'Indice réel'], ['ip', 'Indice payé'], ['fonction', 'Fonction'], ['code', 'Code établissement'], ['etab', 'Établissement'], ['cs', 'Circonscription scolaire'],
@@ -532,6 +545,7 @@ async function personnel(ctx, vueInitiale) {
       { label: '\uE02C Attribuer une zone', title: 'Agents sans zone (Personnel de la CS) : choisir leur zone', onClick: attribuerZone, show: u.role !== 'CP' },
       { label: '\uE00A Importer Excel', title: 'Fichier du personnel (cahier de contrôle DDEMP, fichiers FE / ACDPE, ou fiche au format EducMaster) : complète matricules, dates, téléphones…', onClick: importer },
       { label: '\uE00D Fiche d’importation (EducMaster)', title: 'Modèle Excel à remplir ou à coller depuis EducMaster, puis à importer', onClick: modeleEducMaster },
+      { label: '\uE009 Excel EducMaster (agents)', title: 'Personnel d’une école, modèle officiel « Mes agents » d’EducMaster (importation)', onClick: agentsEducMaster },
       { label: '\uE009 Excel', onClick: async () => download(await listToXlsx({ title: titre(), subtitle: sousTitre(), columns: COLS_X, rows: pourExport(t.visible), sheet: 'Personnel' }), 'Personnel.xlsx') },
       { label: '\uE009 PDF', onClick: async () => download(pdfBlob(await listToPdf({ title: titre(), subtitle: sousTitre(), columns: COLS.filter(c => !['corps', 'dossier', 'telephone', 'arrondissement'].includes(c.k)).map(c => ({ ...c, render: undefined })), rows: t.visible })), 'Personnel.pdf') }]);
   }
