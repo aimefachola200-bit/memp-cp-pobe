@@ -91,6 +91,20 @@ export function champsEditables(D, doc, nPers, v) {
   }
   return out;
 }
+/** Classes ouvertes d'après la structure pédagogique de la fiche (outils/lots/spec-classes.md) : une classe jumelée ou
+    multigrade compte pour UNE classe. Simples = somme des cours ; jumelées = somme des combinaisons (CI-CP, CP-CE1…) ;
+    multigrades = salles utilisées, à défaut le plus grand nombre de classes multigrades d'un cours. Maternelle : sections. */
+export function classesStructure(v) {
+  const n = (k) => entier(v[k]) || 0;
+  const em = !NIV_EP.some(c => !vide(v[`sp.simple.${c}`]) || !vide(v[`sp.multi.${c}`])) && ['pet', 'gra'].some(c => !vide(v[`sp.simple.${c}`]) || !vide(v[`sp.jumelee.${c}`]) || !vide(v[`sp.multi.${c}`]));
+  const niv = em ? ['pet', 'gra'] : NIV_EP;
+  const simples = niv.reduce((a, c) => a + n(`sp.simple.${c}`), 0);
+  const jumelees = em ? (n('sp.jumelee.salles') || Math.max(0, ...niv.map(c => n(`sp.jumelee.${c}`))))
+    : Object.keys(v).filter(k => k.startsWith('sp.jumelee.') && !k.endsWith('salles')).reduce((a, k) => a + n(k), 0);
+  const multigrades = n('sp.multi.salles') || Math.max(0, ...niv.map(c => n(`sp.multi.${c}`)));
+  return { simples, jumelees, multigrades, ouvertes: simples + jumelees + multigrades };
+}
+const vide = (x) => x === null || x === undefined || String(x).trim() === '';
 export function valeursCalculees(D, doc, v) {
   const calc = tousCalculs(D, doc), memo = {};
   const val = (k) => {
@@ -102,6 +116,9 @@ export function valeursCalculees(D, doc, v) {
   };
   const out = { ...v };
   for (const k of Object.keys(calc)) out[k] = val(k);
+  // classes / sections ouvertes non saisies : remplies d'après la structure pédagogique (simples + jumelées + multigrades)
+  const st = classesStructure(out), co = D.docs && D.docs[doc] && D.docs[doc].cycle === 'primaire' ? 'classes_ouvertes' : 'sections_ouvertes';
+  if (vide(out[co]) && st.ouvertes) out[co] = String(st.ouvertes);
   return out;
 }
 export function valeursCompletes(D, doc, finales) {
@@ -150,7 +167,8 @@ export function controles(D, doc, v) {
   const n = (k) => entier(v[k]);
   const cmpLe = (a, b, msg, niveau = 'danger') => { const x = n(a), y = n(b); if (x !== null && y !== null && x > y) out.push([niveau, msg.replace('{x}', x).replace('{y}', y)]); };
   const [ca, co] = ep ? ['classes_autorisees', 'classes_ouvertes'] : ['sections_autorisees', 'sections_ouvertes'];
-  cmpLe(co, ca, 'Le nombre de ' + (ep ? 'classes' : 'sections') + ' ouvertes ({x}) dépasse le nombre autorisé ({y}).');
+  // classes autorisées inférieures aux classes ouvertes : écart signalé, sans blocage (spec-classes.md)
+  cmpLe(co, ca, 'Écart : ' + (ep ? 'classes' : 'sections') + ' ouvertes ({x}) au-delà des ' + (ep ? 'classes' : 'sections') + ' autorisées ({y}).', 'info');
   cmpLe('salles_utilisees', 'salles_existantes', 'Salles de classe utilisées ({x}) supérieures aux salles existantes ({y}).', 'warning');
   for (const k of ['annee_creation', 'annee_extension']) { const a = n(k); if (a && a > new Date().getFullYear()) out.push(['danger', `L'année ${a} (${k.replace(/_/g, ' ')}) est dans le futur.`]); }
   if (n('annee_creation') && n('annee_extension') && n('annee_extension') < n('annee_creation')) out.push(['danger', "L'année d'extension est antérieure à l'année de création."]);
@@ -171,9 +189,9 @@ export function controles(D, doc, v) {
       for (const g of grp) for (const s of ['G', 'F', 'T']) for (const [r, lib] of [['red', 'redoublants'], ['transf', 'transférés'], ['sans_acte', 'sans acte de naissance'], ['handic', 'handicapés']])
         cmpLe(`eff.${r}.${g}_${s}`, `eff.nb.${g}_${s}`, `${g} ${s} : ${lib} ({x}) supérieurs au nombre d'élèves ({y}).`);
     }
-    let totSp = NIV_EP.reduce((a, x) => a + (n(`sp.simple.${x}`) || 0) + (n(`sp.multi.${x}`) || 0), 0);
-    totSp += Object.keys(v).filter(k => k.startsWith('sp.jumelee.') && !k.endsWith('salles')).reduce((a, k) => a + (n(k) || 0), 0);
-    if (n(co) !== null && totSp && totSp !== n(co)) out.push(['warning', `Structure pédagogique : ${totSp} classe(s) décrite(s) pour ${n(co)} classe(s) ouverte(s).`]);
+    // une classe jumelée ou multigrade compte pour une classe : simples + jumelées + multigrades
+    const st = classesStructure(v), totSp = st.ouvertes;
+    if (n(co) !== null && totSp && totSp !== n(co)) out.push(['warning', `Structure pédagogique : ${totSp} classe(s) décrite(s) (${st.simples} simple(s), ${st.jumelees} jumelée(s), ${st.multigrades} multigrade(s)) pour ${n(co)} classe(s) ouverte(s).`]);
   } else {
     if (v.gestion === 'oui' && !['g_ape', 'g_ame', 'g_comite'].some(k => v[k] === 'oui') && !v.g_autres) out.push(['warning', 'Structure de gestion collégiale : cochez APE, AME, Comité de direction ou précisez.']);
     if (v.gestion === 'non' && ['g_ape', 'g_ame', 'g_comite'].some(k => v[k] === 'oui')) out.push(['danger', '« Pas de structure de gestion collégiale » mais une structure est cochée (2.7).']);

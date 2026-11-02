@@ -9,6 +9,7 @@ import { db } from './db.js';
 import { scoped, cleGroupe, libGroupe, ordreGroupe } from './data.js';
 import { listToPdf, listToXlsx } from './export.js';
 import * as E from './effectifs-schema.js';
+import { classesFiche } from './views-ecoles.js';
 
 export const estPrive = (s) => /priv/i.test(String(s?.secteur || ''));
 export const estEM = (s) => s?.cycle === 'Maternelle';
@@ -57,7 +58,8 @@ export async function chiffresEcoles(u, annee, schools) {
     if (m && m.T !== null) { x.el_G = m.G || 0; x.el_F = m.F || 0; x.el_T = m.T || 0; x.red_T = m.redoub || 0; x.eh_T = m.eh || 0; }
     else if (em) { x.el_G = n0(vr['rep.debut.tot_G']); x.el_F = n0(vr['rep.debut.tot_F']); x.el_T = x.el_G + x.el_F; x.eh_T = n0(vr['rep.besoin.tot_T']); }
     else { x.el_G = n0(vr['eff.nb.ENS_G']); x.el_F = n0(vr['eff.nb.ENS_F']); x.el_T = x.el_G + x.el_F; x.red_T = n0(vr['eff.red.ENS_T']); x.eh_T = n0(vr['eff.handic.ENS_T']); }
-    x.classes = n0(vr[em ? 'sections_ouvertes' : 'classes_ouvertes']) || n0((fr?.data || {})[em ? 'sections_ouv' : 'classes_ouv']);
+    // classes ouvertes : simples + jumelées + multigrades (une classe jumelée ou multigrade compte pour une)
+    x.classes = (fr ? classesFiche(fr, s).ouvertes : 0) || n0(vr[em ? 'sections_ouvertes' : 'classes_ouvertes']);
     x.salles = n0(vr.salles_existantes) || n0((fr?.data || {}).salles_exist);
     for (const [r, o] of [['insc', 'insc'], ['pres', 'pres'], ['adm', 'adm']]) for (const g of ['G', 'F']) x[`cep_${o}_${g}`] = 0;
     if (!em) {

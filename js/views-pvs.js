@@ -12,6 +12,7 @@ import { adaptateurUascep } from './views-uascep.js';
 import { cepEcole } from './views-cep.js';
 import * as INF from './views-infra.js';
 import * as E from './effectifs-schema.js';
+import { classesFiche } from './views-ecoles.js';
 
 const I = (n) => (window.Icones ? window.Icones.code(n) + ' ' : '');
 export const MODULES = { sport: 'sport', pilotage: 'pilotage', communication: 'communication', sante: 'sante', inspection: 'inspection', patrimoine: 'patrimoine', examens: 'examens', territoire: 'territoire' };
@@ -59,6 +60,7 @@ async function indicateurs(u, annee) {
       v.ensCommunautaires = p.filter(x => /ACDPCTD|AME|communaut|volont/i.test(x.statut || '')).length; v.ensAutres = p.length - v.ensFE - v.ensContractuels - v.ensCommunautaires;
     }
     const kind = (s.cycle === 'Maternelle' ? 'EM' : 'EP') + '_RENTREE', f = fiches.find(x => x.schoolId === s.id && x.annee === annee && x.kind === kind);
+    if (f) { const c0 = classesFiche(f, s); if (c0.ouvertes) v.groupes = c0.ouvertes; }   // classes ouvertes (jumelée / multigrade = une classe)
     if (f) { const x = INF.indicateurs((() => { const a = INF.vide(); INF.ajouter(a, s, f); return a; })()); if (x.salles_tot) v.salles = x.util || x.salles_tot; if (x.places_ep) v.tablesBancs = Math.round(x.places_ep / 2); if (x.lavage[1]) v.pointEau = x.lavage[0] ? 'Oui' : 'Non'; }
     if (s.cycle !== 'Maternelle') {
       const ff = fiches.find(x => x.schoolId === s.id && x.annee === annee && x.kind === 'EP_FIN'), r = reports.find(x => x.schoolId === s.id && x.annee === annee && x.cours === 'CM2');

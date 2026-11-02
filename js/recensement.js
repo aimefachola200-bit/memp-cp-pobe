@@ -191,7 +191,22 @@ export function evaluer(schema, saisies, auto, dyn) {
       else retenir(k, auto[k] ?? '', c.t === 'c', lib);
     }
   }
+  // classes ouvertes (3.15 ii, classes existantes) d'après la structure pédagogique 3.14 quand elles ne sont pas saisies :
+  // une classe jumelée ou multigrade compte pour une classe (outils/lots/spec-classes.md)
+  const cl = classesT314(eff);
+  if (cl.ouvertes && 'classes_existantes' in eff && saisie('classes_existantes') === null && vide(eff.classes_existantes)) { eff.classes_existantes = calc.classes_existantes = fmt(cl.ouvertes); orig.classes_existantes = 'calculée'; }
   return { eff, calc, orig, alertes };
+}
+/** Classes ouvertes d'après la structure pédagogique 3.14 (cours occupant chacun un local, jumelés, multigrades ;
+    « on précisera 1 pour chaque cours ») : simples = somme des cours ; jumelées et multigrades = salles utilisées,
+    à défaut la moitié (jumelés) ou le tiers (multigrades) des cours, arrondi au-dessus. */
+export function classesT314(v) {
+  const n = (k) => nombre(v[k]) || 0, cours = ['ci', 'cp', 'ce1', 'ce2', 'cm1', 'cm2'];
+  const somme = (r) => cours.reduce((a, c) => a + n(`t314.${r}.${c}`), 0);
+  const simples = somme('simples');
+  const jumelees = n('t314.jumeles.salles') || Math.ceil(somme('jumeles') / 2);
+  const multigrades = n('t314.multi.salles') || Math.ceil(somme('multi') / 3);
+  return { simples, jumelees, multigrades, ouvertes: simples + jumelees + multigrades };
 }
 export function controles(schema, eff, alertesSomme) {
   const out = [...alertesSomme], ix = index(schema), typ = schema.type;

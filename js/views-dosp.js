@@ -16,6 +16,7 @@
    Conception : Maître Aimé FACHOLA — Tél. +229 01 96 51 03 33 */
 import { h, uid, nowISO, toast, confirmBox, download, clean, currentSchoolYear, today, sha256 } from './util.js';
 import { db } from './db.js';
+import { classesFiche } from './views-ecoles.js';   // classes ouvertes : une classe jumelée ou multigrade compte pour une
 import { dataTable, formDialog } from './ui.js';
 import { scoped, inScope, addLog } from './data.js';
 import { FICHE_TYPES, sectionsFor, gridValue, CLASSES } from './schema.js';
@@ -222,7 +223,7 @@ function prevoirEcole(fFin, fRent, norme) {
   CLASSES.forEach((c, i) => { prev[c] = i === 0 ? nouveauxCI + red('CI') : promus(CLASSES[i - 1]) + red(c); });
   const actuel = {}; CLASSES.forEach(c => { actuel[c] = fin(c) || V(fRent, 'eff', 'debut', c, 'T'); });
   const classes = CLASSES.reduce((a, c) => a + (prev[c] ? Math.ceil(prev[c] / norme) : 0), 0);
-  return { prev, actuel, totPrev: CLASSES.reduce((a, c) => a + prev[c], 0), totAct: CLASSES.reduce((a, c) => a + actuel[c], 0), classes, classesAct: n0((fFin || fRent || {}).data?.classes_ouv), ens: persoN(fFin) || persoN(fRent), cep: promus('CM1') + red('CM2') };
+  return { prev, actuel, totPrev: CLASSES.reduce((a, c) => a + prev[c], 0), totAct: CLASSES.reduce((a, c) => a + actuel[c], 0), classes, classesAct: (fFin || fRent) ? classesFiche(fFin || fRent).ouvertes : 0, ens: persoN(fFin) || persoN(fRent), cep: promus('CM1') + red('CM2') };
 }
 async function prevision(ctx) {
   const u = ctx.user;
@@ -266,7 +267,7 @@ let ST_BES = null;
 function moyensEcole(s, fR, fF) {
   const f = fR || fF, mat = s.cycle === 'Maternelle';
   const eleves = mat ? (V(f, 'eff', 'debut', 'tot', 'T') || V(f, 'eff', 'fin', 'tot', 'T')) : (V(f, 'eff', 'debut', 'ens', 'T') || V(f, 'eff', 'fin', 'ens', 'T'));
-  const classes = n0(f?.data?.classes_ouv) || n0(f?.data?.sections_ouv), ens = persoN(f);
+  const classes = f ? classesFiche(f, s).ouvertes : 0, ens = persoN(f);
   const salles = V(f, 'infra', 'salles', 'g', 't') || n0(f?.data?.salles_util);
   const places = V(f, 'mob', 'tc', 'ens', 'n') + 2 * V(f, 'mob', 'tb2', 'ens', 'n') + 3 * V(f, 'mob', 'tb3', 'ens', 'n');
   return { f, eleves, classes, ens, salles, places, mEns: Math.max(0, classes - ens), mSal: Math.max(0, classes - salles), mPl: mat ? 0 : Math.max(0, eleves - places) };
@@ -316,7 +317,7 @@ async function suivieval(ctx) {
     const sR = (r, c) => R.reduce((a, f) => a + V(f, 'eff', r, 'ens', c), 0), sF = (r, c) => F.reduce((a, f) => a + V(f, 'eff', r, 'ens', c), 0);
     const G = sR('debut', 'G') || sF('debut', 'G'), Fi = sR('debut', 'F') || sF('debut', 'F'), T = G + Fi;
     const ens = R.reduce((a, f) => a + persoN(f), 0) || F.reduce((a, f) => a + persoN(f), 0), ensF = R.reduce((a, f) => a + persoN(f, 'F'), 0) || F.reduce((a, f) => a + persoN(f, 'F'), 0);
-    const cl = R.reduce((a, f) => a + n0(f?.data?.classes_ouv), 0) || F.reduce((a, f) => a + n0(f?.data?.classes_ouv), 0);
+    const cl = R.reduce((a, f) => a + (f ? classesFiche(f).ouvertes : 0), 0) || F.reduce((a, f) => a + (f ? classesFiche(f).ouvertes : 0), 0);
     const sal = R.reduce((a, f) => a + V(f, 'infra', 'salles', 'g', 't'), 0) || F.reduce((a, f) => a + V(f, 'infra', 'salles', 'g', 't'), 0);
     const deb = sF('debut', 'T'), cepI = F.reduce((a, f) => a + V(f, 'cep', 'comp', 'cep', 'T'), 0), cepA = F.reduce((a, f) => a + V(f, 'cep', 'adm', 'cep', 'T'), 0);
     return { ecoles: liste.length, recuesR: R.filter(f => f && f.statut !== 'Brouillon').length, recuesF: F.filter(f => f && f.statut !== 'Brouillon').length, G, F: Fi, T, parite: G ? Math.round(Fi / G * 100) / 100 : null,

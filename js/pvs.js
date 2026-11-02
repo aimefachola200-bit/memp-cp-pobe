@@ -2078,7 +2078,8 @@
           rows.forEach((r, i) => {
             const inp = (k) => h('input', { type: 'number', min: 0, step: 1, inputmode: 'numeric', value: nb(r[k]), 'data-k': k, class: 'pvs-in', style: 'width:64px' });
             const c = C(r);
-            tb.append(h('tr', { 'data-id': r.id, class: c.depasse ? 'dep' : '' }, h('td', { class: 'c' }, i + 1), h('td', {}, h('input', { value: r.centre || '', 'data-k': 'centre', class: 'pvs-in', style: 'width:140px' })),
+            tb.append(h('tr', { 'data-id': r.id, class: c.depasse ? 'dep' : '' }, h('td', { class: 'c' }, i + 1), h('td', {}, h('input', { value: r.centre || '', 'data-k': 'centre', class: 'pvs-in', style: 'width:140px' }),
+              r.source ? h('div', { class: 'pvs-aide', 'data-c': 'source', style: 'font-size:11px;margin-top:2px' }, 'Source : ' + r.source + (r.dateSource ? ', ' + fr(r.dateSource) : '') + (r.sourcePar ? ' (' + r.sourcePar + ')' : '')) : null),
               champs.map(([k]) => h('td', { class: 'c' }, inp(k))), h('td', {}, h('input', { value: r.observations || '', 'data-k': 'observations', class: 'pvs-in', placeholder: 'Automatique', style: 'width:180px' })),
               h('td', { class: 'n', 'data-c': 'tot' }, c.rien ? '' : c.tot), h('td', { class: 'n', 'data-c': 'nec' }, c.rien ? '' : c.nec), h('td', { class: 'n', 'data-c': 'ecart' }, c.ecart === null ? '' : c.ecart), h('td', { 'data-c': 'statut' }, c.statut),
               h('td', {}, h('button', { class: 'pvs-btn s d', type: 'button', title: 'Supprimer le centre', 'data-pvs': 'supprimer-centre', onclick: async () => {
@@ -2090,7 +2091,10 @@
             const el = ev.target, tr = el.closest('tr[data-id]'); if (!tr) return;
             const r = etat.cepSalles.find(x => x.id === tr.getAttribute('data-id')); if (!r) return;
             const k = el.getAttribute('data-k'), v = el.value.trim();
+            const avant = r[k];
             r[k] = (k === 'centre' || k === 'observations') ? v : (v === '' ? '' : entierCep(v)); r.maj = maintenant();
+            if (r.source && r.source !== 'saisie' && String(avant) !== String(r[k])) { r.corrections = (r.corrections || []).concat([{ champ: k, avant, apres: r[k], date: maintenant(), par: qui() }]).slice(-50); r.source = r.source + ' (corrigé)'; }
+            else if (!r.source) { r.source = 'saisie'; r.dateSource = auj(); r.sourcePar = qui(); }
             if (k !== 'centre' && k !== 'observations' && v !== '') el.value = r[k];
             await sauver(); maj();
           });
@@ -2138,8 +2142,9 @@
             h('p', { class: 'pvs-aide' }, 'Les effectifs des centres reconnus sont remplacés ; les salles et les observations sont gardées.' + (nouv.length ? ' Centres ajoutés : ' + nouv.map(k => g[k].centre).join(', ') + '.' : ''))),
           [{ l: 'Annuler', v: false }, { l: I('inscription') + 'Reprendre', p: true, v: true, id: 'reprendre-ok' }]);
           if (!ok) return;
-          conn.forEach(k => { const r = etat.cepSalles.find(x => rs.some(y => y.id === x.id) && cleCentre(x.centre) === k); Object.assign(r, { offG: g[k].offG, offF: g[k].offF, offH: g[k].offH, libG: g[k].libG, libF: g[k].libF, libH: g[k].libH, maj: maintenant() }); });
-          nouv.forEach((k, j) => etat.cepSalles.push(Object.assign(nouvelle(majusc(g[k].centre), rs.length + j), { offG: g[k].offG, offF: g[k].offF, offH: g[k].offH, libG: g[k].libG, libF: g[k].libF, libH: g[k].libH })));
+          const src = { source: 'listes CEP', dateSource: auj(), sourcePar: qui() };
+          conn.forEach(k => { const r = etat.cepSalles.find(x => rs.some(y => y.id === x.id) && cleCentre(x.centre) === k); Object.assign(r, { offG: g[k].offG, offF: g[k].offF, offH: g[k].offH, libG: g[k].libG, libF: g[k].libF, libH: g[k].libH, maj: maintenant() }, src); });
+          nouv.forEach((k, j) => etat.cepSalles.push(Object.assign(nouvelle(majusc(g[k].centre), rs.length + j), { offG: g[k].offG, offF: g[k].offF, offH: g[k].offH, libG: g[k].libG, libF: g[k].libF, libH: g[k].libH }, src)));
           await sauver(); toast('Effectifs repris des listes CEP.'); dessiner();
         }
         async function reinitialiserCep(rs) {

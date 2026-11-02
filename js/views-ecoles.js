@@ -49,6 +49,17 @@ export function structureFiche(fiche) {
   }
   return st;
 }
+/** Classes ouvertes d'une fiche (outils/lots/spec-classes.md) : simples + jumelées + multigrades d'après la structure
+    pédagogique ; à défaut le nombre « classes ouvertes » saisi (compté en classes simples). */
+export function classesFiche(fiche, school) {
+  const d = (fiche && fiche.data) || {}, em = fiche ? String(fiche.kind || '').startsWith('EM') : (school && school.cycle === 'Maternelle');
+  const st = fiche ? structureFiche(fiche) : { simple: 0, jumelee: 0, multi: 0 }, tot = st.simple + st.jumelee + st.multi;
+  const saisie = num(em ? d.sections_ouv : d.classes_ouv), autRaw = em ? d.sections_aut : d.classes_aut;
+  const autorisees = autRaw === '' || autRaw === undefined || autRaw === null ? (school && school.classesAutorisees !== '' && school.classesAutorisees != null ? +school.classesAutorisees : null) : num(autRaw);
+  const r = tot ? { simples: st.simple, jumelees: st.jumelee, multigrades: st.multi, ouvertes: tot, source: 'structure pédagogique' }
+    : { simples: saisie, jumelees: 0, multigrades: 0, ouvertes: saisie, source: saisie ? 'saisie' : '' };
+  return Object.assign(r, { autorisees, ecart: autorisees === null ? null : r.ouvertes - autorisees, saisie });
+}
 export function ajouter(x, school, fiche) {
   const em = school.cycle === 'Maternelle';
   x.ecoles++; x[em ? 'em' : 'ep']++;
@@ -58,10 +69,10 @@ export function ajouter(x, school, fiche) {
   if (!fiche) return;
   x.fiches++;
   const d = fiche.data || {}, S = sectionsFor(fiche.kind), eff = S.find(s => s.id === 'eff');
-  const aut = num(em ? d.sections_aut : d.classes_aut), ouv = num(em ? d.sections_ouv : d.classes_ouv);
+  const cl = classesFiche(fiche, school), aut = num(em ? d.sections_aut : d.classes_aut), ouv = cl.ouvertes;
   x.aut += aut; x.ouv += ouv; x.sexist += num(d.salles_exist); x.sutil += num(d.salles_util);
-  const st = structureFiche(fiche); for (const k in st) x.struct[k] += st[k];
-  const nc = ouv || (st.simple + st.jumelee + st.multi); if (nc) x._classes.push(nc);
+  x.struct.simple += cl.simples; x.struct.jumelee += cl.jumelees; x.struct.multi += cl.multigrades;
+  if (ouv) x._classes.push(ouv);
   let tot = 0;
   for (const c of em ? ['pet', 'gra'] : CLASSES) {
     const v = ['G', 'F'].reduce((a, sx) => a + num(gridValue(d, eff, 'debut', c, sx)), 0);
