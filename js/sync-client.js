@@ -127,7 +127,7 @@
         }
         if (s.supprime && o.complet) return;
         const liens = {}; Object.entries(s.liens || {}).forEach(([n, c]) => { if (parCle[c]) liens[n] = parCle[c]; });
-        objets.push({ type: s.type, uuid: s.uuid, seq: s.seq, maj: s.maj, supprime: !!s.supprime, ecole: s.ecole === undefined ? null : s.ecole,
+        objets.push({ type: o.sens === 'descendant' && s.sens === 'les deux' && /^reg:/.test(s.type) ? s.type + '@bas' : s.type, uuid: s.uuid, seq: s.seq, maj: s.maj, supprime: !!s.supprime, ecole: s.ecole === undefined ? null : s.ecole,
           donnees: s.supprime ? {} : (s._o ? s._o.donnees : {}), liens });
       });
       const em = await emetteur(), hub = await lire('hub', null);
@@ -199,7 +199,9 @@
       const conflits = await lire('conflits', []); let appliques = 0, nconf = 0;
       if (A.debut) await A.debut();
       try {
-        for (const o of (p.objets || []).slice().sort((a, b) => (a.seq || 0) - (b.seq || 0))) {
+        for (const o0 of (p.objets || []).slice().sort((a, b) => (a.seq || 0) - (b.seq || 0))) {
+          // registre dans les deux sens : la copie descendante porte le suffixe « @bas » (SCOLARIS / GESCOL, ex. reg:examens:salles@bas)
+          const o = /@bas$/.test(o0.type || '') ? Object.assign({}, o0, { type: o0.type.replace(/@bas$/, '') }) : o0;
           const cleL = parUuid[o.uuid] || null;
           const liens = {}; Object.entries(o.liens || {}).forEach(([n, u]) => { if (parUuid[u]) liens[n] = parUuid[u]; });
           if (o.supprime) {
