@@ -4,7 +4,7 @@
    - date de départ : 1er jour du trimestre qui SUIT le trimestre de naissance
      (janv.–mars → 1er avril ; avril–juin → 1er juillet ; juil.–sept. → 1er octobre ; oct.–déc. → 1er janvier suivant) ;
      année de naissance seule (« 1968 ») → 1er janvier de (année + âge + 1) ;
-   - anciennetés arrêtées au 31 décembre de la première année de l'année scolaire en cours ;
+   - anciennetés arrêtées au 31 décembre de la seconde année de l'année scolaire en cours (« 2026-2027 » → 31/12/2027) ;
    - alerte quand le départ intervient dans les 2 ans. Conception : Maître Aimé FACHOLA */
 import { currentSchoolYear } from './util.js';
 
@@ -38,7 +38,7 @@ export function dateRetraite(naissance, grade) {
   const tri = Math.floor(n.getMonth() / 3);
   return tri === 3 ? new Date(n.getFullYear() + age + 1, 0, 1) : new Date(n.getFullYear() + age, 3 * (tri + 1), 1);
 }
-export function dateReference(auj = new Date()) { return new Date(+currentSchoolYear(auj).slice(0, 4), 11, 31); }
+export function dateReference(auj = new Date()) { return new Date(+currentSchoolYear(auj).slice(0, 4) + 1, 11, 31); }   // seconde année du couple
 const moisEcoules = (a, b) => { let n = (b.getFullYear() - a.getFullYear()) * 12 + b.getMonth() - a.getMonth(); if (b.getDate() < a.getDate()) n--; return n; };
 export function anciennete(debut, ref) {
   const d = enDate(debut); if (!d || d > ref) return null;

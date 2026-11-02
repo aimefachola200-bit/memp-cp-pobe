@@ -211,7 +211,7 @@ async function synodosp(ctx) {
       ctx.actions([{ label: '\uE007 Enregistrer', kind: 'primary', show: peut, onClick: sauver }, ...act]);
     } else if (onglet === 'personnel') {
       const t = dataTable({ columns: COLS_AG, rows: agents.map(ligneAg), onOpen: (r) => peut && editerAgent(agents.find(a => a.id === r.id)), pageSize: 100, empty: 'Aucun agent : touchez « Ajouter » ou « Importer Excel ».' });
-      rc(holder, t.el, h('p', { class: 'notes' }, 'Anciennetés au 31 décembre de l’année scolaire et départ à la retraite calculés comme dans SCOLARIS / GESCOL (A : 60 ans, B : 58 ans, C : 55 ans, 1er jour du trimestre suivant la naissance).'));
+      rc(holder, t.el, h('p', { class: 'notes' }, 'Anciennetés au 31 décembre de la seconde année de l’année scolaire et départ à la retraite calculés comme dans SCOLARIS / GESCOL (A : 60 ans, B : 58 ans, C : 55 ans, 1er jour du trimestre suivant la naissance).'));
       ctx.actions([{ label: '\uE001 Ajouter', kind: 'primary', show: peut, onClick: () => editerAgent(null) }, { label: '\uE006 Modifier', show: peut, onClick: () => (t.selected ? editerAgent(agents.find(a => a.id === t.selected.id)) : toast('Touchez une ligne.', 'warn')) },
         { label: '\uE005 Retirer', show: peut, onClick: () => supprimer(t.selected, t.selected ? t.selected.nom : '') }, ...act]);
     } else if (onglet === 'reseau') {

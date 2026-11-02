@@ -296,7 +296,7 @@ export async function calculerAuto(D, doc, school, annee, user) {
   pose('cp_zone_num', s.numZone, 'zones et unités pédagogiques');
   if ((s.codeZoneUp || s.codeZone) && s.up) { const ups = (await db.setting('synocp-up:' + (s.codeZoneUp || s.codeZone))) || [], x = ups.find(y => norm(y.up || '') === norm(s.up) && (!y.cycle || y.cycle === s.cycle)); if (x && x.rup) pose('rup_nom', x.rup, 'unités pédagogiques'); }
   // personnel enseignant de l'école (menus Personnel enseignant / Saisie manuelle)
-  const ref = new Date(+String(annee).slice(0, 4), 11, 31);
+  const ref = new Date(+String(annee).slice(0, 4) + 1, 11, 31);   // anciennetés au 31 décembre de la seconde année
   const agents = (await db.all('personnel')).filter(p => p.schoolId === s.id && /^(direct|adjoint|enseign|instit|educat)/.test(norm(p.fonction || ''))).map(p => calculerFiche(p));
   agents.sort((x, y) => (/^direct/i.test(y.fonction || '') - /^direct/i.test(x.fonction || '')) || `${x.nom}`.localeCompare(`${y.nom}`, 'fr'));
   agents.forEach((p, k) => {

@@ -87,8 +87,11 @@ export async function adaptateurUascep(u) {
   }
 
   function entete() {
-    const dep = u.departement ? 'DIRECTION DÉPARTEMENTALE DES ENSEIGNEMENTS MATERNEL ET PRIMAIRE DU ' + String(u.departement).toUpperCase() : '';
-    const cs = u.nomCs ? 'CIRCONSCRIPTION SCOLAIRE DE ' + String(u.nomCs).toUpperCase() : '';
+    // comptes de départ (cp, ccs) encore sur le territoire d'exemple : pointillés à compléter, pas de nom de démonstration
+    const exemple = ['cp', 'ccs'].includes(u.username) && u.codeCs === 'CS118' && /ZOGBODOMEY/i.test(u.nomCs || '');
+    const dep = exemple ? 'DIRECTION DÉPARTEMENTALE DES ENSEIGNEMENTS MATERNEL ET PRIMAIRE DU …………………………'
+      : u.departement ? 'DIRECTION DÉPARTEMENTALE DES ENSEIGNEMENTS MATERNEL ET PRIMAIRE DU ' + String(u.departement).toUpperCase() : '';
+    const cs = exemple ? 'CIRCONSCRIPTION SCOLAIRE DE …………………………' : u.nomCs ? 'CIRCONSCRIPTION SCOLAIRE DE ' + String(u.nomCs).toUpperCase() : '';
     const zone = u.role === 'CP' && u.codeZone ? 'ZONE PÉDAGOGIQUE ' + (+u.numZone || u.codeZone) : '';
     return '<div style="font:9pt Arial,sans-serif;margin-bottom:8px"><img src="assets/embleme-memp.png" alt="MEMP — République du Bénin" style="display:block;width:100%;max-width:640px;height:auto">'
       + '<div style="margin-top:6px;line-height:1.4;max-width:60%">' + [dep, cs ? '<b>' + cs + '</b>' : '', zone].filter(Boolean).join('<br>') + '</div>'

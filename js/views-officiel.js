@@ -244,7 +244,7 @@ async function personnel(ctx, vueInitiale) {
     const tc = dataTable({ columns: COLS_C, rows: L, onOpen: () => ficheCarriere(), pageSize: 50, empty: 'Aucun agent.' });
     rc(holder, h('div', { class: 'cards' }, h('div', { class: 'stat' }, h('b', String(L.length)), h('span', 'agents')), ...Object.entries(parCat).map(([c, n]) => h('div', { class: 'stat' }, h('b', String(n)), h('span', c))),
       h('div', { class: 'stat y' }, h('b', String(L.filter(p => p.alerteRetraite || p.retraiteAtteinte).length)), h('span', 'départs dans les 2 ans ou atteints')), h('div', { class: 'stat' }, h('b', String(L.filter(p => p.incomplet).length)), h('span', 'dossiers incomplets'))),
-      h('p', { class: 'notes' }, "Anciennetés arrêtées au 31 décembre de la première année de l'année scolaire en cours ; retraite : A = 60 ans, B = 58 ans, C = 55 ans, au 1er jour du trimestre qui suit le trimestre de naissance (règles de SCOLARIS et GESCOL). Touchez un agent pour sa fiche de carrière."),
+      h('p', { class: 'notes' }, "Anciennetés arrêtées au 31 décembre de la seconde année de l'année scolaire en cours (2026-2027 : 31/12/2027) ; retraite : A = 60 ans, B = 58 ans, C = 55 ans, au 1er jour du trimestre qui suit le trimestre de naissance (règles de SCOLARIS et GESCOL). Touchez un agent pour sa fiche de carrière."),
       tc.el);
     t = tc;
     ctx.status(`${L.length} agent(s) — ${L.filter(p => p.incomplet).length} dossier(s) incomplet(s)`);

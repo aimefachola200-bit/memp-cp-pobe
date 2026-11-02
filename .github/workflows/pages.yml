@@ -18,6 +18,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: Liste de blocage (filigrane interdit)
+        run: node tools/verifier-filigrane.mjs .
+      - name: Test des anciennetés (31/12 de la seconde année)
+        run: node tools/test-anciennete.mjs
       - name: Régénérer la liste des fichiers du cache hors ligne
         run: node tools/gen-assets.mjs
       - name: Publier sur la branche gh-pages

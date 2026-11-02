@@ -216,7 +216,43 @@ def exporter_maternelle(C, tmp, empreintes):
                    "progressions": len(M.get("progressions") or []), "grilles": len(M.get("grilles") or [])}}
 
 
+# --- FILIGRANE : retire « GO HI TO Mathias » et « TO GA N FF IL » (lettres éclatées) des textes exportés (même code que outils/pedagogie/filigrane.py) ---
+import re
+SEP = r'[\s\-_.·|*]{0,6}'
+def lettres(m): return SEP.join(re.escape(c) for c in m)
+# GO(H)ITO, suivi ou non de MATHIAS ; MATHIAS seul seulement s'il est éclaté (coupé par un saut de ligne)
+FULL = re.compile(r'(?i)(?<![A-Za-zÀ-ÿ])(?:' + lettres('GO') + SEP + r'(?:H' + SEP + r')?' + lettres('ITO') + r'(?:' + SEP + lettres('MATHIAS') + r')?)(?![A-Za-zÀ-ÿ])')
+ECLATE = re.compile(r'(?i)(?<![A-Za-zÀ-ÿ])M' + SEP + r'a' + SEP + r't' + SEP + r'h' + SEP + r'i' + SEP + r'a' + SEP + r's(?![A-Za-zÀ-ÿ])')
+# restes isolés du filigrane : paragraphe d'une seule ligne réduit à un fragment (« GO », « ITO », « Ma », « thi »…)
+RESTE = re.compile(r'(?m)(?:^|(?<=\n\n))[ \t]*(?:GO|ITO|GOIT|GOITO|OM|at ?h ?i ?a(?:\n\ns(?= |$))?|Ma|thi|as|Mathias)[ \t]*(?=\n\n|$(?![\s\S]))')
+# second filigrane, éclaté ligne à ligne : « TO / GA / N / FF / IL » ou « TO / G / C / OF / F / IL »
+TOGAN = re.compile(r'(?m)^[ \t]*TO[ \t]*\n\s*GA?[ \t]*\n\s*(?:N[ \t]*\n\s*)?(?:C[ \t]*\n\s*)?(?:OF[ \t]*\n\s*F|FF)[ \t]*\n\s*IL[ \t]*(?=\n|$)')
+def nettoie(s, _tour=0):
+    n = 0
+    def f(m):
+        nonlocal n; n += 1; return '\n'
+    s2 = FULL.sub(f, s)
+    s2 = ECLATE.sub(lambda m: (f(m) if '\n' in m.group(0) else m.group(0)), s2)
+    if '\n' in s2: s2 = TOGAN.sub(f, RESTE.sub(f, s2))
+    if n: s2 = re.sub(r'\n{3,}', '\n\n', s2).strip('\n ') if s2.strip() else ''
+    if n and _tour < 4:   # un fragment peut devenir isolé après un premier passage
+        s3, k = nettoie(s2, _tour + 1); return s3, n + k
+    return s2, n
+def parcourt(x):
+    if isinstance(x, str): return nettoie(x)
+    t = 0
+    if isinstance(x, list):
+        for i, v in enumerate(x):
+            x[i], k = parcourt(v); t += k
+    elif isinstance(x, dict):
+        for k2 in list(x):
+            x[k2], k = parcourt(x[k2]); t += k
+    return x, t
+# --- fin FILIGRANE ---
+
+
 def ecrire(dossier, nom, obj):
+    obj, _ = parcourt(obj)
     t = json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
     for a, b in SIGNES.items():
         t = t.replace(a, b)
