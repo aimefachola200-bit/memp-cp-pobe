@@ -560,7 +560,7 @@ async function pageAuthentification(R, pdf, signe, info) {
     if (!b) return; let im; try { im = await pdf.embedPng(b); } catch (e) { try { im = await pdf.embedJpg(b); } catch (e2) { return; } }
     const k = Math.min(ww / im.width, hh / im.height); c.drawImage(im, x, R.Y(top + 40 + hh) + (hh - im.height * k) / 2, im.width * k, im.height * k);
   };
-  await place(signe.signature, x0 + 10, 150, 80); await place(signe.cachet, x0 + 180, 170, 90);
+  await place(signe.signature, x0 + 10, 150, 80); if (!(window.sansCachet && window.sansCachet())) await place(signe.cachet, x0 + 180, 170, 90);
   if (signe.qrText) {
     const { qrMatrix } = await import('./qr.js'), { size, modules } = qrMatrix(signe.qrText, 'M'), q = 100, m = q / (size + 2), qx = x0 + w - q - 12, qy = R.Y(top + 30 + q);
     c.setFillColor([1, 1, 1]); c.rect(qx, qy, q, q, 1, 0); c.setFillColor(NOIR);

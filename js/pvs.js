@@ -611,6 +611,7 @@
       return r || (global.UASCEP && global.UASCEP.cachetSvg ? global.UASCEP.cachetSvg(o) : '');
     }
     function blocSig(lib, nom, sig, cachet) {
+      if (window.sansCachet && window.sansCachet()) cachet = '';
       return '<div class="pvs-sb"><div class="pvs-sb-l">' + esc(lib) + '</div><div class="pvs-sb-z">' + (cachet ? '<div class="pvs-sb-c">' + cachet + '</div>' : '')
         + (sig ? '<img class="pvs-sb-s" src="' + sig + '" alt="Signature">' : (cachet ? '' : '<div class="pvs-sb-v"></div>')) + '</div><div class="pvs-sb-n">' + esc(nom || '') + '</div></div>';
     }

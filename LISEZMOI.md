@@ -1,6 +1,6 @@
 # Guide d’utilisation — MEMP-CP, DOSP et MEMP-CP Pobè — applications des conseillers pédagogiques et de la circonscription
 
-_Version 2.6.1_
+_Version 2.7.0_
 
 Rôles : Administrateur · Conseiller pédagogique · Chef de circonscription · DDEMP · DOSP
 

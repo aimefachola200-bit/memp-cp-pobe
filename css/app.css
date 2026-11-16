@@ -382,3 +382,23 @@ table.ez td{vertical-align:middle}table.ez td small.sub{font-size:.72rem}
   .actionbar .btn{flex:none;padding:6px 10px;font-size:.84rem}
   .card>h3.fixe,.eff-wrap>h4,.rubrique-fixe{font-size:.9rem;padding:6px 10px;margin:0 -14px 6px}
 }
+
+/* ===== v2.7 — Thème sombre (Clair / Sombre / Auto selon l'heure) et boutons d'affichage ===== */
+.outils-affichage{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px}
+.btn-theme{background:transparent;border:1px solid rgba(255,255,255,.3);color:inherit;border-radius:7px;padding:4px 9px;cursor:pointer;font:inherit;font-size:12.5px}
+.login-body .outils-affichage{padding:0 0 10px;justify-content:flex-end}
+.login-body .btn-theme{border-color:var(--line)}
+.sidebar .outils-affichage .btn-theme{color:#DCE6F2}
+html.sans-cachet .pvs-sb-c,html.sans-cachet .cachet,html.sans-cachet [data-cachet],html.sans-cachet img[alt="Cachet"]{display:none!important}
+html[data-theme="dark"]{color-scheme:dark;--bg:#0f1720;--card:#17212b;--ink:#e6edf3;--mute:#9aa7b4;--line:#2b3947;--green-l:#13283a;--ok:#4cc38a;--warn:#e0a040;--err:#f2766b}
+html[data-theme="dark"] .topbar{background:#17212b;color:#e6edf3}
+html[data-theme="dark"] .topbar img.emblem,html[data-theme="dark"] .login-card .banner{background:#fff;border-radius:6px}
+html[data-theme="dark"] .sidebar{background:#0a1118}
+html[data-theme="dark"] .login-wrap{background:var(--bg)}
+html[data-theme="dark"] .login-card,html[data-theme="dark"] .card,html[data-theme="dark"] .dialog{background:var(--card);color:var(--ink)}
+html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea{background:#0f1720;color:var(--ink);border-color:var(--line)}
+html[data-theme="dark"] table.t tbody tr:nth-child(even){background:rgba(255,255,255,.03)}
+html[data-theme="dark"] .pre,html[data-theme="dark"] .btn{background:var(--card);color:var(--ink)}
+html[data-theme="dark"] .btn.primary,html[data-theme="dark"] .btn.danger{color:#fff}
+html[data-theme="dark"] a{color:#7fb2e5}
+@media print{.outils-affichage{display:none!important}html[data-theme="dark"]{--bg:#fff;--card:#fff;--ink:#000;--mute:#444;--line:#ccc;color-scheme:light}}

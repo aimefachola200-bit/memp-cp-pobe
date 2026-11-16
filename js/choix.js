@@ -19,6 +19,7 @@
   const doc = global.document;
   const scriptCourant = doc.currentScript;
   const URL_GEO = (scriptCourant && scriptCourant.dataset.geo) || 'data/referentiel_villages.json';
+  const URL_ECOLES = (scriptCourant && scriptCourant.dataset.ecoles) || 'data/referentiel_ecoles.json';
   const SEUIL_SELECT = 12;
   const tactile = () => !!(global.matchMedia && global.matchMedia('(pointer: coarse)').matches) && !global.CHOIX_DESACTIVE;
   const cle = (s) => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
@@ -48,6 +49,19 @@
     return promesse;
   }
 
+  /* Liste nationale des écoles maternelles et primaires (9 217) : département > commune > arrondissement > [nom, M|P, année] */
+  let promesseEcoles = null;
+  function chargerEcoles() {
+    if (!promesseEcoles) {
+      promesseEcoles = fetch(URL_ECOLES).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); }).then(j => {
+        const L = [];
+        j.d.forEach(d => d[1].forEach(c => c[1].forEach(a => a[1].forEach(e => L.push({ nom: e[0], type: e[1] === 'M' ? 'Maternelle' : 'Primaire', arr: a[0], com: c[0], dep: d[0] })))));
+        return L;
+      }).catch(e => { promesseEcoles = null; throw e; });
+    }
+    return promesseEcoles;
+  }
+
   /* Rôle géographique d'un champ (ou null) */
   function libelleDe(el) {
     let t = [el.dataset.geo, el.getAttribute('list'), el.name, el.id, el.dataset.k, el.dataset.cle, el.getAttribute('aria-label'), el.placeholder].join(' ');
@@ -62,6 +76,9 @@
     if (el.dataset.geoRole !== undefined) return el.dataset.geoRole || null;
     const t = libelleDe(el);
     let r = null;
+    const lab0 = ((el.id && doc.querySelector('label[for="' + CSS.escape(el.id) + '"]')) || el.closest('label') || {}).textContent;
+    const nomChamp = sansAccent(lab0 || el.getAttribute('aria-label') || el.placeholder || '').replace(/[*:]/g, '').replace(/\s+/g, ' ').trim();
+    if (/^(nom de l.ecole|ecole|ecole d.(origine|affectation|exercice|provenance|accueil|actuelle)|ecole \/ etablissement)$/.test(nomChamp)) { el.dataset.geoRole = 'ecole'; return 'ecole'; }
     if (/lieu.{0,4}naiss|lieunaiss|lieu_naiss|ne\(?e?\)? a\b|ville de naissance|residence|domicile|lieu d.habitation|habite a/.test(t)) r = 'lieu';
     else if (/arrondissement/.test(t)) r = 'arrondissement';
     else if (/village|localite|quartier|\bville\b/.test(t) && !/zone|ecole de la ville/.test(t)) r = 'village';
@@ -100,6 +117,7 @@
       if (c.arr) { const f = lst.filter(v => souple(v.arr) === souple(c.arr)); if (f.length) lst = f.concat(lst.filter(v => souple(v.arr) !== souple(c.arr))); }
       return lst.map(v => ({ v: v.nom, l: v.arr + (c.com ? '' : ', ' + v.com) }));
     }
+    if (r === 'ecole') return (el._choixEcoles || []).filter(e => (!c.com || souple(e.com) === souple(c.com.nom)) && (!c.dep || e.dep === c.dep) && (!c.arr || souple(e.arr) === souple(c.arr))).map(e => ({ v: e.nom, l: e.type + ' · ' + e.arr + (c.com ? '' : ', ' + e.com) }));
     if (r === 'lieu') {
       const def = global.CHOIX_GEO_DEFAUT || {};
       const ici = def.commune ? cle(def.commune) : '';
@@ -130,7 +148,7 @@
     const r = role(el); if (!r) return;
     el._choixGeo = r;
     const l = el.getAttribute('list'); if (l && !/^dl-choix-/.test(l)) el.dataset.listeOrigine = l;
-    const prep = () => charger().then(G => majDatalist(el, G)).catch(() => {});
+    const prep = () => (r === 'ecole' ? chargerEcoles().then(L => { el._choixEcoles = L; }).catch(() => {}) : Promise.resolve()).then(() => charger()).then(G => majDatalist(el, G)).catch(() => {});
     el.addEventListener('focus', prep);
     el.addEventListener('change', () => charger().then(G => apresChoix(el, G)).catch(() => {}));
     if (!el.getAttribute('list')) el.setAttribute('list', 'dl-choix-attente');   // le sélecteur tactile s'ouvre aussi pour ce champ
@@ -145,11 +163,15 @@
       const com = c.com || (coms.length === 1 ? G.communes.find(x => x.nom === coms[0]) : null);
       if (com && !c.com) { poser('commune', com.nom); poser('departement', com.dep); }
     }
+    if (r === 'ecole' && el._choixEcoles) {
+      const x = el._choixEcoles.find(y => cle(y.nom) === cle(v) && (!c.com || souple(y.com) === souple(c.com.nom)));
+      if (x) { poser('arrondissement', x.arr); poser('commune', x.com); poser('departement', x.dep); }
+    }
     if (r === 'village') {
       const lst = c.com ? (G.vil[c.com.nom] || []) : G.lieux, x = lst.find(y => cle(y.nom) === cle(v));
       if (x) { poser('arrondissement', x.arr); poser('commune', x.com); poser('departement', x.dep); }
     }
-    ['departement', 'commune', 'arrondissement', 'village'].forEach(k => (c.ch[k] || []).forEach(x => { if (x !== el && x._choixDl) majDatalist(x, G); }));
+    ['departement', 'commune', 'arrondissement', 'village', 'ecole'].forEach(k => (c.ch[k] || []).forEach(x => { if (x !== el && x._choixDl) majDatalist(x, G); }));
   }
   doc.addEventListener('change', (e) => {
     const x = e.target; if (!x || x.tagName !== 'SELECT' || !role(x)) return;
@@ -194,7 +216,7 @@
   }
   async function optionsDe(el) {
     if (el.tagName === 'SELECT') return [...el.options].filter(o => !o.disabled || o.value === '').map(o => ({ v: o.value, t: o.textContent.trim(), l: '' }));
-    if (el._choixGeo) { try { const G = await charger(); return majDatalist(el, G).map(o => ({ v: o.v, t: o.v, l: o.l || '' })); } catch (e) { /* référentiel indisponible : liste de l'application */ } }
+    if (el._choixGeo) { try { if (el._choixGeo === 'ecole' && !el._choixEcoles) el._choixEcoles = await chargerEcoles(); const G = await charger(); return majDatalist(el, G).map(o => ({ v: o.v, t: o.v, l: o.l || '' })); } catch (e) { /* référentiel indisponible : liste de l'application */ } }
     const id = el.getAttribute('list'), dl = id && doc.getElementById(id);
     return dl ? [...dl.options].map(o => ({ v: o.value, t: o.value, l: o.label && o.label !== o.value ? o.label : '' })) : [];
   }

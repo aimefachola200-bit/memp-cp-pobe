@@ -163,7 +163,7 @@ class Pdf {
     if (nom) this.page.drawText(this.clean(nom), { x: x0 + 8, y: top - 26, size: 8.5, font: this.font });
     const place = async (data, x, w, hh) => { if (!data) return; const img = await this.doc.embedPng(data); const s = Math.min(w / img.width, hh / img.height); this.page.drawImage(img, { x, y: top - 32 - hh + (hh - img.height * s) / 2, width: img.width * s, height: img.height * s }); };
     await place(signature, x0 + 8, 130, 70);
-    await place(cachet, x0 + 150, 170, 80);
+    if (!(window.sansCachet && window.sansCachet())) await place(cachet, x0 + 150, 170, 80);
     if (qrText) {
       const { size, modules } = qrMatrix(qrText, 'M'), q = 86, mod = q / (size + 2), qx = x0 + this.cw - q - 10, qy = top - 28 - q;
       this.page.drawRectangle({ x: qx, y: qy, width: q, height: q, color: this.rgb([1, 1, 1]) });
