@@ -697,8 +697,9 @@ async function synocp(ctx) {
   const z = () => zonesRef.find(x => x.code === zone), nomZone = () => z() ? (z().nom || 'Zone ' + z().numero) : (zone ? 'Zone ' + zone.split('-ZP').pop() : '—');
   const peut = u.role !== 'CP' || u.codeZone === zone;
   const zbar = h('div', { class: 'tabs no-print' }), tabs = h('div', { class: 'tabs no-print' }), holder = h('div'); ctx.el.append(zbar, tabs, holder);
-  const ONG = [['identite', '\uE02B Identité'], ['ecoles', '\uE022 Écoles et directeurs'], ['up', '\uE01C Unités pédagogiques'], ['personnel', '\uE01E Personnel'], ['textes', '\uE030 EDT, planification, règlement']];
+  const ONG = [['identite', '\uE02B Identité'], ['ecoles', '\uE022 Écoles et directeurs'], ['up', '\uE01C Unités pédagogiques'], ['resp', '\uE01E RUP / co-RUP'], ['personnel', '\uE01E Personnel'], ['textes', '\uE030 EDT, planification, règlement']];
   let data = {}, ups = [], ecoles = [], perso = [];
+  let histo = [], sousResp = 'actifs', finEn = null;
   async function charger() {
     const idn = (await db.setting('cpIdentity')) || {};
     const ccs = (await db.all('users')).find(x => x.role === 'CCS' && x.codeCs === (u.codeCs || z()?.cs));
@@ -711,9 +712,10 @@ async function synocp(ctx) {
       arrondissements: [...new Set(ecoles.map(s => s.arrondissement).filter(Boolean))].join(', '), communes: [...new Set(ecoles.map(s => s.commune).filter(Boolean))].join(', ') };
     const enr = (await db.setting('synocp:' + zone)) || {};
     data = { ...defaut, ...Object.fromEntries(Object.entries(enr).filter(([, v]) => v !== '' && v != null)) };
+    histo = (await db.setting('synocp-rup-hist:' + zone)) || [];
     ups = (await db.setting('synocp-up:' + zone)) || [...new Set(ecoles.map(s => s.up).filter(Boolean))].map(n => ({ up: n }));
   }
-  const sauver = async () => { await db.setting('synocp:' + zone, data); await db.setting('synocp-up:' + zone, ups); };
+  const sauver = async () => { await db.setting('synocp:' + zone, data); await db.setting('synocp-up:' + zone, ups); await db.setting('synocp-rup-hist:' + zone, histo); };
   async function draw() {
     ctx.title(`Tableau synoptique du CP — ${nomZone()}`, data.cs ? `Circonscription scolaire de ${data.cs}` : 'Renseignements de la zone pédagogique');
     zbar.replaceChildren(...(u.role === 'CP' ? [] : zonesRef.map(x => h('button', { class: 'tab' + (x.code === zone ? ' on' : ''), onclick: async () => { zone = x.code; db.setting('espace-zone', zone); await charger(); draw(); } }, x.nom || 'Zone ' + x.numero))));
@@ -736,6 +738,41 @@ async function synocp(ctx) {
         peut ? h('button', { class: 'btn no-print', style: { marginTop: '8px' }, onclick: () => { ups.push({}); draw(); } }, '\uE001 Ajouter une UP') : null,
         h('p', { class: 'notes' }, 'RUP : responsable d\'unité pédagogique ; Co-RUP : son adjoint. Indiquez dans « Écoles membres » les écoles rattachées à chaque UP.'));
       requestAnimationFrame(() => holder.querySelectorAll('.edt-cell').forEach(ajuster));
+    } else if (onglet === 'resp') {
+      const hist = histo, nomUp = (x) => x.up || '(UP sans nom)';
+      const actifs = [];
+      ups.forEach((x, i) => { if (x.rup) actifs.push({ i, role: 'RUP', nom: x.rup, tel: x.rup_tel || '' }); if (x.corup) actifs.push({ i, role: 'co-RUP', nom: x.corup, tel: x.corup_tel || '' }); });
+      const sous = h('div', { class: 'tabs no-print' }, [['actifs', `En activité (${actifs.length})`], ['anciens', `Plus en activité (${hist.length})`]].map(([k, l]) => h('button', { class: 'tab' + (k === sousResp ? ' on' : ''), onclick: () => { sousResp = k; finEn = null; draw(); } }, l)));
+      const cle = (r) => r === 'RUP' ? ['rup', 'rup_tel'] : ['corup', 'corup_tel'];
+      const archiver = (x, role, motif, date) => { const k = cle(role); if (!x[k[0]]) return; hist.push({ id: Date.now() + Math.random(), up: x.up || '', role, nom: x[k[0]], tel: x[k[1]] || '', fin: date || new Date().toISOString().slice(0, 10), motif: motif || '' }); x[k[0]] = ''; x[k[1]] = ''; };
+      let corps;
+      if (sousResp === 'actifs') {
+        const form = !peut ? null : h('div', { class: 'card no-print', style: { marginTop: '10px' } }, h('h3', 'Nouveau RUP / co-RUP'),
+          h('div', { class: 'grid12' },
+            h('label', { class: 'half' }, 'Unité pédagogique', h('select', { id: 'nr-up' }, ups.map((x, i) => h('option', { value: String(i) }, nomUp(x))))),
+            h('label', { class: 'half' }, 'Fonction', h('select', { id: 'nr-role' }, h('option', { value: 'RUP' }, 'RUP'), h('option', { value: 'co-RUP' }, 'co-RUP'))),
+            h('label', { class: 'half' }, 'Nom et prénoms', h('input', { id: 'nr-nom' })), h('label', { class: 'half' }, 'Contact', h('input', { id: 'nr-tel' }))),
+          h('p', { class: 'notes' }, 'S\'il y a déjà un responsable pour cette fonction, il passe dans « Plus en activité » (motif : remplacé).'),
+          h('button', { class: 'btn', onclick: async () => {
+            const g = (id) => holder.querySelector('#' + id).value.trim(), x = ups[+g('nr-up')], role = g('nr-role'), nom = g('nr-nom');
+            if (!x || !nom) return toast('Choisissez une UP et saisissez le nom.');
+            const k = cle(role); if (x[k[0]] && x[k[0]] !== nom) archiver(x, role, 'Remplacé');
+            x[k[0]] = nom; x[k[1]] = g('nr-tel'); await sauver(); toast('Responsable enregistré.'); draw();
+          } }, ' Enregistrer'));
+        corps = [h('div', { class: 'tbl-wrap' }, h('table', { class: 't' }, h('thead', h('tr', ['UP', 'Fonction', 'Nom et prénoms', 'Contact', ''].map(t => h('th', t)))),
+          h('tbody', actifs.length ? actifs.map(a => h('tr', h('td', nomUp(ups[a.i])), h('td', a.role), h('td', h('b', a.nom)), h('td', a.tel || '—'),
+            h('td', { class: 'no-print' }, !peut ? null : (finEn && finEn.i === a.i && finEn.role === a.role)
+              ? h('span', h('input', { type: 'date', id: 'fin-date', value: new Date().toISOString().slice(0, 10) }), ' ',
+                h('select', { id: 'fin-motif' }, ['Retraite', 'Mutation', 'Nouvelle affectation', 'Démission', 'Autre'].map(m => h('option', { value: m }, m))), ' ',
+                h('button', { class: 'btn sm', onclick: async () => { archiver(ups[a.i], a.role, holder.querySelector('#fin-motif').value, holder.querySelector('#fin-date').value); finEn = null; await sauver(); draw(); } }, 'Confirmer'), ' ',
+                h('button', { class: 'btn sm', onclick: () => { finEn = null; draw(); } }, 'Annuler'))
+              : h('button', { class: 'btn sm', onclick: () => { finEn = { i: a.i, role: a.role }; draw(); } }, 'Fin de fonction')))) : h('tr', h('td', { colspan: 5 }, 'Aucun responsable renseigné.'))))), form];
+      } else {
+        corps = [h('div', { class: 'tbl-wrap' }, h('table', { class: 't' }, h('thead', h('tr', ['UP', 'Fonction', 'Nom et prénoms', 'Contact', 'Fin', 'Motif', ''].map(t => h('th', t)))),
+          h('tbody', hist.length ? hist.slice().sort((a, b) => String(b.fin || '').localeCompare(String(a.fin || ''))).map(r => h('tr', h('td', r.up), h('td', r.role), h('td', r.nom), h('td', r.tel || '—'), h('td', fmtIso(r.fin) || '—'), h('td', r.motif || '—'),
+            h('td', { class: 'no-print' }, !peut ? null : h('button', { class: 'btn sm', 'aria-label': 'Retirer de l\'historique', onclick: async () => { const j = hist.indexOf(r); if (j >= 0) hist.splice(j, 1); await sauver(); draw(); } }, '✕')))) : h('tr', h('td', { colspan: 7 }, 'Aucun ancien responsable.')))))];
+      }
+      rc(holder, sous, ...corps);
     } else if (onglet === 'personnel') {
       const t = dataTable({ columns: COLS_PS, rows: perso.map(lignePs).sort((a, b) => (a.ecole || '').localeCompare(b.ecole || '', 'fr') || (a.fonction || '').localeCompare(b.fonction || '', 'fr')), pageSize: 300, empty: 'Aucun agent dans cette zone.' }); rc(holder, t.el);
     } else {

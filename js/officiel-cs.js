@@ -132,7 +132,7 @@ export async function migrerOfficiel() {
   const cle = 'officiel-cs-v' + (O.version || 1);
   if (await db.setting(cle)) return null;
   if (!(await db.count('schools'))) return null;   // l'installation se termine d'abord (écoles de départ)
-  const r = { maj: 0, ...(await mettreAJourV1(O)), ...(await zonesCorrigees(O)) };
+  const r = { maj: 0, ...(await mettreAJourV1(O)), ...(await zonesCorrigees(O)), ...(await upsReorganisees(O)) };
   Object.assign(r, await appliquer({ force: false }));
   await recalculerMembres(O);
   await db.setting(cle, { date: nowISO(), ...r });
@@ -168,6 +168,38 @@ async function zoneDesFiches(ecoles) {
     if (l.length) { await db.putMany(st, l); n += l.length; }
   }
   return n;
+}
+
+/** UP réorganisées (officiel.upsAvant = { vN: { idÉcole: { up, codeZoneUp, numZoneUp } } }, officiel.upsRetirees = identifiants des
+    anciennes UP officielles) : une école encore dans l'UP que la version N lui avait donnée passe dans la nouvelle UP officielle ;
+    une UP choisie à la main est gardée. Les anciennes UP officielles qui ne contiennent plus aucune école sont retirées de la liste
+    de la zone (les UP ajoutées par l'utilisateur ne sont jamais touchées). Ex. v4 → v5 : note de service n°560 du 1er octobre 2025. */
+async function upsReorganisees(O) {
+  if (!O.upsAvant || !O.upsRetirees) return {};
+  const maj = [];
+  for (const carte of Object.values(O.upsAvant)) {
+    for (const s of await db.all('schools')) {
+      const a = carte[s.id], o = O.ecoles[s.id];
+      if (!a || !o || maj.some(x => x.id === s.id) || vide(s.up) || norm(s.up) !== norm(a.up || '')) continue;
+      if (norm(o.up || '') === norm(s.up) && (o.codeZoneUp || '') === (s.codeZoneUp || '')) continue;
+      maj.push({ ...s, up: o.up || '', codeZoneUp: o.codeZoneUp || '', numZoneUp: o.numZoneUp || '', rubrique: o.up ? '' : (o.rubrique || s.rubrique || '') });
+    }
+  }
+  if (maj.length) await db.putMany('schools', maj);
+  let retirees = 0;
+  for (const z of ['CSPOBE-ZP01', 'CSPOBE-ZP02', 'CSPOBE-ZP03', ...O.zones.map(z => z.code)]) {
+    const liste = await upsDeZone(z); if (!liste.length) continue;
+    const gardees = [];
+    for (const x of liste) {
+      if (!(x.officielle && x.id && O.upsRetirees.includes(x.id))) { gardees.push(x); continue; }
+      // l'UP garde son nom : les RUP / co-RUP saisis sont reportés sur la nouvelle UP officielle de même nom
+      const n = O.ups.find(y => norm(y.up) === norm(x.up || '') && y.cycle === x.cycle);
+      if (n) { if (x.rup) n.rup = x.rup; if (x.corup) n.corup = x.corup; }
+      retirees++;
+    }
+    if (gardees.length !== liste.length) await enregistrerUps(z, gardees);
+  }
+  return { upsReorganisees: maj.length, upsRetirees: retirees };
 }
 
 /** Zones corrigées d'une version du bloc officiel à l'autre (officiel.zonesAvant = { vN: { id: { codeZone, numZone } } }) :
