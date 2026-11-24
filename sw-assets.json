@@ -1,5 +1,5 @@
 {
- "version": "e824287426f5",
+ "version": "8116d85d2b4e",
  "files": [
   "./",
   "LISEZ-MOI.pdf",
@@ -136,6 +136,7 @@
   "js/xlsx.js",
   "lib/jszip.min.js",
   "lib/pdf-lib.min.js",
+  "maincd",
   "manifest.webmanifest",
   "sw.js"
  ]
