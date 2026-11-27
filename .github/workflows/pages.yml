@@ -5,6 +5,8 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: "23 */4 * * *"   # reprend régulièrement ÉduGestion Pro et ÉduGestion Pro Master (publiées ici)
 permissions:
   contents: write
 concurrency:
@@ -32,6 +34,15 @@ jobs:
         run: |
           rm -rf /tmp/site && mkdir /tmp/site
           tar --exclude=.git --exclude=.github --exclude=tools -cf - . | tar -xf - -C /tmp/site
+          # ÉduGestion Pro et ÉduGestion Pro Master publiées aussi ici (leurs dépôts n'ont pas de site Pages activé) :
+          # https://<utilisateur>.github.io/memp-cp-app/edugestion/ et …/edugestion-master/
+          for x in "EdugestionPro:edugestion" "EdugestionProV5:edugestion-master"; do
+            depot="${x%%:*}"; dossier="${x##*:}"
+            if git clone -q --depth 1 "https://github.com/${GITHUB_REPOSITORY_OWNER}/${depot}.git" "/tmp/src-${dossier}"; then
+              mkdir -p "/tmp/site/${dossier}"
+              tar -C "/tmp/src-${dossier}" --exclude=.git --exclude=.github --exclude=tools --exclude='*.zip' -cf - . | tar -xf - -C "/tmp/site/${dossier}"
+            fi
+          done
           touch /tmp/site/.nojekyll
           cd /tmp/site
           git init -q -b gh-pages

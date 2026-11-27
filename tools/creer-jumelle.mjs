@@ -6,10 +6,11 @@
 import { readdirSync, statSync, readFileSync, writeFileSync, mkdirSync, copyFileSync, existsSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 
 const [id, dest] = process.argv.slice(2);
 if (!id || !dest) { console.error('Usage : node tools/creer-jumelle.mjs <id> <dossier>'); process.exit(1); }
-const root = new URL('..', import.meta.url).pathname, J = join(root, 'tools', 'jumelles', id);
+const root = fileURLToPath(new URL('..', import.meta.url)), J = join(root, 'tools', 'jumelles', id);
 const V = JSON.parse(readFileSync(join(J, 'variante.json'), 'utf8'));
 const SKIP = new Set(['.git', 'sw-assets.json', 'dosp']);   // dosp/ : application jumelle publiée dans ce dépôt
 // on vide la destination (sauf .git) pour retirer les fichiers supprimés de l'application principale

@@ -1,5 +1,5 @@
 {
- "version": "8116d85d2b4e",
+ "version": "bb9d31389144",
  "files": [
   "./",
   "LISEZ-MOI.pdf",
@@ -36,7 +36,6 @@
   "docs/Fiche_rapport_rentree_ecoles_primaires.pdf",
   "docs/Fiche_recensement_annuel_primaire_2025-2026_Guide.pdf",
   "docs/Fiche_recensement_maternelle_inclusive_2025-2026.pdf",
-  "docs/Note_de_service_605_reorganisation_zones_pedagogiques_CS_Pobe.pdf",
   "docs/modeles/attestation_direction.pdf",
   "docs/modeles/certificat_scolarite.pdf",
   "docs/modeles/certificat_travail.pdf",
@@ -88,6 +87,7 @@
   "js/pdf-canvas.js",
   "js/pdf.js",
   "js/pedagogie.js",
+  "js/perimetre.js",
   "js/pvs-modules.js",
   "js/pvs.js",
   "js/qr.js",
@@ -130,13 +130,14 @@
   "js/views-synodosp.js",
   "js/views-uascep.js",
   "js/views-whatsapp.js",
+  "js/views-zone.js",
   "js/views-zonesup.js",
   "js/workflow.js",
   "js/xlsx-ecrire.js",
   "js/xlsx.js",
+  "js/zone-core.js",
   "lib/jszip.min.js",
   "lib/pdf-lib.min.js",
-  "maincd",
   "manifest.webmanifest",
   "sw.js"
  ]

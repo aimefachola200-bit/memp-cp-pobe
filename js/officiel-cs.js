@@ -18,7 +18,7 @@ export async function officiel() {
   if (CACHE !== null) return CACHE || null;
   CACHE = false;
   if (VARIANT.seed) {
-    try { const S = await (await fetch(VARIANT.seed)).json(); if (S.officiel) CACHE = { ...S.officiel, schools: S.schools || [] }; } catch { /* hors ligne sans cache */ }
+    try { const S = await (await fetch(VARIANT.seed)).json(); if (S.officiel) CACHE = { ...S.officiel, schools: S.schools || [], personnel: S.personnel || [] }; } catch { /* hors ligne sans cache */ }
   }
   return CACHE || null;
 }
@@ -134,6 +134,7 @@ export async function migrerOfficiel() {
   if (!(await db.count('schools'))) return null;   // l'installation se termine d'abord (écoles de départ)
   const r = { maj: 0, ...(await mettreAJourV1(O)), ...(await zonesCorrigees(O)), ...(await upsReorganisees(O)) };
   Object.assign(r, await appliquer({ force: false }));
+  Object.assign(r, await directeursMisAJour(O), await personnelMisAJour(O));
   await recalculerMembres(O);
   await db.setting(cle, { date: nowISO(), ...r });
   return r;
@@ -200,6 +201,35 @@ async function upsReorganisees(O) {
     if (gardees.length !== liste.length) await enregistrerUps(z, gardees);
   }
   return { upsReorganisees: maj.length, upsRetirees: retirees };
+}
+
+/** Directeurs 2026-2027 (liste des directeurs de la CS) : officiel.ecoles[id].directeur ; officiel.directeursAvant[id] = directeur du jeu de départ précédent.
+    Un directeur saisi à la main est gardé ; la case vide ou encore le directeur du jeu précédent est remplacée. */
+async function directeursMisAJour(O) {
+  const maj = [];
+  for (const s of await db.all('schools')) {
+    const n = (O.ecoles[s.id] || {}).directeur; if (vide(n) || s.directeur === n) continue;
+    const av = (O.directeursAvant || {})[s.id];
+    if (vide(s.directeur) || (!vide(av) && norm(s.directeur) === norm(av))) maj.push({ ...s, directeur: n });
+  }
+  if (maj.length) await db.putMany('schools', maj);
+  return maj.length ? { directeurs: maj.length } : {};
+}
+
+/** Personnel affecté (fichier du personnel de la CS 2026) : officiel.personnel = [{ id, schoolId, … }] ; officiel.personnelAvant[id] = école du jeu précédent.
+    Un agent absent est ajouté ; un agent encore dans l'école que le jeu précédent lui donnait est muté ; une affectation modifiée à la main est gardée. */
+async function personnelMisAJour(O) {
+  if (!Array.isArray(O.personnel) || !O.personnel.length) return {};
+  const exist = new Map((await db.all('personnel')).map(p => [p.id, p])), maj = [];
+  let neufs = 0, mutes = 0;
+  for (const n of O.personnel) {
+    const p = exist.get(n.id);
+    if (!p) { maj.push({ ...n, created: nowISO() }); neufs++; continue; }
+    if ((p.schoolId || '') !== ((O.personnelAvant || {})[n.id] || '') || (p.schoolId || '') === (n.schoolId || '')) continue;
+    maj.push({ ...p, schoolId: n.schoolId, ecole: n.ecole, codeZone: n.codeZone, numZone: n.numZone, arrondissement: n.arrondissement, fonction: n.fonction, statut: n.statut, grade: n.grade, corps: n.corps }); mutes++;
+  }
+  if (maj.length) await db.putMany('personnel', maj);
+  return neufs || mutes ? { agentsAjoutes: neufs, agentsMutes: mutes } : {};
 }
 
 /** Zones corrigées d'une version du bloc officiel à l'autre (officiel.zonesAvant = { vN: { id: { codeZone, numZone } } }) :

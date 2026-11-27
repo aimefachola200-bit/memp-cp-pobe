@@ -1,7 +1,8 @@
 /* République du Bénin — Ministère des Enseignements Maternel et Primaire (MEMP)
    Application CP — point d'entrée.   Conception : Maître Aimé FACHOLA — Tél. +229 01 96 51 03 33 */
 import { h, $, toast, checkPassword, hashPassword, modal, currentSchoolYear } from './util.js';
-import { db } from './db.js';
+import { db, activerPerimetre } from './db.js';
+import { creerPerimetre } from './perimetre.js';
 import { APP, CREDIT, VARIANT } from './config.js';
 const CLE_SESSION = 'memp-user-' + VARIANT.id;
 import { session, seedIfEmpty, refreshDatalists, ROLES } from './data.js';
@@ -50,6 +51,7 @@ const NAV = [
   { id: 'synocp', ic: '\uE00F', t: 'Tableau synoptique du CP', pasDosp: true },
   { id: 'zonesup', ic: '\uE042', t: 'Zones pédagogiques et UP' },
   { id: 'uascep', ic: '\uE047', t: 'Bureaux UASCEP', roles: ['ADMIN', 'DDEMP', 'CCS', 'DOSP', 'CP'] },
+  { id: 'zonedesh', ic: '\uE047', t: 'Zone déshéritée (prime de zone)', roles: ['ADMIN', 'DDEMP', 'CCS', 'DOSP', 'CP'] },
   { g: 'Vie scolaire, sport et pilotage', id: 'pvssport', ic: '\uE04D', t: 'Sport scolaire' },
   { id: 'pvspilotage', ic: '\uE015', t: 'Tableau de bord du pilotage' },
   { id: 'pvscommunication', ic: '\uE050', t: 'Communication et alertes' },
@@ -100,7 +102,7 @@ const NAV = [
   { id: 'parametres', ic: '\uE051', t: 'Paramètres & à propos' },
   { id: 'guide', ic: '\uE07B', t: 'Guide d’utilisation' },
 ];
-const ROUTES = { listes: 'views-listes', synchronisation: 'views-sync', guide: 'views-guide', zonesup: 'views-zonesup', uascep: 'views-uascep', pvssport: 'views-pvs', pvspilotage: 'views-pvs', pvscommunication: 'views-pvs', pvssante: 'views-pvs', pvsinspection: 'views-pvs', pvspatrimoine: 'views-pvs', pvsexamens: 'views-pvs', pvsterritoire: 'views-pvs', examenblanc: 'views-examen', pedagogie: 'views-pedagogie', accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles', cep: 'views-cep',
+const ROUTES = { listes: 'views-listes', synchronisation: 'views-sync', guide: 'views-guide', zonesup: 'views-zonesup', uascep: 'views-uascep', zonedesh: 'views-zone', pvssport: 'views-pvs', pvspilotage: 'views-pvs', pvscommunication: 'views-pvs', pvssante: 'views-pvs', pvsinspection: 'views-pvs', pvspatrimoine: 'views-pvs', pvsexamens: 'views-pvs', pvsterritoire: 'views-pvs', examenblanc: 'views-examen', pedagogie: 'views-pedagogie', accueil: 'views-core', ecoles: 'views-core', fiches: 'views-core', bilans: 'views-bilan', bilan: 'views-bilan', fiche: 'fiche-ui', effectifs: 'views-effectifs', effectif: 'views-effectifs', infra: 'views-infra', ecolesstruct: 'views-ecoles', cep: 'views-cep',
   synoptique: 'views-more', activites: 'views-more', planningcp: 'views-planning', themes: 'views-more', planification: 'views-more', reglement: 'views-officiel', emploi: 'views-officiel', planif: 'views-officiel', espace: 'views-officiel', synocp: 'views-officiel', calendrier: 'views-officiel', personnel: 'views-officiel', carriere: 'views-officiel', documents: 'views-more', referentiel: 'views-more',
   saisie: 'views-saisie', recensement: 'views-recensement', recfiche: 'views-recensement', synodosp: 'views-synodosp', whatsapp: 'views-whatsapp', espacedosp: 'views-dosp', envois: 'views-dosp', prevision: 'views-dosp', besoins: 'views-dosp', suivieval: 'views-dosp', capacites: 'views-dosp', plandosp: 'views-dosp', docsdosp: 'views-dosp', identite: 'views-admin', transmission: 'views-admin', verifier: 'views-admin', journal: 'views-admin', utilisateurs: 'views-admin', parametres: 'views-admin' };
 
@@ -255,9 +257,19 @@ window.addEventListener('memp-deconnexion', () => logout());
 function addLogSafe(a) { try { import('./data.js').then(m => m.addLog && m.addLog(a, '')).catch(() => {}); } catch (e) { /* journal indisponible */ } }
 function logout() {
   if (window.Securite) window.Securite.arreterInactivite();
+  activerPerimetre(null);
   if (VARIANT.integre) { location.href = retourEduGestion(); return; } sessionStorage.removeItem(CLE_SESSION); sessionStorage.removeItem(CLE_SESSION + '-vu'); session.user = null; loginScreen(); }
 
+/* Cloisonnement : un CP qui tente d'atteindre une donnée d'une autre zone est refusé et ramené à son espace. */
+let _refusVu = 0;
+document.addEventListener('acces-refuse', () => {
+  const t = Date.now(); if (t - _refusVu < 1500) return; _refusVu = t;
+  toast('Accès interdit : cette donnée appartient à une autre zone.', 'err');
+  if (session.user && session.user.role === 'CP') location.hash = VARIANT.profil === 'dosp' ? '#/accueil' : '#/espace';
+});
+
 async function start() {
+  await activerPerimetre(creerPerimetre(session.user));   // espace de travail du CP : sa zone uniquement
   // référentiel des villages (js/choix.js) : département / commune par défaut des formulaires qui n'en ont pas
   const u0 = session.user || {};
   window.CHOIX_GEO_DEFAUT = /pobe/i.test(VARIANT.seed || VARIANT.id || '') ? { departement: 'Plateau', commune: 'Pobè' }
