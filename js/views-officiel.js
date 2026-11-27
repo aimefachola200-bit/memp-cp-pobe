@@ -685,8 +685,8 @@ async function espace(ctx) {
 }
 
 /* ================= TABLEAU SYNOPTIQUE DU CP (présenté comme celui des directeurs dans SCOLARIS) ================= */
-const RUB_ID = [['memp', 'Nom du MEMP (ministère)'], ['ddemp', 'Direction départementale (DDEMP)'], ['cs', 'Circonscription scolaire'], ['ccs', 'Nom du Chef de circonscription (CCS)'],
-  ['zone', 'Zone pédagogique n°'], ['cp_nom', 'Nom et prénoms du CP'], ['cp_grade', 'Grade du CP'], ['cp_matricule', 'Matricule / NIP du CP'], ['cp_diplome', 'Diplôme professionnel (CAPCP, CAPIEMP…)'],
+const RUB_ID = [['memp', 'Nom du MEMP (ministère)'], ['ddemp', 'Direction départementale (DDEMP)'], ['cs', 'Circonscription scolaire'], ['ccs', 'Nom du Chef de circonscription (CCS)'], ['ccs_diplome', 'Diplôme professionnel du CCS, inspecteur (CAIP)'],
+  ['zone', 'Zone pédagogique n°'], ['cp_nom', 'Nom et prénoms du CP'], ['cp_grade', 'Grade du CP'], ['cp_matricule', 'Matricule / NIP du CP'], ['cp_diplome', 'Diplôme professionnel du CP (CAFCP)'],
   ['cp_ps', 'Date de première prise de service'], ['cp_ps_zone', 'Date de prise de service dans la zone'], ['cp_contact', 'Contact (téléphone)'], ['cp_email', 'E-mail'],
   ['arrondissements', 'Arrondissements couverts'], ['communes', 'Commune(s)'], ['siege', 'Siège / bureau du CP'], ['obs', 'Observations']];
 const COLS_UP = [['up', 'Unité pédagogique'], ['siege', 'École siège'], ['rup', 'Nom du RUP'], ['rup_tel', 'Contact RUP'], ['corup', 'Nom du Co-RUP'], ['corup_tel', 'Contact Co-RUP'], ['ecoles', 'Écoles membres'], ['jour', 'Jour / périodicité des séances']];
@@ -712,6 +712,8 @@ async function synocp(ctx) {
       arrondissements: [...new Set(ecoles.map(s => s.arrondissement).filter(Boolean))].join(', '), communes: [...new Set(ecoles.map(s => s.commune).filter(Boolean))].join(', ') };
     const enr = (await db.setting('synocp:' + zone)) || {};
     data = { ...defaut, ...Object.fromEntries(Object.entries(enr).filter(([, v]) => v !== '' && v != null)) };
+    if (/^\s*(CAPCP|CAPIEMP|CAPI|CAEP|CAP\s*CP)\s*$/i.test(data.cp_diplome || '')) data.cp_diplome = 'CAFCP'; // ancienne appellation corrigée
+    if (/^\s*(CAIEMP|CAPIEMP|CAI|CAPI)\s*$/i.test(data.ccs_diplome || '')) data.ccs_diplome = 'CAIP';
     histo = (await db.setting('synocp-rup-hist:' + zone)) || [];
     ups = (await db.setting('synocp-up:' + zone)) || [...new Set(ecoles.map(s => s.up).filter(Boolean))].map(n => ({ up: n }));
   }

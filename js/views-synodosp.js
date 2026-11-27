@@ -35,7 +35,7 @@ const F_AGENT = [
   { k: 'matricule', l: 'Matricule', t: 'text', w: 'third' }, { k: 'nip', l: 'NIP', t: 'text', w: 'third' }, { k: 'email', l: 'E-mail', t: 'text', w: 'third' },
   { k: 'fonction', l: 'Fonction / poste', t: 'select', options: FONCTIONS_DOSP, req: true, w: 'half' }, { k: 'statut', l: 'Catégorie', t: 'select', options: CATEGORIES, w: 'q' }, { k: 'grade', l: 'Grade (ex. B1-04)', t: 'text', w: 'q' },
   { k: 'indice_reel', l: 'Indice réel', t: 'number', w: 'third' }, { k: 'date_prise_service', l: 'Première prise de service', t: 'date', w: 'third' }, { k: 'date_service_ecole', l: 'Prise de fonction à la DOSP', t: 'date', w: 'third' },
-  { k: 'diplome_academique', l: 'Diplôme académique', t: 'select', options: DIPLOMES, w: 'third' }, { k: 'diplome_pro', l: 'Diplôme professionnel', t: 'text', w: 'third' }, { k: 'date_derniere_formation', l: 'Dernière formation (date)', t: 'date', w: 'third' },
+  { k: 'diplome_academique', l: 'Diplôme académique', t: 'select', options: DIPLOMES, w: 'third' }, { k: 'diplome_pro', l: 'Diplôme professionnel (CAFCP : CP · CAIP : inspecteur)', t: 'text', w: 'third' }, { k: 'date_derniere_formation', l: 'Dernière formation (date)', t: 'date', w: 'third' },
   { k: 'obs', l: 'Observations', t: 'textarea' }];
 const COLS_AG = [{ k: 'matricule', l: 'Matricule' }, { k: 'nip', l: 'NIP' }, { k: 'nom', l: 'Nom', w: 110 }, { k: 'prenoms', l: 'Prénoms', w: 130 }, { k: 'sexe', l: 'Sexe' }, { k: 'fonction', l: 'Fonction / poste', w: 160 },
   { k: 'statut', l: 'Catégorie' }, { k: 'grade', l: 'Grade' }, { k: 'indice_reel', l: 'Indice' }, { k: 'date_naissance', l: 'Date de naissance' }, { k: 'date_prise_service', l: '1re prise de service' },
