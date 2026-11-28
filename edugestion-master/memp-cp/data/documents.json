@@ -1,0 +1,311 @@
+{
+ "documents": [
+  {
+   "id": "rentree-ep",
+   "titre": "Fiche de rapport de rentrée — Écoles primaires",
+   "cycle": "Primaire",
+   "pages": 3,
+   "format": "PDF",
+   "fichier": "docs/Fiche_rapport_rentree_ecoles_primaires.pdf",
+   "description": "Direction de l'Enseignement Primaire — identification de l'école, informations générales, structure pédagogique, effectifs, infrastructures, mobilier, manuels et état nominatif du personnel. Aussi disponible comme fiche de collecte « EP · Rentrée » à remplir dans l'application.",
+   "groupe": "Fiches de collecte et canevas statistiques"
+  },
+  {
+   "id": "recens-em-inclusive",
+   "titre": "Fiche de recensement — Maternelle inclusive 2025-2026",
+   "cycle": "Maternelle",
+   "pages": 5,
+   "fichier": "docs/Fiche_recensement_maternelle_inclusive_2025-2026.pdf",
+   "description": "Fiche de recensement annuel des écoles maternelles (y compris inclusives) — année scolaire 2025-2026.",
+   "format": "PDF",
+   "groupe": "Fiches de collecte et canevas statistiques"
+  },
+  {
+   "id": "recens-ep-guide",
+   "titre": "Fiche de recensement annuel — Primaire 2025-2026 (avec guide)",
+   "cycle": "Primaire",
+   "pages": 13,
+   "fichier": "docs/Fiche_recensement_annuel_primaire_2025-2026_Guide.pdf",
+   "description": "Fiche de recensement annuel des écoles primaires — année scolaire 2025-2026, accompagnée de son guide de remplissage.",
+   "format": "PDF",
+   "groupe": "Fiches de collecte et canevas statistiques"
+  },
+  {
+   "id": "canevas-epp",
+   "titre": "Canevas — Statistique du personnel enseignant et des apprenants (EPP publiques)",
+   "cycle": "Primaire",
+   "format": "Excel",
+   "fichier": "docs/Canevas_statistique_EPP_personnel_apprenants.xlsx",
+   "description": "Classes autorisées, effectif du personnel (FE, ACDPE, AME), apprenants par classe et par sexe, salles de classe, mobilier et manuels par cours.",
+   "groupe": "Fiches de collecte et canevas statistiques"
+  },
+  {
+   "id": "canevas-em",
+   "titre": "Canevas — Statistique du personnel et des apprenants (EM publiques)",
+   "cycle": "Maternelle",
+   "format": "Excel",
+   "fichier": "docs/Canevas_statistique_EM_personnel_apprenants.xlsx",
+   "description": "Classes autorisées, personnel (FE, ACDPE, AME), effectifs des sections des petits et des grands.",
+   "groupe": "Fiches de collecte et canevas statistiques"
+  },
+  {
+   "id": "canevas-prive",
+   "titre": "Canevas — Statistique des apprenants et enseignants des écoles privées",
+   "cycle": "Maternelle et primaire",
+   "format": "Excel",
+   "fichier": "docs/Canevas_statistique_ecoles_privees.xlsx",
+   "description": "Personnel, apprenants par classe et par sexe, infrastructures, mobilier et manuels des écoles privées.",
+   "groupe": "Fiches de collecte et canevas statistiques"
+  },
+  {
+   "id": "canevas-cahier",
+   "titre": "Canevas — Cahier de contrôle DDEMP : état d'effectif du personnel",
+   "cycle": "Circonscription",
+   "format": "Excel",
+   "fichier": "docs/Canevas_cahier_controle_etat_effectif_personnel.xlsx",
+   "description": "Matricule, identité, poste, grade, corps, fonction, statut, dates de prise de service et d'arrivée, anciennetés, CAP, retraite, contact, notes d'évaluation. Un fichier rempli s'importe dans « Personnel enseignant ».",
+   "groupe": "Fiches de collecte et canevas statistiques"
+  },
+  {
+   "id": "modele-eval_ace",
+   "titre": "Fiche d'évaluation des collaborateurs (adjoints)",
+   "cycle": "Personnel",
+   "pages": 2,
+   "format": "PDF",
+   "groupe": "Documents de l'enseignant et certificats (modèles officiels de SCOLARIS et GESCOL)",
+   "fichier": "docs/modeles/eval_ace.pdf",
+   "description": "ACE n'ayant pas la qualité de supérieur hiérarchique immédiat — modèle MEMP / DAF. Modèle vierge à imprimer ; dans SCOLARIS et GESCOL il se remplit automatiquement."
+  },
+  {
+   "id": "modele-eval_directeur",
+   "titre": "Fiche d'évaluation des directeurs",
+   "cycle": "Personnel",
+   "pages": 2,
+   "format": "PDF",
+   "groupe": "Documents de l'enseignant et certificats (modèles officiels de SCOLARIS et GESCOL)",
+   "fichier": "docs/modeles/eval_directeur.pdf",
+   "description": "ACE ayant la qualité de supérieur hiérarchique immédiat — modèle MEMP / DAF. Modèle vierge à imprimer ; dans SCOLARIS et GESCOL il se remplit automatiquement."
+  },
+  {
+   "id": "modele-eval_secondaire",
+   "titre": "Nouvelle fiche d'évaluation (collège / lycée)",
+   "cycle": "Personnel",
+   "pages": 2,
+   "format": "PDF",
+   "groupe": "Documents de l'enseignant et certificats (modèles officiels de SCOLARIS et GESCOL)",
+   "fichier": "docs/modeles/eval_secondaire.pdf",
+   "description": "Modèle MESTFP : DDESTFP, CEG / lycée, classe de recrutement. Modèle vierge à imprimer ; dans SCOLARIS et GESCOL il se remplit automatiquement."
+  },
+  {
+   "id": "modele-presence_poste_dir",
+   "titre": "Certificat de présence au poste (délivré par le directeur)",
+   "cycle": "Personnel",
+   "pages": 1,
+   "format": "PDF",
+   "groupe": "Documents de l'enseignant et certificats (modèles officiels de SCOLARIS et GESCOL)",
+   "fichier": "docs/modeles/presence_poste_dir.pdf",
+   "description": "Signé par le directeur et le chef de la circonscription scolaire. Modèle vierge à imprimer ; dans SCOLARIS et GESCOL il se remplit automatiquement."
+  },
+  {
+   "id": "modele-presence_poste_ccs",
+   "titre": "Certificat de présence au poste (délivré par le CCS)",
+   "cycle": "Personnel",
+   "pages": 1,
+   "format": "PDF",
+   "groupe": "Documents de l'enseignant et certificats (modèles officiels de SCOLARIS et GESCOL)",
+   "fichier": "docs/modeles/presence_poste_ccs.pdf",
+   "description": "Le chef de la circonscription scolaire certifie la présence au poste. Modèle vierge à imprimer ; dans SCOLARIS et GESCOL il se remplit automatiquement."
+  },
+  {
+   "id": "modele-attestation_direction",
+   "titre": "Attestation de direction",
+   "cycle": "Personnel",
+   "pages": 1,
+   "format": "PDF",
+   "groupe": "Documents de l'enseignant et certificats (modèles officiels de SCOLARIS et GESCOL)",
+   "fichier": "docs/modeles/attestation_direction.pdf",
+   "description": "Délivrée par le CCS au directeur / à la directrice d'école. Modèle vierge à imprimer ; dans SCOLARIS et GESCOL il se remplit automatiquement."
+  },
+  {
+   "id": "modele-certificat_travail",
+   "titre": "Certificat de travail",
+   "cycle": "Personnel",
+   "pages": 1,
+   "format": "PDF",
+   "groupe": "Documents de l'enseignant et certificats (modèles officiels de SCOLARIS et GESCOL)",
+   "fichier": "docs/modeles/certificat_travail.pdf",
+   "description": "Délivré par le chef de la circonscription scolaire. Modèle vierge à imprimer ; dans SCOLARIS et GESCOL il se remplit automatiquement."
+  },
+  {
+   "id": "modele-prise_service_ccs",
+   "titre": "Certificat de prise de service (délivré par le CCS)",
+   "cycle": "Personnel",
+   "pages": 1,
+   "format": "PDF",
+   "groupe": "Documents de l'enseignant et certificats (modèles officiels de SCOLARIS et GESCOL)",
+   "fichier": "docs/modeles/prise_service_ccs.pdf",
+   "description": "Affectation, remplacement, acte, fonction, date de prise de service, motif. Modèle vierge à imprimer ; dans SCOLARIS et GESCOL il se remplit automatiquement."
+  },
+  {
+   "id": "modele-prise_service_dir",
+   "titre": "Certificat de prise de service (délivré par le directeur)",
+   "cycle": "Personnel",
+   "pages": 1,
+   "format": "PDF",
+   "groupe": "Documents de l'enseignant et certificats (modèles officiels de SCOLARIS et GESCOL)",
+   "fichier": "docs/modeles/prise_service_dir.pdf",
+   "description": "Le directeur certifie la prise de service de l'agent affecté à l'école. Modèle vierge à imprimer ; dans SCOLARIS et GESCOL il se remplit automatiquement."
+  },
+  {
+   "id": "modele-prise_en_charge",
+   "titre": "Certificat de prise en charge (hospitalisation)",
+   "cycle": "Personnel",
+   "pages": 1,
+   "format": "PDF",
+   "groupe": "Documents de l'enseignant et certificats (modèles officiels de SCOLARIS et GESCOL)",
+   "fichier": "docs/modeles/prise_en_charge.pdf",
+   "description": "Admission des fonctionnaires et assimilés : indice, budget, catégorie. Modèle vierge à imprimer ; dans SCOLARIS et GESCOL il se remplit automatiquement."
+  },
+  {
+   "id": "modele-certificat_scolarite",
+   "titre": "Certificat de scolarité (format 2023)",
+   "cycle": "Élèves",
+   "pages": 1,
+   "format": "PDF",
+   "groupe": "Documents de l'enseignant et certificats (modèles officiels de SCOLARIS et GESCOL)",
+   "fichier": "docs/modeles/certificat_scolarite.pdf",
+   "description": "Identité, matricule EducMaster, fréquentation, cours, assiduité, conduite, travail, observations. Modèle vierge à imprimer ; dans SCOLARIS et GESCOL il se remplit automatiquement."
+  },
+  {
+   "id": "ref-aof_services_ddemp",
+   "titre": "Attributions, organisation et fonctionnement (AOF) des services de la DDEMP",
+   "cycle": "DDEMP",
+   "pages": 3,
+   "format": "PDF",
+   "groupe": "Textes et documents de référence (SCOLARIS et GESCOL)",
+   "fichier": "docs/reference/aof_services_ddemp.pdf",
+   "description": "Document original de référence utilisé par SCOLARIS et GESCOL (téléchargé à la première ouverture, puis disponible hors ligne).",
+   "enLigne": true
+  },
+  {
+   "id": "ref-calendrier_scolaire_2026-2027",
+   "titre": "Arrêté fixant le calendrier de l'année scolaire 2026-2027",
+   "cycle": "Tous",
+   "pages": 4,
+   "format": "PDF",
+   "groupe": "Textes et documents de référence (SCOLARIS et GESCOL)",
+   "fichier": "docs/reference/calendrier_scolaire_2026-2027.pdf",
+   "description": "Document original de référence utilisé par SCOLARIS et GESCOL (téléchargé à la première ouverture, puis disponible hors ligne).",
+   "enLigne": true
+  },
+  {
+   "id": "ref-emploi_du_temps_CI_CM2",
+   "titre": "Emplois du temps officiels CI → CM2 (MEMP, septembre 2016)",
+   "cycle": "Primaire",
+   "pages": 7,
+   "format": "PDF",
+   "groupe": "Textes et documents de référence (SCOLARIS et GESCOL)",
+   "fichier": "docs/reference/emploi_du_temps_CI_CM2.pdf",
+   "description": "Document original de référence utilisé par SCOLARIS et GESCOL (téléchargé à la première ouverture, puis disponible hors ligne).",
+   "enLigne": true
+  },
+  {
+   "id": "ref-emploi_du_temps_maternelle",
+   "titre": "Emploi du temps officiel de la maternelle (DEM, septembre 2012)",
+   "cycle": "Maternelle",
+   "pages": 1,
+   "format": "PDF",
+   "groupe": "Textes et documents de référence (SCOLARIS et GESCOL)",
+   "fichier": "docs/reference/emploi_du_temps_maternelle.pdf",
+   "description": "Document original de référence utilisé par SCOLARIS et GESCOL (téléchargé à la première ouverture, puis disponible hors ligne).",
+   "enLigne": true
+  },
+  {
+   "id": "ref-planification_annuelle_CI_CM2",
+   "titre": "Planification annuelle de référence CI → CM2",
+   "cycle": "Primaire",
+   "pages": 8,
+   "format": "PDF",
+   "groupe": "Textes et documents de référence (SCOLARIS et GESCOL)",
+   "fichier": "docs/reference/planification_annuelle_CI_CM2.pdf",
+   "description": "Document original de référence utilisé par SCOLARIS et GESCOL (téléchargé à la première ouverture, puis disponible hors ligne).",
+   "enLigne": true
+  },
+  {
+   "id": "ref-planification_mensuelle_CE1_CM2",
+   "titre": "Modèle de planification mensuelle (CE-CM)",
+   "cycle": "Primaire",
+   "pages": 1,
+   "format": "PDF",
+   "groupe": "Textes et documents de référence (SCOLARIS et GESCOL)",
+   "fichier": "docs/reference/planification_mensuelle_CE1_CM2.pdf",
+   "description": "Document original de référence utilisé par SCOLARIS et GESCOL (téléchargé à la première ouverture, puis disponible hors ligne).",
+   "enLigne": true
+  },
+  {
+   "id": "ref-projet_planification_CI_CM2",
+   "titre": "Projet de planification des objets d'apprentissage CI → CM2",
+   "cycle": "Primaire",
+   "pages": 322,
+   "format": "PDF",
+   "groupe": "Textes et documents de référence (SCOLARIS et GESCOL)",
+   "fichier": "docs/reference/projet_planification_CI_CM2.pdf",
+   "description": "Document original de référence utilisé par SCOLARIS et GESCOL (téléchargé à la première ouverture, puis disponible hors ligne).",
+   "enLigne": true
+  },
+  {
+   "id": "ref-reglement_interieur",
+   "titre": "Règlement intérieur des écoles primaires (révisé, 2018) — document signé",
+   "cycle": "Primaire",
+   "pages": 8,
+   "format": "PDF",
+   "groupe": "Textes et documents de référence (SCOLARIS et GESCOL)",
+   "fichier": "docs/reference/reglement_interieur.pdf",
+   "description": "Document original de référence utilisé par SCOLARIS et GESCOL (téléchargé à la première ouverture, puis disponible hors ligne).",
+   "enLigne": true
+  },
+  {
+   "id": "ref-themes_UP_CP_FG_2026-2027",
+   "titre": "Thèmes des UP, conférences pédagogiques et formations groupées 2026-2027",
+   "cycle": "Tous",
+   "pages": 9,
+   "format": "PDF",
+   "groupe": "Textes et documents de référence (SCOLARIS et GESCOL)",
+   "fichier": "docs/reference/themes_UP_CP_FG_2026-2027.pdf",
+   "description": "Document original de référence utilisé par SCOLARIS et GESCOL (téléchargé à la première ouverture, puis disponible hors ligne).",
+   "enLigne": true
+  }
+ ],
+ "integres": [
+  {
+   "route": "emploi",
+   "titre": "Emplois du temps officiels (MEMP 2016)",
+   "description": "Maternelle, CI-CP, CE1-CE2, CM1-CM2 — modifiables, PDF et Excel."
+  },
+  {
+   "route": "calendrier",
+   "titre": "Calendrier scolaire officiel 2026-2027",
+   "description": "Arrêté interministériel n° 017 du 28 juillet 2026 — trimestres, congés, jours fériés."
+  },
+  {
+   "route": "reglement",
+   "titre": "Règlement intérieur des écoles primaires (révisé, 2018)",
+   "description": "Préambule, titres et articles — texte modifiable, PDF et Excel."
+  },
+  {
+   "route": "planif",
+   "titre": "Planification annuelle — Maternelle et primaire",
+   "description": "EM (section des petits, section des grands) par domaines d'activités D1 à D5 ; CI → CM2 avec la planification de référence. Modifiable, PDF et Excel."
+  },
+  {
+   "route": "themes",
+   "titre": "Thèmes 2026-2027",
+   "description": "Unités pédagogiques, conférences et formations groupées."
+  },
+  {
+   "route": "planification",
+   "titre": "Planification CI → CM2 (projet de planification des objets d'apprentissage)",
+   "description": "Projet de planification des objets d'apprentissage à l'école primaire."
+  }
+ ]
+}

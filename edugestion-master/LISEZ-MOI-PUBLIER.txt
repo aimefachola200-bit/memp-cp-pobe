@@ -1,0 +1,15 @@
+POUR METTRE L'APPLICATION EN LIGNE
+==================================
+
+1. Installez Node.js une seule fois : https://nodejs.org (version LTS).
+2. Extrayez le zip (clic droit > Extraire tout...).
+3. Dans le dossier extrait, double-cliquez sur : publier-surge.bat
+4. Repondez aux questions dans la fenetre :
+   - O pour creer / utiliser un nouveau compte
+   - email    : votre adresse, sans accent
+   - password : tapez-le a l'aveugle (il ne s'affiche pas), puis Entree
+
+Le site sera a l'adresse : https://edugestion-pro-master.surge.sh
+
+Pour les mises a jour : remplacez les fichiers du dossier par la nouvelle
+version, double-cliquez sur publier-surge.bat et repondez N.

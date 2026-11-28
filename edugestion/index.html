@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+<script src="js/icones.js"></script>
+<script src="js/doc-export.js"></script>
+  <title>ÉduGestion Pro — gestion scolaire, Bénin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Gestion des écoles maternelles et primaires du Bénin : élèves, présences, évaluations, CEP, personnel, patrimoine, recensement. Fonctionne sans internet.">
+  <meta name="theme-color" content="#1F4E79">
+  <meta name="color-scheme" content="light">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/favicon.ico" sizes="any">
+  <link rel="icon" href="icons/icon-192.png" type="image/png" sizes="192x192">
+  <link rel="icon" href="icons/icon-512.png" type="image/png" sizes="512x512">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+  <link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ÉduGestion">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="css/app.css">
+</head>
+<body class="connexion">
+  <div id="app">
+    <div id="chargement" class="ecran-connexion">
+      <div class="carte-connexion">
+        <h1>ÉduGestion Pro</h1>
+        <p id="chargement-texte">Chargement de l’application…</p>
+        <button type="button" id="chargement-recharger" class="btn btn-primaire pleine" hidden onclick="location.reload()">Recharger la page</button>
+      </div>
+    </div>
+    <noscript>
+      <div class="ecran-connexion">
+        <div class="carte-connexion">
+          <h1>JavaScript est nécessaire</h1>
+          <p>ÉduGestion Pro fonctionne entièrement sur votre appareil, sans serveur. Activez JavaScript pour l’utiliser.</p>
+        </div>
+      </div>
+    </noscript>
+  </div>
+
+  <script>
+    /* Filet de sécurité : si rien n'apparaît au bout de quelques secondes, on explique pourquoi
+       au lieu de laisser un écran vide (le plus souvent : une autre fenêtre de l'application,
+       restée ouverte sur l'ancienne version, bloque la mise à jour de la base locale). */
+    setTimeout(function () {
+      var c = document.getElementById('chargement');
+      if (!c) return;
+      var t = document.getElementById('chargement-texte');
+      if (t.textContent.indexOf('déjà ouvert') >= 0) return; /* message plus précis déjà affiché */
+      t.textContent =
+        'Le démarrage prend plus de temps que prévu. Si ÉduGestion Pro est déjà ouvert dans un autre onglet ou une autre fenêtre, fermez-le, puis rechargez cette page.';
+      document.getElementById('chargement-recharger').hidden = false;
+    }, 6000);
+  </script>
+  <script src="js/classes.js"></script>
+  <script src="js/classes-eg.js"></script>
+  <script src="js/listes-classe.js"></script>
+  <script src="js/modele-xlsx.js"></script>
+  <script src="js/schema.js"></script>
+  <script src="js/db.js"></script>
+  <script src="js/rules.js"></script>
+  <script src="js/tableur.js"></script>
+  <script src="js/referentiel-cs.js"></script>
+  <script src="js/seed.js"></script>
+  <script src="js/choix.js" data-geo="data/referentiel_villages.json"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/qr.js"></script>
+  <script src="js/docs-styles.js"></script>
+  <script src="js/docs-socle.js"></script>
+  <script src="js/docs-modeles.js"></script>
+  <script src="js/sortie.js"></script>
+  <script src="js/geo-ref.js"></script>
+  <script src="js/docs-scolaris.js"></script>
+  <script src="js/screens.js"></script>
+  <script src="js/screens2.js"></script>
+  <script src="js/screens3.js"></script>
+  <script src="js/screens4.js"></script>
+  <script src="js/screens5.js"></script>
+  <script src="js/screens6.js"></script>
+  <script src="js/screens7.js"></script>
+  <script src="js/screens8.js"></script>
+  <script src="js/screens9.js"></script>
+  <script src="js/screens10.js"></script>
+  <script src="js/screens11.js"></script>
+  <script src="js/screens12.js"></script>
+  <script src="js/screens13.js"></script>
+  <script src="js/screens14.js"></script>
+  <script src="js/screens15.js"></script>
+  <script src="js/screens16.js"></script>
+  <script src="js/screens17.js"></script>
+  <script src="js/screens18.js"></script>
+  <script src="js/screens19.js"></script>
+  <script src="js/screens20.js"></script>
+  <script src="js/screens21.js"></script>
+  <script src="js/screens22.js"></script>
+  <script src="js/screens23.js"></script>
+  <script src="js/screens24.js"></script>
+<script src="js/screens25.js"></script>
+<script src="js/screens26.js"></script>
+<script src="js/screens27.js"></script>
+<script src="js/screens28.js"></script>
+<script src="js/screens29.js"></script>
+<script src="js/screens30.js"></script>
+<script src="js/uascep.js"></script>
+<script src="js/uascep-eg.js"></script>
+<script src="js/pvs-modules.js"></script>
+<script src="js/pvs.js"></script>
+<script src="js/pvs-eg.js"></script>
+<script src="js/documents-officiels.js"></script>
+<script src="js/docs-pedagogiques.js"></script>
+<script src="js/logo-ecole.js"></script>
+<script src="js/guide.js"></script>
+<script src="js/guide-contenu.js"></script>
+<script src="js/pedagogie.js"></script>
+<script src="js/pedagogie-eg.js"></script>
+<script src="js/secondaire.js"></script>
+<script src="js/bulletins-sec.js"></script>
+<script src="js/maitre-semaine.js"></script>
+<script src="js/registres-sec.js"></script>
+<script src="js/ecole-registres.js"></script>
+<script src="js/zone-core.js"></script>
+<script src="js/zone-eg.js"></script>
+<script src="js/declarations-paiement.js"></script>
+<script src="js/educmaster-modeles.js"></script>
+<script src="js/listes-eg.js"></script>
+<script src="js/graphiques.js"></script>
+<script src="js/divisions-donnees.js"></script>
+<script src="js/divisions.js"></script>
+<script src="js/signatures.js"></script>
+<script src="js/espace-memp-cp.js"></script>
+<script src="js/camera.js"></script>
+<script src="js/securite.js"></script>
+<script src="js/sauvegarde-auto.js"></script>
+<script src="js/ed25519.js"></script>
+<script src="js/sync-client.js"></script>
+<script src="js/sync-commun.js"></script>
+<script src="js/motdepasse.js"></script>
+  <script src="js/sync-eg.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

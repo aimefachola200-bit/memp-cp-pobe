@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+<script src="js/icones.js"></script>
+  <title>Vérification d’un document — ÉduGestion Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#008751">
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="css/app.css">
+  <style>
+    body { background: var(--fond); }
+    .verif { max-width: 640px; margin: 0 auto; padding: 20px 16px 48px; }
+    .verif-tete { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; }
+    .verif-tete h1 { font-size: 20px; }
+    .verdict { border-radius: var(--rayon); padding: 16px; margin-bottom: 16px;
+      border: 1px solid var(--bordure); background: var(--surface); border-left-width: 5px; }
+    .verdict h2 { font-size: 17px; margin-bottom: 6px; }
+    .verdict.ok { border-left-color: var(--succes); }
+    .verdict.ok h2 { color: var(--succes); }
+    .verdict.alerte { border-left-color: var(--danger); }
+    .verdict.alerte h2 { color: var(--danger); }
+    .verdict.neutre { border-left-color: var(--jaune); }
+    .verdict.neutre h2 { color: var(--attention); }
+    code.reference { font-family: ui-monospace, Menlo, monospace; font-size: 13px;
+      background: var(--fond); padding: 3px 7px; border-radius: 5px; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <div class="verif">
+    <div class="verif-tete">
+      <span class="marque-drapeau" aria-hidden="true"></span>
+      <div>
+        <h1>Vérification d’un document</h1>
+        <p class="muet petit">ÉduGestion Pro — écoles maternelles et primaires du Bénin</p>
+      </div>
+    </div>
+    <div id="resultat"><p class="muet">Lecture en cours…</p></div>
+    <p class="muet petit">
+      Cette page interroge uniquement la base de l’appareil sur lequel vous êtes. Elle ne
+      transmet rien et ne consulte aucun serveur.
+    </p>
+  </div>
+
+<script src="js/uascep.js"></script>
+<script src="js/pvs-modules.js"></script>
+<script src="js/pvs.js"></script>
+<script>
+(function () {
+  'use strict';
+  const zone = document.getElementById('resultat');
+
+  function el(tag, props, enfants) {
+    const n = document.createElement(tag);
+    if (props) Object.keys(props).forEach(k => {
+      if (k === 'class') n.className = props[k];
+      else if (k === 'text') n.textContent = props[k];
+      else n.setAttribute(k, props[k]);
+    });
+    (enfants || []).forEach(c => n.appendChild(typeof c === 'string' ? document.createTextNode(c) : c));
+    return n;
+  }
+
+  function verdict(ton, titre, corps) {
+    zone.textContent = '';
+    const bloc = el('div', { class: 'verdict ' + ton }, [el('h2', { text: titre })]);
+    corps.forEach(c => bloc.appendChild(c));
+    zone.appendChild(bloc);
+  }
+
+  function reference(numero, empreinte) {
+    const l = [el('p', {}, ['Numéro : ', el('code', { class: 'reference', text: numero })])];
+    if (empreinte) l.push(el('p', {}, ['Empreinte : ', el('code', { class: 'reference', text: empreinte })]));
+    return l;
+  }
+
+  function dateFR(v) {
+    if (!v) return '—';
+    const d = new Date(v);
+    if (isNaN(d.getTime())) return v;
+    const mois = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet',
+      'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+    return d.getDate() + ' ' + mois[d.getMonth()] + ' ' + d.getFullYear();
+  }
+
+  /* Même empreinte que l'application (EG.empreinte) */
+  function empreinte(texte) {
+    let h1 = 0x811c9dc5, h2 = 0x01000193;
+    for (let i = 0; i < texte.length; i++) {
+      h1 = (h1 ^ texte.charCodeAt(i)) >>> 0; h1 = (h1 * 16777619) >>> 0;
+      h2 = (h2 + texte.charCodeAt(i) * (i + 7)) >>> 0;
+    }
+    return (h1.toString(16) + h2.toString(16)).padStart(16, '0');
+  }
+  function meta(db, cle) {
+    return new Promise(res => {
+      if (!db.objectStoreNames.contains('meta')) return res(null);
+      const r = db.transaction(['meta'], 'readonly').objectStore('meta').get(cle);
+      r.onsuccess = () => res(r.result ? r.result.valeur : null); r.onerror = () => res(null);
+    });
+  }
+  /**
+   * Contrôle du contenu : l'empreinte est recalculée
+   *  - pour les pièces UASCEP et PVS, sur les données telles qu'elles sont enregistrées aujourd'hui (bureau, registres, licences…) :
+   *    toute modification faite après l'édition est signalée ;
+   *  - pour les autres pièces, sur le texte conservé dans le registre : une pièce du registre retouchée est signalée.
+   * Rend { etat: 'ok' | 'modifie' | 'inconnu', texte }.
+   */
+  function controleContenu(db, doc) {
+    const src = doc.source || {};
+    if ((src.kind === 'uascep' && window.UASCEP) || (src.kind === 'pvs' && window.PVS)) {
+      return meta(db, src.kind).then(etat => {
+        let c;
+        try {
+          c = src.kind === 'uascep'
+            ? window.UASCEP.canon(window.UASCEP.contenuDocument(etat || { bureaux: [], membres: [] }, src.type, src.bureauIds || [], src.membreId, src.options || undefined))
+            : window.PVS.canon(window.PVS.contenuDocument(etat || {}, src.type, src.ref || {}));
+        } catch (e) { return { etat: 'inconnu', texte: 'Les données d’origine n’ont pas pu être relues.' }; }
+        return empreinte(c + doc.numero) === doc.hash_sha256
+          ? { etat: 'ok', texte: 'Les données enregistrées n’ont pas changé depuis l’édition de la pièce.' }
+          : { etat: 'modifie', texte: 'Les données enregistrées ont été modifiées depuis l’édition de la pièce (bureau, registre, notes ou résultats) : le document imprimé ne correspond plus à l’état actuel. Faites-le rééditer et signer de nouveau.' };
+      });
+    }
+    if (doc.contenu_html) {
+      return Promise.resolve(empreinte(doc.contenu_html + doc.numero) === doc.hash_sha256
+        ? { etat: 'ok', texte: 'Le texte conservé dans le registre correspond à son empreinte.' }
+        : { etat: 'modifie', texte: 'Le texte conservé dans le registre ne correspond plus à son empreinte : la pièce a été retouchée après son édition.' });
+    }
+    return Promise.resolve({ etat: 'inconnu', texte: 'Pièce éditée par une version antérieure : seul le numéro et l’empreinte du registre sont contrôlés.' });
+  }
+
+  function lire(numero) {
+    return new Promise((resolve, reject) => {
+      const requete = indexedDB.open('edugestion_pro');
+      requete.onerror = () => reject(new Error('stockage inaccessible'));
+      requete.onsuccess = e => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('documents')) { db.close(); return resolve(null); }
+        const t = db.transaction(['documents'], 'readonly');
+        const tout = t.objectStore('documents').getAll();
+        tout.onsuccess = () => {
+          const trouve = (tout.result || []).filter(d => d.numero === numero)[0] || null;
+          if (!trouve) { db.close(); return resolve(null); }
+          controleContenu(db, trouve).then(c => { trouve._controle = c; db.close(); resolve(trouve); }, () => { db.close(); resolve(trouve); });
+        };
+        tout.onerror = () => { db.close(); reject(new Error('lecture impossible')); };
+      };
+    });
+  }
+
+  /**
+   * Relit l'adresse et rend le verdict. Appelée au chargement et à chaque
+   * changement d'empreinte : scanner un second code ne doit jamais laisser
+   * le verdict du premier à l'écran.
+   */
+  /* Libellés des pièces éditées (registres, tableaux d'affichage, synthèses, statistiques, bulletins…). */
+  const TYPES = { REGISTRE_APPEL: 'Registre de présence (appel)', RELEVE_MENSUEL: 'Relevé mensuel de fréquentation', AFFICHAGE_CLASSE: 'Tableau d’affichage de la classe',
+    SYNTHESE_EVAL: 'Synthèse de l’évaluation', RESULTATS_EVAL: 'Résultats de l’évaluation', STATISTIQUES: 'Statistiques et courbes', DIVISION_STATS: 'Division / service : statistiques, courbes, plan d’action', BILAN_PRESENCE: 'Bilan de présence',
+    BULLETIN: 'Bulletin de notes', LISTE_CLASSE: 'Liste de classe', CERT_SCOLARITE: 'Certificat de scolarité', CARTE_SCOLAIRE: 'Carte d’identité scolaire',
+    FICHE_CEP: 'Fiche d’inscription au CEP', FICHE_INSCRIPTION: 'Fiche d’inscription', RELEVE_CENTRE: 'Relevé de centre', REPARTITION_CLASSES: 'Répartition des classes',
+    ETAT_BUDGET: 'État budgétaire', FICHE_CARRIERE: 'Fiche de carrière', PV_VISITE: 'Procès-verbal de visite', LISTE_PAIEMENT: 'Liste de paiement', UASCEP: 'Pièce UASCEP', PVS: 'Pièce « Pilotage et vie scolaire »' };
+
+  function verifier() {
+    const params = new URLSearchParams(location.search);
+    let numero = params.get('n');
+    if (!numero) {
+      const m = location.pathname.match(/\/v\/([^/?#]+)/);
+      if (m) numero = decodeURIComponent(m[1]);
+    }
+    const empreinte = (location.hash || '').replace(/^#/, '');
+
+    if (!numero) {
+      verdict('neutre', 'Aucun document indiqué', [
+        el('p', { text: 'Scannez le code figurant en pied du document, ou ouvrez le lien qu’il contient.' })
+      ]);
+      return;
+    }
+
+    zone.textContent = '';
+    zone.appendChild(el('p', { class: 'muet', text: 'Lecture en cours…' }));
+
+    lire(numero).then(doc => {
+      if (!doc) {
+        verdict('neutre', 'Document introuvable sur cet appareil', [
+          el('p', { text: 'Ce téléphone ne détient pas la base de l’établissement, ce qui est normal '
+            + 'si vous n’êtes pas le directeur ou l’enseignant qui a édité la pièce.' }),
+          el('p', { text: 'Présentez les références ci-dessous à l’école : elles suffisent à retrouver '
+            + 'le document dans son registre et à confirmer qu’il en est bien l’auteur.' })
+        ].concat(reference(numero, empreinte)));
+        return;
+      }
+
+      const concorde = !empreinte || doc.hash_sha256 === empreinte;
+      const details = [
+      el('p', {}, [el('strong', { text: doc.titre || '—' })]),
+      el('p', { class: 'muet', text: 'Type : ' + (TYPES[doc.type_code] || doc.type_code || '—')
+        + ' • édité le ' + dateFR(doc.created_at) + ' • version ' + (doc.version || 1) }),
+      el('p', { class: 'muet', text: 'Statut : ' + (doc.statut || '—') })
+    ].concat(doc.pvs ? [['Type', doc.pvs.type || ''], ['Entité', doc.pvs.entite], ['Objet', doc.pvs.objet], ['Mention', doc.pvs.mention], ['Date', doc.pvs.date], ['Signataire', doc.pvs.signataire]]
+      .filter(x => x[1]).map(x => el('p', {}, [el('strong', { text: x[0] + ' : ' }), x[1]])) : []).concat(doc.uascep ? [['Type', 'UASCEP — ' + (doc.uascep.type || '')], ['Bureau', doc.uascep.bureau], ['Membre', doc.uascep.membre], ['Fonction', doc.uascep.fonction],
+      ['Saison', doc.uascep.saison], ['Date', doc.uascep.date], ['Signataire', doc.uascep.signataire]].filter(x => x[1]).map(x => el('p', {}, [el('strong', { text: x[0] + ' : ' }), x[1]])) : [])
+      .concat(reference(numero, doc.hash_sha256));
+
+      const ctl = doc._controle || { etat: 'inconnu' };
+      if (concorde && ctl.etat === 'modifie') {
+        verdict('alerte', 'Document modifié après son édition', [
+          el('p', { text: ctl.texte })
+        ].concat(details));
+        return;
+      }
+      if (concorde) {
+        if (ctl.etat === 'ok') details.unshift(el('p', { class: 'muet', text: ctl.texte }));
+        verdict('ok', 'Document authentique', [
+          el('p', { text: 'Ce numéro figure dans le registre de l’établissement et l’empreinte '
+            + 'correspond : le document n’a pas été modifié depuis son édition.' })
+        ].concat(details));
+      } else {
+        verdict('alerte', 'L’empreinte ne correspond pas', [
+          el('p', { text: 'Le numéro existe bien, mais l’empreinte portée sur le document que vous avez '
+            + 'en main diffère de celle enregistrée. La pièce a pu être modifiée, ou rééditée depuis. '
+            + 'Rapprochez-vous de l’établissement.' }),
+          el('p', { class: 'muet', text: 'Empreinte présentée : ' + empreinte })
+        ].concat(details));
+      }
+    }).catch(err => {
+      verdict('neutre', 'Vérification impossible', [
+        el('p', { text: 'Le stockage local n’est pas accessible (' + err.message
+          + '). Présentez les références à l’établissement.' })
+      ].concat(reference(numero, empreinte)));
+    });
+  }
+
+  window.addEventListener('hashchange', verifier);
+  verifier();
+})();
+</script>
+</body>
+</html>
